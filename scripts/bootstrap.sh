@@ -71,6 +71,17 @@ base(){
 }
 docker_install(){
  check_host; need_sudo
+ # Pathfinder storage must be mounted correctly before Docker installation.
+"$ROOT/scripts/lib/docker-storage.sh" check-mount
+
+# Prepare storage only on the first installation.
+if [[ ! -e /etc/docker/daemon.json &&
+      ! -e /etc/containerd/config.toml ]]; then
+  "$ROOT/scripts/lib/docker-storage.sh" prepare
+elif [[ ! -f /etc/docker/daemon.json ||
+        ! -f /etc/containerd/config.toml ]]; then
+  die "Partial Docker storage configuration detected. Review manually."
+fi
  if dpkg-query -W -f='${Status}' docker.io 2>/dev/null | grep -q 'install ok installed'; then die 'docker.io already installed; review package migration manually'; fi
  sudo apt-get update
  sudo apt-get install -y ca-certificates curl gnupg
@@ -91,6 +102,7 @@ EOT
  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
  sudo systemctl enable --now docker
  sudo docker version; sudo docker compose version
+ "$ROOT/scripts/lib/docker-storage.sh" verify
  log 'Docker ready. Access requires sudo; no docker group membership granted.'
 }
 nvidia_toolkit(){
