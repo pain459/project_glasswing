@@ -16,3 +16,9 @@
         href: http://192.168.68.62:3003
         description: Infrastructure Monitoring
         siteMonitor: http://192.168.68.62:3003
+
+    - Beszel:
+        icon: beszel.png
+        href: http://192.168.68.62:8090
+        description: Pathfinder Host Monitoring
+        siteMonitor: http://192.168.68.62:8090
