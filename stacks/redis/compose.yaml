@@ -12,7 +12,7 @@ services:
       - --appendonly
       - "yes"
       - --aclfile
-      - /data/run/secrets/redis.acl
+      - /run/secrets/redis.acl
 
     volumes:
       - redis_data:/data
