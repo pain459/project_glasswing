@@ -1,0 +1,40 @@
+
+name: glasswing-flowise
+
+services:
+  flowise:
+    image: flowiseai/flowise:latest
+    container_name: glasswing-flowise
+    restart: unless-stopped
+
+    ports:
+      - "192.168.68.62:3002:3000"
+
+    environment:
+      PORT: "3000"
+      APP_URL: http://192.168.68.62:3002
+
+      DATABASE_TYPE: sqlite
+      DATABASE_PATH: /home/node/.flowise
+
+      SECRETKEY_PATH: /home/node/.flowise
+      FLOWISE_SECRETKEY_OVERWRITE: ${FLOWISE_SECRETKEY_OVERWRITE:?Required from Infisical}
+
+      JWT_AUTH_TOKEN_SECRET: ${JWT_AUTH_TOKEN_SECRET:?Required from Infisical}
+      JWT_REFRESH_TOKEN_SECRET: ${JWT_REFRESH_TOKEN_SECRET:?Required from Infisical}
+
+      LOG_PATH: /home/node/.flowise/logs
+      BLOB_STORAGE_PATH: /home/node/.flowise/storage
+
+      DISABLE_FLOWISE_TELEMETRY: "true"
+      TZ: Asia/Kolkata
+
+    volumes:
+      - flowise_data:/home/node/.flowise
+
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  flowise_data:
+    name: glasswing-flowise-data
