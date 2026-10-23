@@ -1,0 +1,58 @@
+
+name: glasswing-open-notebook
+
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2
+    restart: unless-stopped
+    user: root
+
+    command:
+      - start
+      - --log
+      - info
+      - --user
+      - root
+      - --pass
+      - ${SURREAL_PASSWORD:?Required from Infisical}
+      - rocksdb:/mydata/mydatabase.db
+
+    environment:
+      SURREAL_EXPERIMENTAL_GRAPHQL: "true"
+
+    volumes:
+      - surreal_data:/mydata
+
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest
+    restart: unless-stopped
+
+    depends_on:
+      - surrealdb
+
+    ports:
+      - "192.168.68.62:8502:8502"
+      - "192.168.68.62:5055:5055"
+
+    environment:
+      OPEN_NOTEBOOK_ENCRYPTION_KEY: ${OPEN_NOTEBOOK_ENCRYPTION_KEY:?Required from Infisical}
+      OPEN_NOTEBOOK_PASSWORD: ${OPEN_NOTEBOOK_PASSWORD:?Required from Infisical}
+
+      SURREAL_URL: ws://surrealdb:8000/rpc
+      SURREAL_USER: root
+      SURREAL_PASSWORD: ${SURREAL_PASSWORD:?Required from Infisical}
+      SURREAL_NAMESPACE: open_notebook
+      SURREAL_DATABASE: open_notebook
+
+      OPEN_NOTEBOOK_WORKER_MAX_TASKS: "2"
+      TZ: Asia/Kolkata
+
+    volumes:
+      - notebook_data:/app/data
+
+volumes:
+  surreal_data:
+    name: glasswing-notebook-surreal-data
+
+  notebook_data:
+    name: glasswing-notebook-data
