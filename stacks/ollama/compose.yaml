@@ -1,0 +1,27 @@
+
+name: glasswing-ollama
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: glasswing-ollama
+    restart: unless-stopped
+
+    ports:
+      - "192.168.68.62:11434:11434"
+
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_KEEP_ALIVE: 30m
+
+    volumes:
+      - /mnt/storage/ollama:/root/.ollama
+
+    gpus: all
+
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
