@@ -24,10 +24,13 @@ sudo -v
 pass 'Ubuntu and Docker access'
 
 log 'Checking RTX 4090 presence'
-if ! lspci -nn | grep -iq 'NVIDIA.*AD102\|NVIDIA.*RTX 4090'; then
-  fail 'Expected NVIDIA RTX 4090 GPU not found in PCI inventory'
+PCI_INVENTORY="$(lspci -nn)"
+
+if [[ "$PCI_INVENTORY" != *"[10de:2684]"* ]]; then
+  fail 'NVIDIA RTX 4090 GPU not detected'
 fi
-pass 'NVIDIA GPU detected'
+
+pass 'NVIDIA RTX 4090 detected'
 
 log 'Refreshing APT and installing driver selection tools'
 sudo apt-get update
