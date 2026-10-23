@@ -8,10 +8,6 @@ COMPOSE := docker compose -f stacks/$(STACK)/compose.yaml
 .PHONY: help up down restart logs ps check \
         infisical homepage core status
 
-.PHONY: secrets-check
-
-secrets-check:
-	@bash scripts/04-infisical-check.sh
 
 help:
 	@echo "Glasswing Stack Manager"
@@ -80,3 +76,19 @@ core:
 status:
 	@docker ps --format \
 	  'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+
+.PHONY: secrets-check
+
+secrets-check:
+	@bash scripts/04-infisical-check.sh
+
+
+
+.PHONY: secrets-injection-check
+
+secrets-injection-check:
+	@./scripts/with-infisical.sh \
+	  /test tests/infisical-secrets.list -- \
+	  bash -c 'test "$$GLASSWING_TEST_SECRET" = "pathfinder-ready"'
+	@echo "[PASS] Infisical secret injection operational"
+	
