@@ -34,3 +34,10 @@
         href: http://192.168.68.62:3007
         description: Network DNS and Content Filtering
         siteMonitor: http://192.168.68.62:3007
+
+- AI Infrastructure:
+    - Ollama:
+        icon: ollama.png
+        href: http://192.168.68.62:11434
+        description: Local AI Inference — RTX 4090
+        siteMonitor: http://192.168.68.62:11434/api/version
