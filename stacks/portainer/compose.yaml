@@ -1,0 +1,22 @@
+
+name: glasswing-portainer
+
+services:
+  portainer:
+    image: portainer/portainer-ce:lts
+    container_name: glasswing-portainer
+    restart: unless-stopped
+
+    ports:
+      - "192.168.68.62:9443:9443"
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  portainer_data:
+    name: glasswing-portainer-data

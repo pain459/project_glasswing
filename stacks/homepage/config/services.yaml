@@ -22,3 +22,9 @@
         href: http://192.168.68.62:8090
         description: Pathfinder Host Monitoring
         siteMonitor: http://192.168.68.62:8090
+
+    - Portainer:
+        icon: portainer.png
+        href: https://192.168.68.62:9443
+        description: Docker Management
+        siteMonitor: http://192.168.68.62:9443
