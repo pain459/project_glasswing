@@ -1,0 +1,55 @@
+
+name: glasswing-redis
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: glasswing-redis
+    restart: unless-stopped
+
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --aclfile
+      - /run/secrets/redis.acl
+
+    volumes:
+      - redis_data:/data
+
+    secrets:
+      - redis_acl
+      - redis_password
+
+    networks:
+      glasswing-backend:
+        aliases:
+          - glasswing-redis
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - REDISCLI_AUTH="$$(cat /run/secrets/redis_password)" redis-cli ping | grep -qx PONG
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+    security_opt:
+      - no-new-privileges:true
+
+secrets:
+  redis_acl:
+    file: ../../.local/secrets/redis.acl
+
+  redis_password:
+    file: ../../.local/secrets/redis_password
+
+volumes:
+  redis_data:
+    name: glasswing-redis-data
+
+networks:
+  glasswing-backend:
+    external: true
+    name: glasswing-backend
