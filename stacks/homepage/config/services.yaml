@@ -28,3 +28,9 @@
         href: https://192.168.68.62:9443
         description: Docker Management
         siteMonitor: http://192.168.68.62:9443
+
+    - AdGuard Home:
+        icon: adguard-home.png
+        href: http://192.168.68.62:3007
+        description: Network DNS and Content Filtering
+        siteMonitor: http://192.168.68.62:3007
