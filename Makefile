@@ -8,6 +8,11 @@ COMPOSE := docker compose -f stacks/$(STACK)/compose.yaml
 .PHONY: help up down restart logs ps check \
         infisical homepage core status
 
+.PHONY: secrets-check
+
+secrets-check:
+	@bash scripts/04-infisical-check.sh
+
 help:
 	@echo "Glasswing Stack Manager"
 	@echo ""
