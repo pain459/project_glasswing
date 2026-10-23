@@ -48,3 +48,9 @@
         href: http://192.168.68.62:3002
         description: AI Workflows and Agent Builder
         siteMonitor: http://192.168.68.62:3002
+
+    - Open Notebook:
+        icon: open-notebook.png
+        href: http://192.168.68.62:8502
+        description: AI Research and Knowledge Notebook
+        siteMonitor: http://192.168.68.62:8502
