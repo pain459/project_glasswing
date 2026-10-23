@@ -1,0 +1,71 @@
+
+name: glasswing-infisical
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: infisical
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+      POSTGRES_DB: infisical
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U infisical -d infisical"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+
+  infisical:
+    image: infisical/infisical:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      SITE_URL: ${SITE_URL:?required}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?required}
+      AUTH_SECRET: ${AUTH_SECRET:?required}
+      DB_CONNECTION_URI: postgresql://infisical:${POSTGRES_PASSWORD}@postgres:5432/infisical
+      REDIS_URL: redis://redis:6379
+    networks: [internal]
+    security_opt:
+      - no-new-privileges:true
+
+  gateway:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    depends_on:
+      - infisical
+    ports:
+      - "${HOST_IP:?required}:8095:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./tls:/etc/nginx/tls:ro
+    networks: [internal]
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:

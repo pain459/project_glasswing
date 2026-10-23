@@ -1,0 +1,35 @@
+cd ~/src_git/project_glasswing
+mkdir -p stacks/infisical/tls
+chmod 700 stacks/infisical/tls
+
+if [ ! -e stacks/infisical/.env ]; then
+  (
+    umask 077
+    {
+      printf 'HOST_IP=192.168.68.62\n'
+      printf 'SITE_URL=https://192.168.68.62:8095\n'
+      printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 32)"
+      printf 'ENCRYPTION_KEY=%s\n' "$(openssl rand -hex 16)"
+      printf 'AUTH_SECRET=%s\n' "$(openssl rand -hex 32)"
+    } > stacks/infisical/.env
+  )
+fi
+
+
+-----------
+
+
+if [ ! -e stacks/infisical/tls/cert.pem ] &&
+   [ ! -e stacks/infisical/tls/key.pem ]; then
+  openssl req -x509 -nodes -newkey rsa:3072 \
+    -days 365 -sha256 \
+    -keyout stacks/infisical/tls/key.pem \
+    -out stacks/infisical/tls/cert.pem \
+    -subj "/CN=Pathfinder Infisical" \
+    -addext "subjectAltName=IP:192.168.68.62,DNS:pathfinder"
+fi
+
+chmod 600 stacks/infisical/tls/key.pem
+
+
+-------------
