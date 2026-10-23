@@ -34,6 +34,18 @@ services:
 
     security_opt:
       - no-new-privileges:true
+    
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
+
+  init-permissions:
+    image: alpine:3.20
+    user: root
+    command: ["sh", "-c", "chown -R 1000:1000 /data"]
+    volumes:
+      - flowise_data:/data
+    restart: "no"
 
 volumes:
   flowise_data:
