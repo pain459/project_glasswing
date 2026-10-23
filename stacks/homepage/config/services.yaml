@@ -1,0 +1,11 @@
+
+- Infrastructure:
+    - Infisical:
+        icon: infisical.png
+        href: https://192.168.68.62:8095
+        description: Secrets Management
+
+    - Homepage:
+        icon: homepage.png
+        href: http://192.168.68.62:3006
+        description: Glasswing Dashboard

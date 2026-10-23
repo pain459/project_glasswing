@@ -1,0 +1,21 @@
+name: glasswing-homepage
+
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    restart: unless-stopped
+
+    ports:
+      - "192.168.68.62:3006:3000"
+
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: "192.168.68.62:3006,localhost:3006"
+      PUID: "1000"
+      PGID: "1000"
+
+    volumes:
+      - ./config:/app/config
+      - ./icons:/app/public/icons:ro
+
+    security_opt:
+      - no-new-privileges:true

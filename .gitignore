@@ -1,1 +1,4 @@
+stacks/infisical/.env
+stacks/infisical/tls/
+stacks/homepage/config/logs/
 .local/
