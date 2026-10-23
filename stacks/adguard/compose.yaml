@@ -1,0 +1,31 @@
+
+name: glasswing-adguard
+
+services:
+  adguard:
+    image: adguard/adguardhome:latest
+    container_name: glasswing-adguard
+    restart: unless-stopped
+
+    ports:
+      - "192.168.68.62:53:53/tcp"
+      - "192.168.68.62:53:53/udp"
+      - "192.168.68.62:3007:80/tcp"
+      - "192.168.68.62:3008:3000/tcp"
+
+    volumes:
+      - adguard_work:/opt/adguardhome/work
+      - adguard_conf:/opt/adguardhome/conf
+
+    environment:
+      TZ: Asia/Kolkata
+
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  adguard_work:
+    name: glasswing-adguard-work
+
+  adguard_conf:
+    name: glasswing-adguard-conf
