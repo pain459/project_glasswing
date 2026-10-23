@@ -3,7 +3,7 @@ name: glasswing-flowise
 
 services:
   flowise:
-    image: flowiseai/flowise:latest
+    image: flowiseai/flowise:3.1.3
     container_name: glasswing-flowise
     restart: unless-stopped
 
