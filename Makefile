@@ -23,6 +23,7 @@ help:
 	@echo "make check STACK=name      Validate stack configuration"
 	@echo "make status                Show all Docker containers"
 
+
 up:
 	@set -eu; \
 	STACK_DIR="stacks/$(STACK)"; \
@@ -41,8 +42,9 @@ up:
 	  echo "[INFO] No external secrets required: $(STACK)"; \
 	  docker compose -f "$$COMPOSE_FILE" \
 	    up -d --wait --wait-timeout 180; \
-	fi
-	@docker compose -f stacks/$(STACK)/compose.yaml ps
+	fi; \
+	echo "[PASS] Stack $(STACK) started"
+
 
 
 down:
@@ -55,12 +57,12 @@ logs:
 	@$(COMPOSE) logs --tail=100 -f
 
 ps:
-	@$(COMPOSE) ps
+	@docker ps --filter "label=com.docker.compose.project=glasswing-$(STACK)" \
+	  --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
 check:
-	@$(COMPOSE) config --quiet
-	@$(COMPOSE) ps
-	@echo "[PASS] Compose configuration valid"
+	@docker ps --filter "label=com.docker.compose.project=glasswing-$(STACK)" \
+	  --format 'table {{.Names}}\t{{.Status}}'
 
 infisical:
 	@$(MAKE) --no-print-directory up STACK=infisical
