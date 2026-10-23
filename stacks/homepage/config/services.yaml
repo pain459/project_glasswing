@@ -4,6 +4,7 @@
         icon: infisical.png
         href: https://192.168.68.62:8095
         description: Secrets Management
+        siteMonitor: https://192.168.68.62:8095/api/status
 
     - Homepage:
         icon: homepage.png
