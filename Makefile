@@ -28,9 +28,26 @@ help:
 	@echo "make status                Show all Docker containers"
 
 up:
-	@$(COMPOSE) config --quiet
-	@$(COMPOSE) up -d --wait --wait-timeout 180
-	@$(COMPOSE) ps
+	@set -eu; \
+	STACK_DIR="stacks/$(STACK)"; \
+	COMPOSE_FILE="$$STACK_DIR/compose.yaml"; \
+	KEYS_FILE="$$STACK_DIR/secrets.list"; \
+	test -f "$$COMPOSE_FILE" || { \
+	  echo "[FAIL] Unknown stack: $(STACK)"; exit 1; \
+	}; \
+	if [ -s "$$KEYS_FILE" ]; then \
+	  echo "[INFO] Infisical integration enabled: $(STACK)"; \
+	  ./scripts/with-infisical.sh \
+	    "/$(STACK)" "$$KEYS_FILE" -- \
+	    docker compose -f "$$COMPOSE_FILE" \
+	    up -d --wait --wait-timeout 180; \
+	else \
+	  echo "[INFO] No external secrets required: $(STACK)"; \
+	  docker compose -f "$$COMPOSE_FILE" \
+	    up -d --wait --wait-timeout 180; \
+	fi
+	@docker compose -f stacks/$(STACK)/compose.yaml ps
+
 
 down:
 	@$(COMPOSE) down
