@@ -16,8 +16,6 @@ ravik@pathfinder:~$
 ravik@pathfinder:~$
 ravik@pathfinder:~$
 ravik@pathfinder:~$
-ravik@pathfinder:~$
-ravik@pathfinder:~$
 ravik@pathfinder:~$ sudo vgcfgbackup ubuntu-vg
   Volume group "ubuntu-vg" successfully backed up.
 ravik@pathfinder:~$ sudo lvs -o lv_name,lv_size,lv_path
