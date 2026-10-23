@@ -1,5 +1,0 @@
-# UUID,MOUNTPOINT,FSTYPE,OPTIONS
-# Example (do NOT uncomment before confirming via lsblk -f):
-# 11111111-2222-3333-4444-555555555555,/srv/glasswing-data,ext4,defaults,nofail,x-systemd.device-timeout=15s# UUID,MOUNTPOINT,FSTYPE,OPTIONS
-83259698-d2a6-45e7-b503-7f106b746b39,/mnt/storage,ext4,defaults,nofail,x-systemd.device-timeout=15s
-9070ff10-5016-4b6f-a148-b5ed1ad61ae6,/mnt/cold,ext4,defaults,nofail,x-systemd.device-timeout=15s
