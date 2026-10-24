@@ -78,3 +78,10 @@
         href: http://192.168.68.62:3004
         description: Database Administration
         siteMonitor: http://192.168.68.62:3004
+
+- Developer Tools:
+    - Forgejo:
+        icon: forgejo.png
+        href: http://192.168.68.62:3011
+        description: Private Git Repositories
+        siteMonitor: http://192.168.68.62:3011
