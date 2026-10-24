@@ -56,7 +56,7 @@
         siteMonitor: http://192.168.68.62:8502
 
     - Langfuse:
-        icon: langfuse.png
+        icon: sh-langfuse
         href: http://192.168.68.62:3010
         description: LLM Tracing and Observability
         siteMonitor: http://192.168.68.62:3010/api/public/health
