@@ -72,3 +72,9 @@
         href: http://192.168.68.62:3009
         description: Architecture Diagrams and Whiteboard
         siteMonitor: http://192.168.68.62:3009
+
+    - DBGate:
+        icon: dbgate.png
+        href: http://192.168.68.62:3004
+        description: Database Administration
+        siteMonitor: http://192.168.68.62:3004
