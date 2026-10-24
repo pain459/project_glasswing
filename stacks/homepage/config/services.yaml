@@ -60,3 +60,9 @@
         href: http://192.168.68.62:3010
         description: LLM Tracing and Observability
         siteMonitor: http://192.168.68.62:3010/api/public/health
+    
+    - JupyterLab:
+        icon: jupyter.png
+        href: http://192.168.68.62:8889/lab
+        description: Python Notebooks and Data Science
+        siteMonitor: http://192.168.68.62:8889/login
