@@ -1,0 +1,29 @@
+
+name: glasswing-jupyterlab
+
+services:
+  jupyterlab:
+    image: quay.io/jupyter/scipy-notebook:2026-07-28
+    container_name: glasswing-jupyterlab
+    restart: unless-stopped
+
+    ports:
+      - "192.168.68.62:8889:8888"
+
+    environment:
+      JUPYTER_TOKEN: ${JUPYTER_TOKEN:?Required from Infisical}
+      TZ: Asia/Kolkata
+
+    command:
+      - start-notebook.py
+      - --ServerApp.root_dir=/home/jovyan/work
+
+    volumes:
+      - jupyterlab_data:/home/jovyan/work
+
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  jupyterlab_data:
+    name: glasswing-jupyterlab-data
