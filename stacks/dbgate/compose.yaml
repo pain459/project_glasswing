@@ -1,0 +1,26 @@
+
+name: glasswing-dbgate
+
+services:
+  dbgate:
+    image: dbgate/dbgate:7.3.2
+    container_name: glasswing-dbgate
+    restart: unless-stopped
+
+    ports:
+      - "192.168.68.62:3004:3000"
+
+    environment:
+      LOGIN: ${DBGATE_USERNAME:?Required from Infisical}
+      PASSWORD: ${DBGATE_PASSWORD:?Required from Infisical}
+      TZ: Asia/Kolkata
+
+    volumes:
+      - dbgate_data:/root/.dbgate
+
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  dbgate_data:
+    name: glasswing-dbgate-data
