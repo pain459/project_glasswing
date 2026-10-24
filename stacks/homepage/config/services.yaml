@@ -66,3 +66,9 @@
         href: http://192.168.68.62:8889/lab
         description: Python Notebooks and Data Science
         siteMonitor: http://192.168.68.62:8889/login
+
+    - Excalidraw:
+        icon: excalidraw.png
+        href: http://192.168.68.62:3009
+        description: Architecture Diagrams and Whiteboard
+        siteMonitor: http://192.168.68.62:3009

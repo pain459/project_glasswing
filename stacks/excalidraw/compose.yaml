@@ -1,0 +1,23 @@
+
+name: glasswing-excalidraw
+
+services:
+  excalidraw:
+    image: excalidraw/excalidraw:latest
+    container_name: glasswing-excalidraw
+    restart: unless-stopped
+
+    ports:
+      - "192.168.68.62:3009:80"
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://127.0.0.1:80
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+    security_opt:
+      - no-new-privileges:true
