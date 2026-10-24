@@ -1,0 +1,37 @@
+
+name: glasswing-forgejo
+
+services:
+  forgejo:
+    image: codeberg.org/forgejo/forgejo:17
+    container_name: glasswing-forgejo
+    restart: unless-stopped
+
+    environment:
+      USER_UID: "1000"
+      USER_GID: "1000"
+
+      FORGEJO__server__DOMAIN: 192.168.68.62
+      FORGEJO__server__ROOT_URL: http://192.168.68.62:3011/
+      FORGEJO__server__SSH_DOMAIN: 192.168.68.62
+      FORGEJO__server__SSH_PORT: "2222"
+
+      FORGEJO__service__DISABLE_REGISTRATION: "true"
+      FORGEJO__service__REQUIRE_SIGNIN_VIEW: "true"
+
+      TZ: Asia/Kolkata
+
+    ports:
+      - "192.168.68.62:3011:3000"
+      - "192.168.68.62:2222:22"
+
+    volumes:
+      - forgejo_data:/data
+      - /etc/localtime:/etc/localtime:ro
+
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  forgejo_data:
+    name: glasswing-forgejo-data
