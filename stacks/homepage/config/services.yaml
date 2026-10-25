@@ -40,7 +40,7 @@
         siteMonitor: http://192.168.68.62:3006
 
     - OpenObserve:
-        icon: openobserve.png
+        icon: sh-openobserve
         href: http://192.168.68.62:3018
         description: Centralized Logs, Metrics and Traces
         siteMonitor: http://192.168.68.62:3018/healthz
