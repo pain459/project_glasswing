@@ -119,3 +119,9 @@
         href: http://192.168.68.62:32400/web
         description: Movies, TV, Documentaries and Home Videos
         siteMonitor: http://192.168.68.62:32400/identity
+
+    - Kavita:
+        icon: kavita.png
+        href: http://192.168.68.62:3017
+        description: Books, Comics and Digital Reading
+        siteMonitor: http://192.168.68.62:3017
