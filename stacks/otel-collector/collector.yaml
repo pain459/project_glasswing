@@ -1,0 +1,70 @@
+
+receivers:
+  docker_stats:
+    endpoint: unix:///var/run/docker.sock
+    collection_interval: 30s
+    timeout: 20s
+
+    container_labels_to_metric_labels:
+      com.docker.compose.project: compose_project
+      com.docker.compose.service: compose_service
+
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 384
+    spike_limit_mib: 96
+
+  batch:
+    timeout: 10s
+    send_batch_size: 1000
+
+extensions:
+  basicauth/openobserve:
+    client_auth:
+      username: ${env:ZO_ROOT_USER_EMAIL}
+      password: ${env:ZO_ROOT_USER_PASSWORD}
+
+exporters:
+  otlphttp/openobserve:
+    endpoint: http://192.168.68.62:3018/api/default
+    auth:
+      authenticator: basicauth/openobserve
+
+service:
+  extensions:
+    - basicauth/openobserve
+
+  pipelines:
+    metrics:
+      receivers:
+        - docker_stats
+        - otlp
+      processors:
+        - memory_limiter
+        - batch
+      exporters:
+        - otlphttp/openobserve
+
+    traces:
+      receivers:
+        - otlp
+      processors:
+        - memory_limiter
+        - batch
+      exporters:
+        - otlphttp/openobserve
+
+    logs:
+      receivers:
+        - otlp
+      processors:
+        - memory_limiter
+        - batch
+      exporters:
+        - otlphttp/openobserve

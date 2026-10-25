@@ -1,0 +1,30 @@
+
+name: glasswing-otel-collector
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.163.0
+    container_name: glasswing-otel-collector
+    restart: unless-stopped
+
+    command:
+      - --config=/etc/otelcol-contrib/config.yaml
+
+    environment:
+      ZO_ROOT_USER_EMAIL: ${ZO_ROOT_USER_EMAIL:?Required from Infisical}
+      ZO_ROOT_USER_PASSWORD: ${ZO_ROOT_USER_PASSWORD:?Required from Infisical}
+
+    group_add:
+      - "${DOCKER_GID:?Set Docker socket group ID}"
+
+    volumes:
+      - ./collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    ports:
+      - "192.168.68.62:4318:4318"
+
+    mem_limit: 512m
+
+    security_opt:
+      - no-new-privileges:true
