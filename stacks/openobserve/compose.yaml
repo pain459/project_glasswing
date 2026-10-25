@@ -1,0 +1,30 @@
+
+name: glasswing-openobserve
+
+services:
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve:latest
+    container_name: glasswing-openobserve
+    restart: unless-stopped
+
+    ports:
+      - "192.168.68.62:3018:5080"
+
+    environment:
+      TZ: Asia/Kolkata
+
+      ZO_ROOT_USER_EMAIL: ${ZO_ROOT_USER_EMAIL:?Required from Infisical}
+      ZO_ROOT_USER_PASSWORD: ${ZO_ROOT_USER_PASSWORD:?Required from Infisical}
+
+      ZO_LOCAL_MODE: "true"
+      ZO_DATA_DIR: /data
+
+    volumes:
+      - openobserve_data:/data
+
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  openobserve_data:
+    name: glasswing-openobserve-data
