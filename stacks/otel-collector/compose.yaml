@@ -3,7 +3,7 @@ name: glasswing-otel-collector
 
 services:
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.163.0
+    image: otel/opentelemetry-collector-contrib:latest
     container_name: glasswing-otel-collector
     restart: unless-stopped
 
@@ -23,6 +23,7 @@ services:
 
     ports:
       - "192.168.68.62:4318:4318"
+      - "192.168.68.62:13133:13133"
 
     mem_limit: 512m
 

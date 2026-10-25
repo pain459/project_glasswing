@@ -45,6 +45,11 @@
         description: Centralized Logs, Metrics and Traces
         siteMonitor: http://192.168.68.62:3018/healthz
 
+    - OpenTelemetry Collector:
+        icon: mdi-chart-timeline-variant
+        description: Centralized Docker Metrics and Telemetry
+        siteMonitor: http://192.168.68.62:13133/
+
 - AI Platform:
     - Ollama:
         icon: ollama.png
