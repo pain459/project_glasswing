@@ -99,14 +99,14 @@ RESTORE_REQUIRED=1
 for name in "${RUNNING[@]}"; do
   if [[ ! "$name" =~ (postgres|redis|clickhouse|minio|surrealdb) ]]; then
     echo "[STOP] $name"
-    docker stop --time 90 "$name"
+    docker stop --timeout 90 "$name"
   fi
 done
 
 for name in "${RUNNING[@]}"; do
   if [[ "$name" =~ (postgres|redis|clickhouse|minio|surrealdb) ]]; then
     echo "[STOP] $name"
-    docker stop --time 90 "$name"
+    docker stop --timeout 90 "$name"
   fi
 done
 
