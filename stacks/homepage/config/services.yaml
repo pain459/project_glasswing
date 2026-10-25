@@ -39,6 +39,12 @@
         description: Operations Dashboard
         siteMonitor: http://192.168.68.62:3006
 
+    - OpenObserve:
+        icon: openobserve.png
+        href: http://192.168.68.62:3018
+        description: Centralized Logs, Metrics and Traces
+        siteMonitor: http://192.168.68.62:3018/healthz
+
 - AI Platform:
     - Ollama:
         icon: ollama.png
