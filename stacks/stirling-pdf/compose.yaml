@@ -1,0 +1,49 @@
+
+name: glasswing-stirling-pdf
+
+services:
+  stirling-pdf:
+    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest
+    container_name: glasswing-stirling-pdf
+    restart: unless-stopped
+
+    ports:
+      - "192.168.68.62:3016:8080"
+
+    environment:
+      TZ: Asia/Kolkata
+      PUID: "1000"
+      PGID: "1000"
+
+      SECURITY_ENABLELOGIN: "true"
+      SECURITY_INITIALLOGIN_USERNAME: ${STIRLING_ADMIN_USERNAME:?Required from Infisical}
+      SECURITY_INITIALLOGIN_PASSWORD: ${STIRLING_ADMIN_PASSWORD:?Required from Infisical}
+
+      SYSTEM_DEFAULTLOCALE: en-US
+
+    volumes:
+      - stirling_configs:/configs
+      - stirling_logs:/logs
+      - stirling_custom:/customFiles
+      - stirling_pipeline:/pipeline
+      - stirling_storage:/storage
+      - stirling_tessdata:/usr/share/tessdata
+
+    mem_limit: 4g
+
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  stirling_configs:
+    name: glasswing-stirling-configs
+  stirling_logs:
+    name: glasswing-stirling-logs
+  stirling_custom:
+    name: glasswing-stirling-custom
+  stirling_pipeline:
+    name: glasswing-stirling-pipeline
+  stirling_storage:
+    name: glasswing-stirling-storage
+  stirling_tessdata:
+    name: glasswing-stirling-tessdata

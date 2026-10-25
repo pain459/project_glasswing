@@ -1,0 +1,21 @@
+
+name: glasswing-it-tools
+
+services:
+  it-tools:
+    image: ghcr.io/corentinth/it-tools:2024.10.22-7ca5933
+    container_name: glasswing-it-tools
+    restart: unless-stopped
+
+    ports:
+      - "192.168.68.62:3015:80"
+
+    security_opt:
+      - no-new-privileges:true
+
+    read_only: true
+
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
