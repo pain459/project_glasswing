@@ -1,0 +1,31 @@
+
+name: glasswing-kavita
+
+services:
+  kavita:
+    image: ghcr.io/kareadita/kavita:latest
+    container_name: glasswing-kavita
+    restart: unless-stopped
+
+    ports:
+      - "192.168.68.62:3017:5000"
+
+    environment:
+      TZ: Asia/Kolkata
+
+    volumes:
+      - kavita_config:/kavita/config
+
+      - type: bind
+        source: /mnt/cold/books
+        target: /books
+        read_only: true
+        bind:
+          create_host_path: false
+
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  kavita_config:
+    name: glasswing-kavita-config
