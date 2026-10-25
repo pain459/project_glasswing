@@ -17,6 +17,8 @@ services:
       ZO_ROOT_USER_EMAIL: ${ZO_ROOT_USER_EMAIL:?Required}
       ZO_ROOT_USER_PASSWORD: ${ZO_ROOT_USER_PASSWORD:?Required}
 
+      VECTOR_DANGEROUSLY_ALLOW_ENV_VAR_INTERPOLATION: "true"
+
     group_add:
       - "${DOCKER_GID:?Docker socket GID required}"
 
