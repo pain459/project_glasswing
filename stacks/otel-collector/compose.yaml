@@ -15,7 +15,7 @@ services:
       ZO_ROOT_USER_PASSWORD: ${ZO_ROOT_USER_PASSWORD:?Required from Infisical}
 
     group_add:
-      - "${DOCKER_GID:?Set Docker socket group ID}"
+      - "${DOCKER_GID:?Docker socket GID required}"
 
     volumes:
       - ./collector.yaml:/etc/otelcol-contrib/config.yaml:ro
