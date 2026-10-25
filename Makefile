@@ -83,8 +83,23 @@ core:
 status:
 	@docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
+
 secrets-check:
-	@bash scripts/04-infisical-check.sh
+	@set -eu; \
+	echo "[INFO] Checking Infisical integration"; \
+	test -x scripts/with-infisical.sh || { \
+	  echo "[FAIL] Missing executable: scripts/with-infisical.sh"; \
+	  exit 1; \
+	}; \
+	test -s tests/infisical-secrets.list || { \
+	  echo "[FAIL] Missing test secret list"; \
+	  exit 1; \
+	}; \
+	./scripts/with-infisical.sh \
+	  /test tests/infisical-secrets.list -- \
+	  bash -c 'test "$$GLASSWING_TEST_SECRET" = "pathfinder-ready"'; \
+	echo "[PASS] Infisical authentication and secret injection operational"
+
 
 secrets-injection-check:
 	@./scripts/with-infisical.sh \
