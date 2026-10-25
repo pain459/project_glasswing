@@ -23,7 +23,7 @@ services:
 
     volumes:
       - plex_config:/config
-      - /mnt/cold/media:/media:ro
+      - /mnt/cold/media:/media
 
     tmpfs:
       - /transcode:size=8g,mode=1777
