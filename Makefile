@@ -7,7 +7,7 @@ COMPOSE_FILE := $(STACK_DIR)/compose.yaml
 SECRETS_FILE := $(STACK_DIR)/secrets.list
 
 # Default secret location: /<stack>. The collector reuses /openobserve.
-INFISICAL_PATH ?= $(if $(filter otel-collector,$(STACK)),/openobserve,/$(STACK))
+INFISICAL_PATH ?= $(if $(filter otel-collector vector,$(STACK)),/openobserve,/$(STACK))
 
 # Needed by the OTEL collector to access /var/run/docker.sock as non-root.
 export DOCKER_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null)
