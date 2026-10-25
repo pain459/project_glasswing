@@ -91,7 +91,7 @@ The wrapper also expects the Infisical CA certificate at `stacks/infisical/tls/c
 
 ```bash
 make core                        # Infisical, then Homepage
-make secrets-injection-check     # verify a test secret reaches the environment
+make secrets-check               # verify authentication and secret injection
 ```
 
 Then bring up individual stacks, or reconcile everything:
@@ -117,6 +117,8 @@ make restart-all
 | `make restart-all` | Redeploy every stack in order |
 
 `make restart-all` uses `docker compose up`, not `docker restart`. Changed environment variables are applied, not ignored.
+
+Every lifecycle target calls the same `run_compose` macro. It validates the stack name, decides whether the stack declares secrets, injects them through `scripts/with-infisical.sh`, and runs one Compose command. Secret injection is therefore not something a target can forget.
 
 `INFISICAL_PATH` overrides the secret path for a stack. The default is `/<stack>`, and the collectors reuse `/openobserve`.
 
@@ -168,6 +170,8 @@ environment:
 
 This is deliberate. A service should refuse to start with a blank password rather than run with an insecure default.
 
+`make secrets-check` proves the path works end to end. It verifies the wrapper is executable, reads `tests/infisical-secrets.list`, and asserts that a known test value arrives in the command environment.
+
 ## Observability
 
 Three layers, each answering a different question:
@@ -203,6 +207,7 @@ Read [backup/GLASSWING_RESTIC_BACKUP_RUNBOOK.md](backup/GLASSWING_RESTIC_BACKUP_
 
 ```bash
 make check STACK=name     # Compose config validation and status
+make secrets-check        # Infisical auth, test secret list, and injection
 make secrets-injection-check
 make ps STACK=name
 ```
@@ -215,7 +220,6 @@ A green container is not proof a service works. Check the destination too: telem
 - There is no off-host backup copy yet.
 - Backup scheduling is manual; systemd timers are planned.
 - A full application-state restore has not been attempted end to end. An isolated configuration restore has.
-- `make secrets-check` calls `scripts/04-infisical-check.sh`, which is not in the repository yet.
 - Remote access is LAN-only. A VPN or tunnel is not configured.
 - Infisical serves a self-signed certificate, so clients need the CA explicitly.
 
