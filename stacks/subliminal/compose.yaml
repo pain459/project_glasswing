@@ -1,11 +1,13 @@
-
 name: glasswing-subliminal
 
 services:
   subliminal:
     image: ghcr.io/diaoul/subliminal:latest
-
     user: "1000:1000"
+    restart: "no"
+
+    environment:
+      XDG_CACHE_HOME: /tmp/subliminal-cache
 
     volumes:
       - type: bind
@@ -15,4 +17,5 @@ services:
         bind:
           create_host_path: false
 
-    restart: "no"
+    tmpfs:
+      - /usr/src/cache:uid=1000,gid=1000,mode=0700
