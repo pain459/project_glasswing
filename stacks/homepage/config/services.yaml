@@ -101,6 +101,18 @@
         description: Encoding, Decoding and Data Analysis
         siteMonitor: http://192.168.68.62:3013
 
+    - IT-Tools:
+        icon: it-tools.png
+        href: http://192.168.68.62:3015
+        description: Developer Utilities and Converters
+        siteMonitor: http://192.168.68.62:3015
+
+    - Stirling-PDF:
+        icon: stirling-pdf.png
+        href: http://192.168.68.62:3016
+        description: PDF Processing, OCR and Conversion
+        siteMonitor: http://192.168.68.62:3016
+
 - Entertainment:
     - Plex:
         icon: plex.png
