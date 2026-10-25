@@ -64,6 +64,12 @@
         description: AI Research & Knowledge
         siteMonitor: http://192.168.68.62:8502
 
+    - AnythingLLM:
+        icon: anything-llm.png
+        href: http://192.168.68.62:3012
+        description: Local AI Knowledge and Document RAG
+        siteMonitor: http://192.168.68.62:3012
+
 - Developer Workbench:
     - Forgejo:
         icon: forgejo.png
