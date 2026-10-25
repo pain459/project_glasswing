@@ -1,0 +1,58 @@
+
+data_dir: /var/lib/vector
+
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  docker_logs:
+    type: docker_logs
+    docker_host: unix:///var/run/docker.sock
+    auto_partial_merge: true
+    exclude_containers:
+      - glasswing-vector
+
+transforms:
+  glasswing_enrich:
+    type: remap
+    inputs:
+      - docker_logs
+    source: |
+      .host_name = "pathfinder"
+      .environment = "glasswing"
+      .service_name = .container_name
+      .log_source = "docker"
+
+sinks:
+  openobserve:
+    type: http
+    inputs:
+      - glasswing_enrich
+
+    uri: http://192.168.68.62:3018/api/default/glasswing_docker/_json
+    method: post
+
+    auth:
+      strategy: basic
+      user: ${ZO_ROOT_USER_EMAIL}
+      password: ${ZO_ROOT_USER_PASSWORD}
+
+    encoding:
+      codec: json
+      timestamp_format: rfc3339
+
+    compression: gzip
+
+    batch:
+      max_events: 500
+      timeout_secs: 5
+
+    buffer:
+      type: disk
+      max_size: 1073741824
+      when_full: block
+
+    healthcheck:
+      enabled: true
+      uri: http://192.168.68.62:3018/healthz

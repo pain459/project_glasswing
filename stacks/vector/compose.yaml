@@ -1,0 +1,38 @@
+
+name: glasswing-vector
+
+services:
+  vector:
+    image: timberio/vector:0.60.0-debian
+    container_name: glasswing-vector
+    restart: unless-stopped
+
+    command:
+      - --config
+      - /etc/vector/vector.yaml
+
+    environment:
+      TZ: Asia/Kolkata
+      DOCKER_HOST: unix:///var/run/docker.sock
+      ZO_ROOT_USER_EMAIL: ${ZO_ROOT_USER_EMAIL:?Required}
+      ZO_ROOT_USER_PASSWORD: ${ZO_ROOT_USER_PASSWORD:?Required}
+
+    group_add:
+      - "${DOCKER_GID:?Docker socket GID required}"
+
+    volumes:
+      - ./vector.yaml:/etc/vector/vector.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - vector_data:/var/lib/vector
+
+    ports:
+      - "192.168.68.62:8686:8686"
+
+    mem_limit: 512m
+
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  vector_data:
+    name: glasswing-vector-data
