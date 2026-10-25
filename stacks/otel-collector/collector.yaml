@@ -25,6 +25,10 @@ processors:
     send_batch_size: 1000
 
 extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+    path: /
+
   basicauth/openobserve:
     client_auth:
       username: ${env:ZO_ROOT_USER_EMAIL}
@@ -38,6 +42,7 @@ exporters:
 
 service:
   extensions:
+    - health_check
     - basicauth/openobserve
 
   pipelines:
