@@ -91,3 +91,39 @@ secrets-injection-check:
 	  /test tests/infisical-secrets.list -- \
 	  bash -c 'test "$$GLASSWING_TEST_SECRET" = "pathfinder-ready"'
 	@echo "[PASS] Infisical secret injection operational"
+
+
+# --------------------------------------------------
+# Glasswing platform-wide lifecycle management
+# --------------------------------------------------
+
+.PHONY: list-stacks restart-all
+
+# Discover all independently managed Compose projects.
+STACKS := $(patsubst stacks/%/compose.yaml,%,$(wildcard stacks/*/compose.yaml))
+
+list-stacks:
+	@printf '%s\n' $(sort $(STACKS))
+
+# Reconcile every stack with its current Compose configuration.
+# This recreates containers only when their configuration has changed.
+# Run Infisical first to ensure secret injection remains available.
+restart-all:
+	@set -e; \
+	echo "========================================"; \
+	echo " Glasswing - Platform Redeployment"; \
+	echo "========================================"; \
+	echo ""; \
+	if [ -f stacks/infisical/compose.yaml ]; then \
+	  echo "[INFO] Starting Infisical"; \
+	  $(MAKE) --no-print-directory up STACK=infisical; \
+	fi; \
+	for stack in $(sort $(filter-out infisical,$(STACKS))); do \
+	  echo ""; \
+	  echo "========================================"; \
+	  echo "[INFO] Deploying $$stack"; \
+	  echo "========================================"; \
+	  $(MAKE) --no-print-directory up STACK=$$stack || exit 1; \
+	done; \
+	echo ""; \
+	echo "[PASS] All Glasswing stacks reconciled"
