@@ -27,6 +27,9 @@ services:
       OTEL_LOGS_EXPORTER: otlp
       OTEL_RESOURCE_ATTRIBUTES: deployment.environment=homelab,host.name=pathfinder
 
+      ZO_COMPACT_ENABLED: "true"
+      ZO_COMPACT_DATA_RETENTION_DAYS: "10"
+
     volumes:
       - openobserve_data:/data
 
