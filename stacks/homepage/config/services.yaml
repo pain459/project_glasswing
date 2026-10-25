@@ -94,3 +94,9 @@
         href: http://192.168.68.62:3009
         description: Architecture & Whiteboarding
         siteMonitor: http://192.168.68.62:3009
+
+    - CyberChef:
+        icon: cyberchef.png
+        href: http://192.168.68.62:3013
+        description: Encoding, Decoding and Data Analysis
+        siteMonitor: http://192.168.68.62:3013

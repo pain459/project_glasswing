@@ -1,0 +1,14 @@
+
+name: glasswing-cyberchef
+
+services:
+  cyberchef:
+    image: ghcr.io/gchq/cyberchef:11.5.0
+    container_name: glasswing-cyberchef
+    restart: unless-stopped
+
+    ports:
+      - "192.168.68.62:3013:8080"
+
+    security_opt:
+      - no-new-privileges:true
