@@ -127,3 +127,41 @@ restart-all:
 	done; \
 	echo ""; \
 	echo "[PASS] All Glasswing stacks reconciled"
+
+
+
+# --------------------------------------------------
+# Glasswing unified Restic backups
+# --------------------------------------------------
+
+.PHONY: backup backup-list backup-check backup-retention
+
+RESTIC_REPO := /mnt/cold/glasswing-backups/restic
+RESTIC_PASSWORD := /etc/glasswing/backup/restic-password
+
+backup:
+	@sudo bash backup/scripts/backup.sh
+
+backup-list:
+	@sudo env \
+	  RESTIC_REPOSITORY=$(RESTIC_REPO) \
+	  RESTIC_PASSWORD_FILE=$(RESTIC_PASSWORD) \
+	  restic snapshots --tag glasswing-full
+
+backup-check:
+	@sudo env \
+	  RESTIC_REPOSITORY=$(RESTIC_REPO) \
+	  RESTIC_PASSWORD_FILE=$(RESTIC_PASSWORD) \
+	  restic check
+
+backup-retention:
+	@sudo env \
+	  RESTIC_REPOSITORY=$(RESTIC_REPO) \
+	  RESTIC_PASSWORD_FILE=$(RESTIC_PASSWORD) \
+	  restic forget \
+	    --tag glasswing-full \
+	    --host pathfinder \
+	    --keep-daily 7 \
+	    --keep-weekly 4 \
+	    --keep-monthly 6 \
+	    --prune
