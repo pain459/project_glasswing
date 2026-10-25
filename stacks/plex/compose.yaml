@@ -1,0 +1,36 @@
+
+name: glasswing-plex
+
+services:
+  plex:
+    image: plexinc/pms-docker:public
+    container_name: glasswing-plex
+    hostname: pathfinder
+    restart: unless-stopped
+
+    network_mode: host
+
+    environment:
+      TZ: Asia/Kolkata
+      PLEX_UID: "1000"
+      PLEX_GID: "1000"
+      ADVERTISE_IP: http://192.168.68.62:32400/
+
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,video,utility
+
+    gpus: all
+
+    volumes:
+      - plex_config:/config
+      - /mnt/cold/media:/media:ro
+
+    tmpfs:
+      - /transcode:size=8g,mode=1777
+
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  plex_config:
+    name: glasswing-plex-config
