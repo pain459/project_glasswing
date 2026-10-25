@@ -50,6 +50,11 @@
         description: Centralized Docker Metrics and Telemetry
         siteMonitor: http://192.168.68.62:13133/
 
+    - Vector:
+        icon: vector.png
+        description: Centralized Docker Log Collector
+        siteMonitor: http://192.168.68.62:8686/health
+
 - AI Platform:
     - Ollama:
         icon: ollama.png
