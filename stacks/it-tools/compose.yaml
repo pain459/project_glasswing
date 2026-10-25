@@ -12,6 +12,16 @@ services:
 
     security_opt:
       - no-new-privileges:true
+    
+    environment:
+      # OTEL ingetration
+      OTEL_SERVICE_NAME: glasswing-homepage
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://192.168.68.62:4318
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: otlp
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=homelab,host.name=pathfinder
 
     read_only: true
 

@@ -9,6 +9,14 @@ services:
 
     environment:
       APP_URL: http://192.168.68.62:8090
+      # OTEL ingetration
+      OTEL_SERVICE_NAME: glasswing-homepage
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://192.168.68.62:4318
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: otlp
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=homelab,host.name=pathfinder
 
     ports:
       - "192.168.68.62:8090:8090"
