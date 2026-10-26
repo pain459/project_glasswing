@@ -34,6 +34,8 @@ services:
         condition: service_completed_successfully
       open-notebook-mcp:
         condition: service_started
+      steel-mcp:
+        condition: service_started
 
     user: "1000:1000"
     working_dir: /workspace
@@ -112,5 +114,41 @@ services:
 
     labels:
       com.glasswing.service: open-notebook-mcp
+      com.glasswing.category: ai
+      com.glasswing.monitoring: "true"
+
+  # Self-hosted Steel gives the model a real Chrome. steel-mcp speaks stdio only,
+  # so supergateway fronts it with the streamable HTTP transport OpenCode uses.
+  steel-mcp:
+    build:
+      context: ./steel-mcp
+      dockerfile: Dockerfile
+    image: glasswing/steel-mcp:3.0.0
+    container_name: glasswing-steel-mcp
+    restart: unless-stopped
+    init: true
+
+    environment:
+      # Point the MCP server at the self-hosted Steel service, not steel.dev.
+      STEEL_LOCAL: "true"
+      STEEL_BASE_URL: http://192.168.68.62:3100
+      STEEL_CONNECT_URL: ws://192.168.68.62:3100
+      TZ: Asia/Kolkata
+
+    security_opt:
+      - no-new-privileges:true
+
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 1.0
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    labels:
+      com.glasswing.service: steel-mcp
       com.glasswing.category: ai
       com.glasswing.monitoring: "true"
