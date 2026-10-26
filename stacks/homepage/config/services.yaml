@@ -4,140 +4,140 @@
 
 - Core Infrastructure:
     - Infisical:
-        icon: /icons/infisical.png
+        icon: infisical.png
         href: https://192.168.68.62:8095
         description: Secrets & Credentials
         siteMonitor: https://192.168.68.62:8095/api/status
 
     - Uptime Kuma:
-        icon: /icons/uptime-kuma.png
+        icon: uptime-kuma.png
         href: http://192.168.68.62:3003
         description: Availability Monitoring
         siteMonitor: http://192.168.68.62:3003
 
     - Beszel:
-        icon: /icons/beszel.png
+        icon: beszel.png
         href: http://192.168.68.62:8090
         description: Host Telemetry
         siteMonitor: http://192.168.68.62:8090
 
     - Portainer:
-        icon: /icons/portainer.png
+        icon: portainer.png
         href: https://192.168.68.62:9443
         description: Container Management
         siteMonitor: https://192.168.68.62:9443
 
     - AdGuard Home:
-        icon: /icons/adguard-home.png
+        icon: adguard-home.png
         href: http://192.168.68.62:3007
         description: DNS & Network Security
         siteMonitor: http://192.168.68.62:3007
 
     - Homepage:
-        icon: /icons/homepage.png
+        icon: homepage.png
         href: http://192.168.68.62:3006
         description: Operations Dashboard
         siteMonitor: http://192.168.68.62:3006
 
     - OpenObserve:
-        icon: /icons/openobserve.png
+        icon: sh-openobserve
         href: http://192.168.68.62:3018
         description: Centralized Logs, Metrics and Traces
         siteMonitor: http://192.168.68.62:3018/healthz
 
     - OpenTelemetry Collector:
-        icon: /icons/opentelemetry.png
+        icon: mdi-chart-timeline-variant
         description: Centralized Docker Metrics and Telemetry
         siteMonitor: http://192.168.68.62:13133/
 
     - Vector:
-        icon: /icons/vector.png
+        icon: vector.png
         description: Centralized Docker Log Collector
         siteMonitor: http://192.168.68.62:8686/health
 
 - AI Platform:
     - Ollama:
-        icon: /icons/ollama.png
+        icon: ollama.png
         href: http://192.168.68.62:11434
         description: RTX 4090 · Model Inference
         siteMonitor: http://192.168.68.62:11434/api/version
 
     - Flowise:
-        icon: /icons/flowise.png
+        icon: flowise.png
         href: http://192.168.68.62:3002
         description: Agents & AI Workflows
         siteMonitor: http://192.168.68.62:3002
 
     - Langfuse:
-        icon: /icons/langfuse.png
+        icon: sh-langfuse
         href: http://192.168.68.62:3010
         description: LLM Tracing & Analytics
         siteMonitor: http://192.168.68.62:3010/api/public/health
 
     - Open Notebook:
-        icon: /icons/open-notebook.png
+        icon: open-notebook.png
         href: http://192.168.68.62:8502
         description: AI Research & Knowledge
         siteMonitor: http://192.168.68.62:8502
 
     - AnythingLLM:
-        icon: /icons/anything-llm.png
+        icon: anything-llm.png
         href: http://192.168.68.62:3012
         description: Local AI Knowledge and Document RAG
         siteMonitor: http://192.168.68.62:3012
 
 - Developer Workbench:
     - Forgejo:
-        icon: /icons/forgejo.png
+        icon: forgejo.png
         href: http://192.168.68.62:3011
         description: Private Git Hosting
         siteMonitor: http://192.168.68.62:3011
 
     - JupyterLab:
-        icon: /icons/jupyter.png
+        icon: jupyter.png
         href: http://192.168.68.62:8889/lab
         description: Python & Data Science
         siteMonitor: http://192.168.68.62:8889/login
 
     - DBGate:
-        icon: /icons/dbgate.png
+        icon: dbgate.png
         href: http://192.168.68.62:3004
         description: Database Administration
         siteMonitor: http://192.168.68.62:3004
 
     - Excalidraw:
-        icon: /icons/excalidraw.png
+        icon: excalidraw.png
         href: http://192.168.68.62:3009
         description: Architecture & Whiteboarding
         siteMonitor: http://192.168.68.62:3009
 
     - CyberChef:
-        icon: /icons/cyberchef.png
+        icon: cyberchef.png
         href: http://192.168.68.62:3013
         description: Encoding, Decoding and Data Analysis
         siteMonitor: http://192.168.68.62:3013
 
     - IT-Tools:
-        icon: /icons/it-tools.png
+        icon: it-tools.png
         href: http://192.168.68.62:3015
         description: Developer Utilities and Converters
         siteMonitor: http://192.168.68.62:3015
 
     - Stirling-PDF:
-        icon: /icons/stirling-pdf.png
+        icon: stirling-pdf.png
         href: http://192.168.68.62:3016
         description: PDF Processing, OCR and Conversion
         siteMonitor: http://192.168.68.62:3016
 
 - Entertainment:
     - Plex:
-        icon: /icons/plex.png
+        icon: plex.png
         href: http://192.168.68.62:32400/web
         description: Movies, TV, Documentaries and Home Videos
         siteMonitor: http://192.168.68.62:32400/identity
 
     - Kavita:
-        icon: /icons/kavita.png
+        icon: kavita.png
         href: http://192.168.68.62:3017
         description: Books, Comics and Digital Reading
         siteMonitor: http://192.168.68.62:3017
