@@ -1,0 +1,51 @@
+
+name: glasswing-steel
+
+services:
+  steel:
+    image: ghcr.io/steel-dev/steel-browser:latest
+    container_name: glasswing-steel
+    restart: unless-stopped
+    init: true
+
+    ports:
+      - "${STEEL_BIND_IP:?Missing STEEL_BIND_IP}:${STEEL_PORT:?Missing STEEL_PORT}:3000"
+
+    environment:
+      NODE_ENV: production
+      LOG_STORAGE_ENABLED: ${STEEL_LOG_STORAGE_ENABLED:?Missing STEEL_LOG_STORAGE_ENABLED}
+      LOG_STORAGE_PATH: ${STEEL_LOG_STORAGE_PATH:?Missing STEEL_LOG_STORAGE_PATH}
+
+    volumes:
+      - /srv/glasswing/steel/cache:/app/.cache
+      - /srv/glasswing/steel/logs:/data/logs
+      - /srv/glasswing/steel/exports:/tmp/steel-browser-exports
+
+    shm_size: "1gb"
+
+    security_opt:
+      - no-new-privileges:true
+
+    pids_limit: 512
+    mem_limit: 4g
+    cpus: 4.0
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    labels:
+      com.glasswing.service: steel
+      com.glasswing.category: ai
+      com.glasswing.monitoring: "true"
+
+    networks:
+      glasswing-backend:
+        aliases:
+          - steel
+
+networks:
+  glasswing-backend:
+    external: true
