@@ -54,6 +54,19 @@ docker exec glasswing-opencode \
 
 The link expires after five minutes and works once.
 
+## Monitoring
+
+`/health` is unauthenticated and reports whether the server is up, so it is the
+right target for availability checks:
+
+- Homepage: `stacks/homepage/config/services.yaml` lists OpenCode under
+  **AI Platform** with `siteMonitor: http://192.168.68.62:3019/health`.
+- Uptime Kuma monitor URL: `http://192.168.68.62:3019/health`
+  (HTTP, 60s interval recommended).
+
+Prefer `/health` over `/` for the actual check: `/` returns the app shell to
+every visitor, and `/api/health` returns 401 without a session.
+
 ## Context and RAG
 
 The model window is 131,072 tokens. RAG does not make the window literally
