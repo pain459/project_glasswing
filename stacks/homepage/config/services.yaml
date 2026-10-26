@@ -90,8 +90,7 @@
         icon: mdi-web
         href: http://192.168.68.62:3100/ui
         description: Private AI browser automation
-        siteMonitor: http://steel:3000/v1/health
-        target: _blank
+        siteMonitor: http://192.168.68.62:3100/v1/health
 
 
 - Developer Workbench:
