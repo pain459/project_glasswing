@@ -1,0 +1,32 @@
+title: Glasswing
+description: Pathfinder operations dashboard
+theme: dark
+color: slate
+headerStyle: clean
+statusStyle: dot
+target: _blank
+fullWidth: true
+useEqualHeights: true
+hideVersion: true
+disableIndexing: true
+
+quicklaunch:
+  searchDescriptions: true
+  hideInternetSearch: true
+
+layout:
+  Core Infrastructure:
+    style: row
+    columns: 3
+  AI Platform:
+    style: row
+    columns: 3
+  Developer Workbench:
+    style: row
+    columns: 4
+  Entertainment:
+    style: row
+    columns: 2
+  Documentation:
+    style: row
+    columns: 5

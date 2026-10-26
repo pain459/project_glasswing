@@ -1,0 +1,26 @@
+---
+- Documentation:
+    - Homepage:
+        - abbr: HP
+          href: https://gethomepage.dev/
+          description: Dashboard configuration and widgets
+
+    - Infisical:
+        - abbr: IF
+          href: https://infisical.com/docs
+          description: Secrets management
+
+    - OpenObserve:
+        - abbr: OO
+          href: https://openobserve.ai/docs/
+          description: Logs, metrics, and traces
+
+    - Restic:
+        - abbr: RS
+          href: https://restic.readthedocs.io/
+          description: Backup and restore
+
+    - Docker Compose:
+        - abbr: DC
+          href: https://docs.docker.com/compose/
+          description: Compose reference
