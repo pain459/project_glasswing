@@ -2,7 +2,8 @@ name: glasswing-homepage
 
 services:
   homepage:
-    image: ghcr.io/gethomepage/homepage:latest
+    image: ghcr.io/gethomepage/homepage:v2.7.0
+    container_name: glasswing-homepage
     restart: unless-stopped
 
     ports:
