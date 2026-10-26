@@ -143,6 +143,7 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 | `openobserve` | 3018 | Logs, metrics, traces |
 | `jupyterlab` | 8889 | GPU notebooks |
 | `open-notebook` | 8502, 5055 | Research workflows |
+| `opencode` | 3019 | Web coding agent with Ollama and Open Notebook RAG |
 | `beszel` | 8090 | Host health |
 | `portainer` | 9443 | Container management |
 | `plex` | 32400 (host network) | Media server |
@@ -151,6 +152,8 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 | `infisical` | 8095 | Secrets management |
 
 Ports in the Compose files are bound to `192.168.68.62`, the LAN address of Pathfinder. Change them for your own host, or parameterize them with `HOST_IP` the way the Infisical stack does.
+
+`opencode` uses Open Notebook as a retrieval layer for context beyond the model window. See `stacks/opencode/README.md` for the required secrets, access details, and RAG workflow.
 
 ## Secrets
 
