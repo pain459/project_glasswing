@@ -33,6 +33,13 @@
         "type": "remote",
         "url": "http://open-notebook-mcp:8000/mcp",
         "oauth": false
+      },
+      // Steel is the browsing layer: it drives a real Chrome in the
+      // self-hosted Steel service for pages that plain fetches cannot read.
+      "steel": {
+        "type": "remote",
+        "url": "http://steel-mcp:8000/mcp",
+        "oauth": false
       }
     }
   },
