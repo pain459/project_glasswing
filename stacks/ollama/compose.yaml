@@ -14,8 +14,9 @@ services:
       OLLAMA_HOST: 0.0.0.0:11434
       OLLAMA_KEEP_ALIVE: 30m
       OLLAMA_MODELS: /root/.ollama
-      # OTEL ingetration
-      OTEL_SERVICE_NAME: glasswing-homepage
+
+      # OpenTelemetry resource identity
+      OTEL_SERVICE_NAME: glasswing-ollama
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_EXPORTER_OTLP_ENDPOINT: http://192.168.68.62:4318
       OTEL_TRACES_EXPORTER: otlp
