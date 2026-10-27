@@ -23,6 +23,10 @@ services:
       # Docker socket for container stats and auto-discovery
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
+    # Docker socket group access for container stats
+    group_add:
+      - "${DOCKER_GID:?Docker socket GID required}"
+
     # Resolve host for Glances API access
     extra_hosts:
       - "host.docker.internal:host-gateway"
