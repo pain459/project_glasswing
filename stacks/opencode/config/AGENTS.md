@@ -2,6 +2,13 @@
 
 You are running in the Glasswing homelab on Pathfinder.
 
+## Machine (Pathfinder)
+
+- AMD Ryzen 9 7950X (16-core, 170W TDP)
+- NVIDIA RTX 4090 (24GB VRAM, 450W TDP)
+- 128GB RAM
+- Electricity rate: ₹9/kWh
+
 ## Models
 
 - The default model is `ollama/qwen3.6-opencode:latest`, served by Ollama at
@@ -65,6 +72,18 @@ Glasswing Infrastructure notebook (`notebook:vh3t0sg5ghfz6styrlh5`):
    duplicate session notes.
 4. When the user says "done", "that's all", "goodbye", or similar closing
    phrases, treat it as a signal to save the session summary before ending.
+
+## Cost tracking
+
+- A `/costs` slash command is available (`.opencode/commands/costs.md`). It runs
+  `scripts/opencode-costs.py` which fetches live session stats and shows:
+  - Token usage per model with cloud cost comparisons (Qwen, Claude, GPT-4o,
+    Gemini)
+  - Estimated electricity cost from local inference (Ryzen 9 7950X + RTX 4090,
+    ₹9/kWh, ~280W marginal power, ~50 tok/s)
+  - Net savings and ROI vs cloud providers
+- `scripts/opencode-costs.sh` is the bash equivalent with `--detail` and
+  `--json` modes.
 
 ## Workspace
 
