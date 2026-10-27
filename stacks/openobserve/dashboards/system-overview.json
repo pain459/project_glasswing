@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "dashboardId": "glasswing_system_overview",
   "title": "System Overview",
   "description": "Host-level metrics: CPU, memory, disk, filesystem, network, load averages from hostmetricsreceiver.",
   "panels": [

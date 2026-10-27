@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "dashboardId": "glasswing_container_health",
   "title": "Container Health",
   "description": "Per-container resource usage from docker_stats receiver. Shows CPU, memory, network, and restart counts for all Glasswing services.",
   "panels": [
