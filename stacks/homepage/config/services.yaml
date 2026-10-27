@@ -16,10 +16,6 @@
         description: Availability Monitoring
         container: glasswing-uptime-kuma
         siteMonitor: http://192.168.68.62:3003
-        widget:
-          type: uptimekuma
-          url: http://192.168.68.62:3003
-          slug: glasswing-uptime-kuma
 
     - Beszel:
         icon: beszel.png
