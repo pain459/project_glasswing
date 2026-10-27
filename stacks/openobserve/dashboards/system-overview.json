@@ -3,15 +3,20 @@
   "dashboardId": "glasswing_system_overview",
   "title": "System Overview",
   "description": "Host-level metrics: CPU, memory, disk, filesystem, network, load averages from hostmetricsreceiver.",
+  "role": "",
+  "owner": "",
+  "created": "2026-10-27T00:00:00.000Z",
   "panels": [
     {
-      "id": "cpu_load_5m",
+      "id": "Panel_ID1001",
       "type": "line",
       "title": "CPU Load Average (5m)",
-      "description": "5-minute load average across all CPUs",
+      "description": "",
       "config": {
         "show_legends": true,
-        "unit": ""
+        "legends_position": null,
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -22,24 +27,30 @@
             "stream": "system_cpu_load_average_5m",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{host_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 0, "w": 4, "h": 5 }
+      "layout": { "x": 0, "y": 0, "w": 4, "h": 5, "i": 1 }
     },
     {
-      "id": "cpu_utilization",
+      "id": "Panel_ID1002",
       "type": "line",
       "title": "CPU Utilization",
-      "description": "CPU time spent in system, user, and wait states",
+      "description": "",
       "config": {
         "show_legends": true,
-        "unit": "percent-1"
+        "legends_position": null,
+        "unit": "percent-1",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -50,24 +61,30 @@
             "stream": "system_cpu_time",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{host_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 4, "y": 0, "w": 4, "h": 5 }
+      "layout": { "x": 4, "y": 0, "w": 4, "h": 5, "i": 2 }
     },
     {
-      "id": "cpu_idle",
+      "id": "Panel_ID1003",
       "type": "line",
       "title": "CPU Idle",
-      "description": "CPU idle percentage",
+      "description": "",
       "config": {
         "show_legends": true,
-        "unit": "percent-1"
+        "legends_position": null,
+        "unit": "percent-1",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -78,24 +95,30 @@
             "stream": "system_cpu_time",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{host_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 8, "y": 0, "w": 4, "h": 5 }
+      "layout": { "x": 8, "y": 0, "w": 4, "h": 5, "i": 3 }
     },
     {
-      "id": "memory_used",
+      "id": "Panel_ID1004",
       "type": "line",
       "title": "Memory: Used",
-      "description": "Used memory in bytes",
+      "description": "",
       "config": {
         "show_legends": true,
-        "unit": "bytes"
+        "legends_position": null,
+        "unit": "bytes",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -106,24 +129,30 @@
             "stream": "system_memory_usage",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{host_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 5, "w": 4, "h": 5 }
+      "layout": { "x": 0, "y": 5, "w": 4, "h": 5, "i": 4 }
     },
     {
-      "id": "memory_free",
+      "id": "Panel_ID1005",
       "type": "line",
       "title": "Memory: Free",
-      "description": "Free memory in bytes",
+      "description": "",
       "config": {
         "show_legends": true,
-        "unit": "bytes"
+        "legends_position": null,
+        "unit": "bytes",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -134,24 +163,30 @@
             "stream": "system_memory_usage",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{host_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 4, "y": 5, "w": 4, "h": 5 }
+      "layout": { "x": 4, "y": 5, "w": 4, "h": 5, "i": 5 }
     },
     {
-      "id": "memory_inactive",
+      "id": "Panel_ID1006",
       "type": "line",
       "title": "Memory: Inactive",
-      "description": "Inactive memory in bytes",
+      "description": "",
       "config": {
         "show_legends": true,
-        "unit": "bytes"
+        "legends_position": null,
+        "unit": "bytes",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -162,24 +197,30 @@
             "stream": "system_memory_usage",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{host_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 8, "y": 5, "w": 4, "h": 5 }
+      "layout": { "x": 8, "y": 5, "w": 4, "h": 5, "i": 6 }
     },
     {
-      "id": "filesystem_used",
+      "id": "Panel_ID1007",
       "type": "line",
       "title": "Filesystem: Used",
-      "description": "Disk space used per mount point (excluding loop devices and tmpfs)",
+      "description": "",
       "config": {
         "show_legends": true,
-        "unit": "bytes"
+        "legends_position": null,
+        "unit": "bytes",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -190,24 +231,30 @@
             "stream": "system_filesystem_usage",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
-            "promql_legend": "{host_name}-{device}-{mount_point}",
-            "layer_type": "scatter"
+            "promql_legend": "{host_name}-{device}",
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 10, "w": 6, "h": 5 }
+      "layout": { "x": 0, "y": 10, "w": 6, "h": 5, "i": 7 }
     },
     {
-      "id": "filesystem_free",
+      "id": "Panel_ID1008",
       "type": "line",
       "title": "Filesystem: Available",
-      "description": "Disk space available per mount point",
+      "description": "",
       "config": {
         "show_legends": true,
-        "unit": "bytes"
+        "legends_position": null,
+        "unit": "bytes",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -218,24 +265,30 @@
             "stream": "system_filesystem_usage",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
-            "promql_legend": "{host_name}-{device}-{mount_point}",
-            "layer_type": "scatter"
+            "promql_legend": "{host_name}-{device}",
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 6, "y": 10, "w": 6, "h": 5 }
+      "layout": { "x": 6, "y": 10, "w": 6, "h": 5, "i": 8 }
     },
     {
-      "id": "network_receive",
+      "id": "Panel_ID1009",
       "type": "line",
       "title": "Network: Received",
-      "description": "Network bytes received per second",
+      "description": "",
       "config": {
         "show_legends": true,
-        "unit": "bps"
+        "legends_position": null,
+        "unit": "bps",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -246,24 +299,30 @@
             "stream": "system_network_io",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{host_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 15, "w": 6, "h": 5 }
+      "layout": { "x": 0, "y": 15, "w": 6, "h": 5, "i": 9 }
     },
     {
-      "id": "network_transmit",
+      "id": "Panel_ID1010",
       "type": "line",
       "title": "Network: Transmitted",
-      "description": "Network bytes transmitted per second",
+      "description": "",
       "config": {
         "show_legends": true,
-        "unit": "bps"
+        "legends_position": null,
+        "unit": "bps",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -274,24 +333,30 @@
             "stream": "system_network_io",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{host_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 6, "y": 15, "w": 6, "h": 5 }
+      "layout": { "x": 6, "y": 15, "w": 6, "h": 5, "i": 10 }
     },
     {
-      "id": "disk_io_read",
+      "id": "Panel_ID1011",
       "type": "line",
       "title": "Disk I/O: Read",
-      "description": "Disk read throughput",
+      "description": "",
       "config": {
         "show_legends": true,
-        "unit": "bps"
+        "legends_position": null,
+        "unit": "bps",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -302,24 +367,30 @@
             "stream": "system_disk_io",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{host_name}-{device}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 20, "w": 6, "h": 5 }
+      "layout": { "x": 0, "y": 20, "w": 6, "h": 5, "i": 11 }
     },
     {
-      "id": "disk_io_write",
+      "id": "Panel_ID1012",
       "type": "line",
       "title": "Disk I/O: Write",
-      "description": "Disk write throughput",
+      "description": "",
       "config": {
         "show_legends": true,
-        "unit": "bps"
+        "legends_position": null,
+        "unit": "bps",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -330,15 +401,18 @@
             "stream": "system_disk_io",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{host_name}-{device}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 6, "y": 20, "w": 6, "h": 5 }
+      "layout": { "x": 6, "y": 20, "w": 6, "h": 5, "i": 12 }
     }
   ],
   "variables": null
