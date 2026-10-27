@@ -3,7 +3,7 @@ name: glasswing-otel-collector
 
 services:
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
+    image: otel/opentelemetry-collector-contrib:0.164.0
     container_name: glasswing-otel-collector
     restart: unless-stopped
 

@@ -3,7 +3,7 @@ name: glasswing-ollama
 
 services:
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.40.11
     container_name: glasswing-ollama
     restart: unless-stopped
 

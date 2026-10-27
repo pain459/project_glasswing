@@ -3,6 +3,7 @@ name: glasswing-steel
 
 services:
   steel:
+    # No versioned tags available; :latest is the only option
     image: ghcr.io/steel-dev/steel-browser:latest
     container_name: glasswing-steel
     restart: unless-stopped

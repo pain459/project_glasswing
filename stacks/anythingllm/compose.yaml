@@ -3,7 +3,7 @@ name: glasswing-anythingllm
 
 services:
   anythingllm:
-    image: mintplexlabs/anythingllm:latest
+    image: mintplexlabs/anythingllm:1.19
     container_name: glasswing-anythingllm
     restart: unless-stopped
 

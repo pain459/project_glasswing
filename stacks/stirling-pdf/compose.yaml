@@ -3,7 +3,7 @@ name: glasswing-stirling-pdf
 
 services:
   stirling-pdf:
-    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:latest
+    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:3.2.2
     container_name: glasswing-stirling-pdf
     restart: unless-stopped
 

@@ -3,7 +3,7 @@ name: glasswing-beszel
 
 services:
   beszel:
-    image: henrygd/beszel:latest
+    image: henrygd/beszel:0.21.1
     container_name: glasswing-beszel
     restart: unless-stopped
 

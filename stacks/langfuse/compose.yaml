@@ -111,7 +111,7 @@ services:
       retries: 10
 
   minio:
-    image: cgr.dev/chainguard/minio
+    image: cgr.dev/chainguard/minio:0.20261023
     restart: unless-stopped
 
     entrypoint: sh
