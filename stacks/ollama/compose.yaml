@@ -11,27 +11,21 @@ services:
       - "192.168.68.62:11434:11434"
 
     environment:
-      OLLAMA_HOST: 0.0.0.0:11434
-      OLLAMA_KEEP_ALIVE: 30m
-      OLLAMA_MODELS: /root/.ollama
+      OLLAMA_HOST: ${OLLAMA_HOST:?Required from Infisical}
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:?Required from Infisical}
+      OLLAMA_MODELS: ${OLLAMA_MODELS:?Required from Infisical}
 
       # Inference baseline shared with the opencode stack.
       # Flash attention plus an 8-bit KV cache keeps more of the 131k context
       # on the 4090. One request and one loaded model prevent a second session
       # from splitting VRAM with the coding model.
-      OLLAMA_FLASH_ATTENTION: "1"
-      OLLAMA_KV_CACHE_TYPE: q8_0
-      OLLAMA_NUM_PARALLEL: "1"
-      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_FLASH_ATTENTION: ${OLLAMA_FLASH_ATTENTION:?Required from Infisical}
+      OLLAMA_KV_CACHE_TYPE: ${OLLAMA_KV_CACHE_TYPE:?Required from Infisical}
+      OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:?Required from Infisical}
+      OLLAMA_MAX_LOADED_MODELS: ${OLLAMA_MAX_LOADED_MODELS:?Required from Infisical}
 
-      # OpenTelemetry resource identity
+      # OTEL integration
       OTEL_SERVICE_NAME: glasswing-ollama
-      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://192.168.68.62:4318
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
-      OTEL_LOGS_EXPORTER: otlp
-      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=homelab,host.name=pathfinder
 
     volumes:
       - /mnt/storage/ollama:/root/.ollama

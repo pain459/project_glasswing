@@ -1,0 +1,2 @@
+# homepage stack config variables
+HOMEPAGE_ALLOWED_HOSTS=192.168.68.62:3006,localhost:3006

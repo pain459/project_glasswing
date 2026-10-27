@@ -2,39 +2,39 @@
 name: glasswing-langfuse
 
 x-langfuse-env: &langfuse-env
-  HOSTNAME: "0.0.0.0"
-  NEXTAUTH_URL: http://192.168.68.62:3010
+  HOSTNAME: ${LANGFUSE_HOSTNAME:?Required from Infisical}
+  NEXTAUTH_URL: ${LANGFUSE_NEXTAUTH_URL:?Required from Infisical}
   DATABASE_URL: postgresql://langfuse:${LANGFUSE_POSTGRES_PASSWORD:?Required}@postgres:5432/langfuse
 
   SALT: ${LANGFUSE_SALT:?Required}
   ENCRYPTION_KEY: ${LANGFUSE_ENCRYPTION_KEY:?Required}
 
-  CLICKHOUSE_URL: http://clickhouse:8123
-  CLICKHOUSE_MIGRATION_URL: clickhouse://clickhouse:9000
-  CLICKHOUSE_USER: langfuse
+  CLICKHOUSE_URL: ${LANGFUSE_CLICKHOUSE_URL:?Required from Infisical}
+  CLICKHOUSE_MIGRATION_URL: ${LANGFUSE_CLICKHOUSE_MIGRATION_URL:?Required from Infisical}
+  CLICKHOUSE_USER: ${LANGFUSE_CLICKHOUSE_USER:?Required from Infisical}
   CLICKHOUSE_PASSWORD: ${LANGFUSE_CLICKHOUSE_PASSWORD:?Required}
-  CLICKHOUSE_CLUSTER_ENABLED: "false"
+  CLICKHOUSE_CLUSTER_ENABLED: ${LANGFUSE_CLICKHOUSE_CLUSTER_ENABLED:?Required from Infisical}
 
-  REDIS_HOST: redis
-  REDIS_PORT: "6379"
+  REDIS_HOST: ${LANGFUSE_REDIS_HOST:?Required from Infisical}
+  REDIS_PORT: ${LANGFUSE_REDIS_PORT:?Required from Infisical}
   REDIS_AUTH: ${LANGFUSE_REDIS_PASSWORD:?Required}
 
-  LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
-  LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
-  LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: langfuse
+  LANGFUSE_S3_EVENT_UPLOAD_BUCKET: ${LANGFUSE_S3_EVENT_UPLOAD_BUCKET:?Required from Infisical}
+  LANGFUSE_S3_EVENT_UPLOAD_REGION: ${LANGFUSE_S3_EVENT_UPLOAD_REGION:?Required from Infisical}
+  LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: ${LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID:?Required from Infisical}
   LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: ${LANGFUSE_MINIO_PASSWORD:?Required}
-  LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://minio:9000
-  LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: ${LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT:?Required from Infisical}
+  LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: ${LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE:?Required from Infisical}
 
-  LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
-  LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
-  LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: langfuse
+  LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: ${LANGFUSE_S3_MEDIA_UPLOAD_BUCKET:?Required from Infisical}
+  LANGFUSE_S3_MEDIA_UPLOAD_REGION: ${LANGFUSE_S3_MEDIA_UPLOAD_REGION:?Required from Infisical}
+  LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: ${LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID:?Required from Infisical}
   LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: ${LANGFUSE_MINIO_PASSWORD:?Required}
-  LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://192.168.68.62:9090
-  LANGFUSE_S3_MEDIA_UPLOAD_INTERNAL_ENDPOINT: http://minio:9000
-  LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+  LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: ${LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT:?Required from Infisical}
+  LANGFUSE_S3_MEDIA_UPLOAD_INTERNAL_ENDPOINT: ${LANGFUSE_S3_MEDIA_UPLOAD_INTERNAL_ENDPOINT:?Required from Infisical}
+  LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: ${LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE:?Required from Infisical}
 
-  TELEMETRY_ENABLED: "false"
+  TELEMETRY_ENABLED: ${LANGFUSE_TELEMETRY_ENABLED:?Required from Infisical}
 
 x-langfuse-depends: &langfuse-depends
   postgres:
@@ -52,8 +52,8 @@ services:
     restart: unless-stopped
 
     environment:
-      POSTGRES_USER: langfuse
-      POSTGRES_DB: langfuse
+      POSTGRES_USER: ${LANGFUSE_POSTGRES_USER:?Required from Infisical}
+      POSTGRES_DB: ${LANGFUSE_POSTGRES_DB:?Required from Infisical}
       POSTGRES_PASSWORD: ${LANGFUSE_POSTGRES_PASSWORD:?Required}
 
     volumes:
@@ -94,8 +94,8 @@ services:
     user: "101:101"
 
     environment:
-      CLICKHOUSE_DB: default
-      CLICKHOUSE_USER: langfuse
+      CLICKHOUSE_DB: ${LANGFUSE_CLICKHOUSE_DB:?Required from Infisical}
+      CLICKHOUSE_USER: ${LANGFUSE_CLICKHOUSE_USER:?Required from Infisical}
       CLICKHOUSE_PASSWORD: ${LANGFUSE_CLICKHOUSE_PASSWORD:?Required}
 
     volumes:
@@ -120,7 +120,7 @@ services:
       - 'mkdir -p /data/langfuse && exec minio server --address ":9000" --console-address ":9001" /data'
 
     environment:
-      MINIO_ROOT_USER: langfuse
+      MINIO_ROOT_USER: ${LANGFUSE_MINIO_ROOT_USER:?Required from Infisical}
       MINIO_ROOT_PASSWORD: ${LANGFUSE_MINIO_PASSWORD:?Required}
 
     ports:
@@ -156,14 +156,8 @@ services:
     environment:
       <<: *langfuse-env
       NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:?Required}
-      # OTEL ingetration
-      OTEL_SERVICE_NAME: glasswing-homepage
-      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://192.168.68.62:4318
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
-      OTEL_LOGS_EXPORTER: otlp
-      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=homelab,host.name=pathfinder
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-langfuse
 
 volumes:
   postgres_data:

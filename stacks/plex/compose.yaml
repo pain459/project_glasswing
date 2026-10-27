@@ -11,21 +11,15 @@ services:
     network_mode: host
 
     environment:
-      TZ: Asia/Kolkata
-      PLEX_UID: "1000"
-      PLEX_GID: "1000"
-      ADVERTISE_IP: http://192.168.68.62:32400/
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+      PLEX_UID: ${PLEX_UID:?Required from Infisical}
+      PLEX_GID: ${PLEX_GID:?Required from Infisical}
+      ADVERTISE_IP: ${PLEX_ADVERTISE_IP:?Required from Infisical}
 
-      NVIDIA_VISIBLE_DEVICES: all
-      NVIDIA_DRIVER_CAPABILITIES: compute,video,utility
-      # OTEL ingetration
-      OTEL_SERVICE_NAME: glasswing-homepage
-      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://192.168.68.62:4318
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
-      OTEL_LOGS_EXPORTER: otlp
-      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=homelab,host.name=pathfinder
+      NVIDIA_VISIBLE_DEVICES: ${PLEX_NVIDIA_VISIBLE_DEVICES:?Required from Infisical}
+      NVIDIA_DRIVER_CAPABILITIES: ${PLEX_NVIDIA_DRIVER_CAPABILITIES:?Required from Infisical}
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-plex
 
     gpus: all
 

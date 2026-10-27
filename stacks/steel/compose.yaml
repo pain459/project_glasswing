@@ -12,9 +12,10 @@ services:
       - "${STEEL_BIND_IP:?Missing STEEL_BIND_IP}:${STEEL_PORT:?Missing STEEL_PORT}:3000"
 
     environment:
-      NODE_ENV: production
-      LOG_STORAGE_ENABLED: ${STEEL_LOG_STORAGE_ENABLED:?Missing STEEL_LOG_STORAGE_ENABLED}
-      LOG_STORAGE_PATH: ${STEEL_LOG_STORAGE_PATH:?Missing STEEL_LOG_STORAGE_PATH}
+      NODE_ENV: ${STEEL_NODE_ENV:?Required from Infisical}
+      LOG_STORAGE_ENABLED: ${STEEL_LOG_STORAGE_ENABLED:?Required from Infisical}
+      LOG_STORAGE_PATH: ${STEEL_LOG_STORAGE_PATH:?Required from Infisical}
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
 
     volumes:
       - /srv/glasswing/steel/cache:/app/.cache

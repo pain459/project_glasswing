@@ -1,0 +1,3 @@
+# vector stack config variables
+VECTOR_DOCKER_HOST=unix:///var/run/docker.sock
+VECTOR_ALLOW_ENV_INTERPOLATION=true

@@ -1,0 +1,2 @@
+# steel stack config variables
+STEEL_NODE_ENV=production
