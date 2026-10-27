@@ -1,3 +1,0 @@
----
-# Docker integration disabled: container user lacks socket permissions.
-# Container references in services.yaml still work via name matching.
