@@ -349,8 +349,10 @@ The stack restart order (defined in `scripts/verify-stacks.sh`) is:
 1. **Infrastructure:** otel-collector, vector, openobserve
 2. **AI platform:** ollama, open-notebook, steel, opencode, anythingllm, flowise, langfuse
 3. **Services:** homepage, stirling-pdf, forgejo, plex, beszel, adguard, kavita
-4. **Monitoring:** uptime-kuma, portainer
+4. **Monitoring:** uptime-kuma, portainer, dagu
 5. **Tools:** cyberchef, excalidraw, it-tools, jupyterlab, dbgate
+
+**Note:** Dagu is started after the monitored services so its health-check and update DAGs have targets to reach. Dagu uses `network_mode: host` and does not require port mapping.
 
 ### 6.2 If Infisical was restored from backup
 
@@ -457,6 +459,7 @@ If the Infisical PostgreSQL volume is corrupted:
 3. **CA key loss** — Without the Glasswing CA key, TLS certificates cannot be re-signed. **Mitigation:** keep an offline copy of `.local/ca/glasswing-ca.key`.
 4. **Infisical credentials loss** — Without `credentials.env`, secret injection fails. **Mitigation:** keep an offline copy or re-register via Infisical admin UI.
 5. **Image tag drift** — if a pinned image version is deprecated or removed from the registry, `make up` will fail. **Mitigation:** pin to versions that are still available, or use image digests for critical services.
+6. **Dagu update DAG failures** — the automated image update DAG rolls back broken updates automatically, but if a new image is fundamentally broken, the stack reverts to the previously cached image. **Mitigation:** review Dagu run logs after each scheduled run, especially after long gaps.
 
 ---
 

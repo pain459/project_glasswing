@@ -6,7 +6,8 @@ Day-to-day operations for keeping the platform healthy, current, and backed up.
 **Repository:** `/home/ravik/src_git/project_glasswing`  
 **Homepage:** `http://192.168.68.62:3006`  
 **Infisical:** `https://192.168.68.62:8095`  
-**Portainer:** `https://192.168.68.62:9443`
+**Portainer:** `https://192.168.68.62:9443`  
+**Dagu:** `http://192.168.68.62:3014`
 
 ---
 
@@ -86,6 +87,20 @@ make status
 **Schedule:** Pick a low-traffic window. AdGuard downtime interrupts DNS if no fallback resolver is configured.
 
 ### 2. Check for image updates
+
+#### Automated updates (Dagu)
+
+The Dagu DAG `staged-image-update` runs every Sunday at 05:00 and handles updates for stacks with mutable tags automatically:
+
+- **Mutable tags** (`:latest`, `:public`, `:lts`, etc.): Pulls new image, restarts, verifies health for ~5 min, rolls back if broken
+- **Pinned tags**: Checks registry for newer versions and reports availability
+- **Critical infrastructure** (Infisical, OTel, Vector, Postgres, Dagu): Excluded — update manually
+
+Review results in the Dagu Web UI at `http://192.168.68.62:3014` or trigger a manual run. The DAG always succeeds; per-stack failures are logged.
+
+#### Manual updates (pinned-tag stacks)
+
+For stacks with pinned tags that Dagu reports as having updates available:
 
 ```bash
 # Terminal: compare running images against registry
@@ -193,16 +208,37 @@ sudo rm -rf /tmp/glasswing-restore-test
 
 ## Image updates
 
-### Current pinning policy
+### Pinning policy
 
-All images use explicit version tags. The only exception is `steel-browser`, which has no versioned tags and remains on `:latest`.
+Most images use explicit version tags for stability. A few stacks use mutable tags (`:latest`, `:public`, `:4`, etc.) and are eligible for automatic updates through the Dagu DAG.
 
-### Update workflow
+Critical infrastructure stacks (Infisical, OTel Collector, Vector, Postgres, Dagu) are excluded from automatic updates regardless of tag type.
+
+### Automated updates (Dagu)
+
+The `staged-image-update` DAG runs weekly via the Dagu scheduler. It uses `scripts/update-stacks.sh` inside the Dagu container (which has the Docker socket and project directory mounted):
+
+```
+For each eligible stack:
+  1. Pull latest image (mutable tags only)
+  2. Restart via docker compose
+  3. Healthcheck: wait up to 120s for service to respond
+  4. Monitor: observe for 180s to catch delayed failures
+  5. Rollback: if healthcheck or monitor fails, restart with old image (--pull never)
+```
+
+To trigger manually:
+- Open Dagu Web UI at `http://192.168.68.62:3014`
+- Click the `staged-image-update` DAG → Run
+- Or run the script directly: `./scripts/update-stacks.sh`
+
+### Manual update workflow (pinned tags)
 
 ```
 1. Discover updates
    ./scripts/check-updates.sh          # terminal
    or Portainer :9443 → Images tab     # UI
+   or Dagu :3014 → DAG run logs        # automated check results
 
 2. Review release notes
    Check GitHub releases or project changelog
@@ -416,7 +452,9 @@ make restart-all
 | Run backup | `make backup` |
 | List snapshots | `make backup-list` |
 | Check image updates | `./scripts/check-updates.sh` |
+| Trigger automated updates | `./scripts/update-stacks.sh` |
 | Bump image version | `./scripts/bump-image.sh <stack> <old> <new>` |
 | Inspect running images | `./scripts/inspect-images.sh` |
 | Verify all stacks | `./scripts/verify-stacks.sh` |
 | GPU preflight | `make ai-preflight` |
+| Dagu Web UI | `http://192.168.68.62:3014` |

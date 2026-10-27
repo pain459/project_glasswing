@@ -168,6 +168,7 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 | `vector` | 8686 | Docker log shipping |
 | `infisical` | 8095 | Secrets management |
 | `steel` | 3020 | Cloud browser automation |
+| `dagu` | 3014 | Workflow orchestrator (scheduled DAGs for updates, health checks) |
 
 Ports in the Compose files are bound to `192.168.68.62`, the LAN address of Pathfinder. Change them for your own host, or parameterize them with `HOST_IP` the way the Infisical stack does.
 
@@ -185,19 +186,34 @@ residency.
 
 ## Image management
 
-All Docker images are pinned to explicit version tags. The only exception is `steel-browser`, which publishes no versioned tags and remains on `:latest`.
+Most Docker images are pinned to explicit version tags. A few stacks use mutable tags (`:latest`, `:public`, `:4`, etc.) for automatic updates.
 
-### Checking for updates
+### Automated updates (Dagu)
+
+The **Dagu** workflow orchestrator at `http://192.168.68.62:3014` runs a scheduled DAG every Sunday at 05:00 that safely updates images with health verification and rollback:
+
+- **Mutable tags** (`:latest`, `:public`, `:lts`, `:2`, `:4`, etc.) — pull new image, restart the stack, verify health for ~5 minutes, roll back automatically if broken.
+- **Pinned tags** (`:2.24.0`, `:v2.7.0`, etc.) — check for newer version in the registry and report if available. No automatic update (compose.yaml must be edited and committed).
+- **Critical infrastructure** (Infisical, OTel Collector, Vector, Postgres, Dagu itself) — excluded entirely. Update those manually.
+
+The DAG always succeeds even when individual stacks fail; partial failures are reported in the logs and summary. Review Dagu run history at `http://192.168.68.62:3014` or trigger a manual run from the UI.
+
+The update logic lives in `scripts/update-stacks.sh`. It can also be run standalone:
 
 ```bash
-# Terminal: compare running images against registry
-./scripts/check-updates.sh
+# Full run
+./scripts/update-stacks.sh
 
-# UI: browse Portainer at https://192.168.68.62:9443
-# The Images tab shows orange badges for containers with newer images available
+# Report only, no changes
+./scripts/update-stacks.sh --dry-run
+
+# Single stack
+./scripts/update-stacks.sh STACK_NAME
 ```
 
-### Updating an image
+### Manual updates
+
+For pinned-tag stacks, or when you want controlled, reviewed updates:
 
 ```bash
 # 1. Bump the tag in compose.yaml (shows diff before applying)
@@ -214,6 +230,19 @@ make check STACK=ollama
 # 4. Rollback if needed
 git revert HEAD
 make up STACK=ollama
+```
+
+### Checking for updates
+
+```bash
+# Terminal: compare running images against registry
+./scripts/check-updates.sh
+
+# UI: browse Portainer at https://192.168.68.62:9443
+# The Images tab shows orange badges for containers with newer images available
+
+# UI: Dagu at http://192.168.68.62:3014
+# The staged-image-update DAG run logs show per-stack update results
 ```
 
 ### Inspecting running images
@@ -406,13 +435,15 @@ A green container is not proof a service works. Check the destination too: telem
 - A full application-state restore has not been attempted end to end. An isolated configuration restore has.
 - Remote access is LAN-only. A VPN or tunnel is not configured.
 - Infisical serves a self-signed certificate, so clients need the CA explicitly.
-- `steel-browser` has no versioned image tags; it remains on `:latest` with no rollback path beyond git.
+- `steel-browser` has no versioned image tags; it remains on `:latest`. The Dagu update DAG handles rollback for mutable-tag stacks automatically.
+- Some mutable-tag stacks (langfuse, steel) have slow startup times that exceed the 120s healthcheck timeout, causing unnecessary rollbacks. The timeout may need adjustment per-stack.
 
 ## Related documents
 
 - **[MAINTENANCE.md](MAINTENANCE.md)** — Daily, weekly, and monthly maintenance tasks. Image updates, secret management, backup operations, troubleshooting, and adding new stacks.
 - **[DR_RUNBOOK.md](DR_RUNBOOK.md)** — Disaster recovery procedures for hardware failure, OS reinstall, or complete data loss. Step-by-step recovery from a fresh Ubuntu install.
 - **[backup/GLASSWING_RESTIC_BACKUP_RUNBOOK.md](backup/GLASSWING_RESTIC_BACKUP_RUNBOOK.md)** — Restic backup scope, encryption, restore procedures, and known risks.
+- **Dagu Web UI** (`http://192.168.68.62:3014`) — Workflow orchestrator for scheduled image updates and health checks.
 
 ## License
 
