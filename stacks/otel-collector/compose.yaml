@@ -30,5 +30,4 @@ services:
 
     mem_limit: 768m
 
-    security_opt:
-      - no-new-privileges:true
+    # no-new-privileges removed: journald receiver needs to fork/exec journalctl
