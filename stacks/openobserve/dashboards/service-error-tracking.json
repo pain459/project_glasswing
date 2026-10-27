@@ -1,0 +1,202 @@
+{
+  "version": 2,
+  "title": "Service Error Tracking",
+  "description": "Error and warning logs from all Docker containers via Vector. Shows error rates, top error-producing services, and recent error entries.",
+  "panels": [
+    {
+      "id": "error_count",
+      "type": "metric",
+      "title": "Total Errors (selected period)",
+      "description": "Count of ERROR level log entries",
+      "config": {
+        "show_legends": true,
+        "decimals": 0
+      },
+      "queryType": "sql",
+      "queries": [
+        {
+          "query": "SELECT count(*) AS total_errors FROM glasswing_errors WHERE log_level = 'ERROR'",
+          "customQuery": true,
+          "fields": {
+            "stream": "glasswing_errors",
+            "stream_type": "logs",
+            "x": [],
+            "y": ["total_errors"]
+          },
+          "config": {
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 0, "y": 0, "w": 4, "h": 4 }
+    },
+    {
+      "id": "warn_count",
+      "type": "metric",
+      "title": "Total Warnings (selected period)",
+      "description": "Count of WARN level log entries",
+      "config": {
+        "show_legends": true,
+        "decimals": 0
+      },
+      "queryType": "sql",
+      "queries": [
+        {
+          "query": "SELECT count(*) AS total_warnings FROM glasswing_errors WHERE log_level = 'WARN'",
+          "customQuery": true,
+          "fields": {
+            "stream": "glasswing_errors",
+            "stream_type": "logs",
+            "x": [],
+            "y": ["total_warnings"]
+          },
+          "config": {
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 4, "y": 0, "w": 4, "h": 4 }
+    },
+    {
+      "id": "error_rate",
+      "type": "line",
+      "title": "Error Rate Over Time",
+      "description": "Errors and warnings per minute",
+      "config": {
+        "show_legends": true
+      },
+      "queryType": "sql",
+      "queries": [
+        {
+          "query": "SELECT histogram(1m) AS time_bucket, count(*) AS errors, log_level FROM glasswing_errors GROUP BY time_bucket, log_level ORDER BY time_bucket",
+          "customQuery": true,
+          "fields": {
+            "stream": "glasswing_errors",
+            "stream_type": "logs",
+            "x": ["time_bucket"],
+            "y": ["errors"]
+          },
+          "config": {
+            "x_axis": "time_bucket",
+            "y_axis": "errors",
+            "color_key": "log_level",
+            "labels_key": "log_level",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 8, "y": 0, "w": 4, "h": 4 }
+    },
+    {
+      "id": "errors_by_service",
+      "type": "bar",
+      "title": "Errors by Service",
+      "description": "Error count grouped by service/container name",
+      "config": {
+        "show_legends": true
+      },
+      "queryType": "sql",
+      "queries": [
+        {
+          "query": "SELECT service_name, count(*) AS error_count FROM glasswing_errors WHERE log_level = 'ERROR' GROUP BY service_name ORDER BY error_count DESC LIMIT 20",
+          "customQuery": true,
+          "fields": {
+            "stream": "glasswing_errors",
+            "stream_type": "logs",
+            "x": ["service_name"],
+            "y": ["error_count"]
+          },
+          "config": {
+            "x_axis": "service_name",
+            "y_axis": "error_count",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 0, "y": 4, "w": 6, "h": 5 }
+    },
+    {
+      "id": "warnings_by_service",
+      "type": "bar",
+      "title": "Warnings by Service",
+      "description": "Warning count grouped by service/container name",
+      "config": {
+        "show_legends": true
+      },
+      "queryType": "sql",
+      "queries": [
+        {
+          "query": "SELECT service_name, count(*) AS warn_count FROM glasswing_errors WHERE log_level = 'WARN' GROUP BY service_name ORDER BY warn_count DESC LIMIT 20",
+          "customQuery": true,
+          "fields": {
+            "stream": "glasswing_errors",
+            "stream_type": "logs",
+            "x": ["service_name"],
+            "y": ["warn_count"]
+          },
+          "config": {
+            "x_axis": "service_name",
+            "y_axis": "warn_count",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 6, "y": 4, "w": 6, "h": 5 }
+    },
+    {
+      "id": "recent_errors",
+      "type": "table",
+      "title": "Recent Error Entries",
+      "description": "Latest error log messages from all services",
+      "config": {
+        "show_legends": true
+      },
+      "queryType": "sql",
+      "queries": [
+        {
+          "query": "SELECT _timestamp AS time, service_name, log_level, SUBSTR(message, 1, 200) AS message FROM glasswing_errors WHERE log_level = 'ERROR' ORDER BY _timestamp DESC LIMIT 100",
+          "customQuery": true,
+          "fields": {
+            "stream": "glasswing_errors",
+            "stream_type": "logs",
+            "x": ["time"],
+            "y": ["service_name", "log_level", "message"]
+          },
+          "config": {
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 0, "y": 9, "w": 12, "h": 5 }
+    },
+    {
+      "id": "docker_log_errors",
+      "type": "line",
+      "title": "Docker Log Error Rate",
+      "description": "Error rate from all Docker container logs",
+      "config": {
+        "show_legends": true
+      },
+      "queryType": "sql",
+      "queries": [
+        {
+          "query": "SELECT histogram(5m) AS time_bucket, count(*) AS log_count FROM glasswing_docker WHERE message ILIKE '%error%' OR message ILIKE '%fail%' OR message ILIKE '%exception%' GROUP BY time_bucket ORDER BY time_bucket",
+          "customQuery": true,
+          "fields": {
+            "stream": "glasswing_docker",
+            "stream_type": "logs",
+            "x": ["time_bucket"],
+            "y": ["log_count"]
+          },
+          "config": {
+            "x_axis": "time_bucket",
+            "y_axis": "log_count",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 0, "y": 14, "w": 12, "h": 5 }
+    }
+  ],
+  "variables": null
+}

@@ -1,0 +1,146 @@
+{
+  "version": 2,
+  "title": "GPU Monitoring",
+  "description": "NVIDIA RTX 4090 metrics. NOTE: This dashboard requires GPU metrics to be configured. Currently no GPU data source is active. To enable: add DCGM exporter or nvidia-smi scraping to the OTel collector pipeline.",
+  "panels": [
+    {
+      "id": "gpu_utilization",
+      "type": "line",
+      "title": "GPU Utilization",
+      "description": "GPU compute utilization percentage. Requires DCGM exporter or nvidia-smi metrics.",
+      "config": {
+        "show_legends": true,
+        "unit": "percent-1"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "nvidia_smi_gpu_utilization{}",
+          "customQuery": true,
+          "fields": {
+            "stream": "nvidia_smi_gpu_utilization",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{gpu_name}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 0, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": "gpu_memory",
+      "type": "line",
+      "title": "GPU Memory Usage",
+      "description": "VRAM usage in bytes. Requires DCGM exporter or nvidia-smi metrics.",
+      "config": {
+        "show_legends": true,
+        "unit": "bytes"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "nvidia_smi_memory_used{}",
+          "customQuery": true,
+          "fields": {
+            "stream": "nvidia_smi_memory_used",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{gpu_name}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 6, "y": 0, "w": 6, "h": 5 }
+    },
+    {
+      "id": "gpu_temperature",
+      "type": "line",
+      "title": "GPU Temperature",
+      "description": "GPU temperature in Celsius. Requires DCGM exporter or nvidia-smi metrics.",
+      "config": {
+        "show_legends": true,
+        "unit": "celsius"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "nvidia_smi_gpu_temperature{}",
+          "customQuery": true,
+          "fields": {
+            "stream": "nvidia_smi_gpu_temperature",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{gpu_name}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 0, "y": 5, "w": 6, "h": 5 }
+    },
+    {
+      "id": "gpu_power",
+      "type": "line",
+      "title": "GPU Power Draw",
+      "description": "GPU power consumption in watts. Requires DCGM exporter or nvidia-smi metrics.",
+      "config": {
+        "show_legends": true,
+        "unit": "watts"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "nvidia_smi_power_draw{}",
+          "customQuery": true,
+          "fields": {
+            "stream": "nvidia_smi_power_draw",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{gpu_name}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 6, "y": 5, "w": 6, "h": 5 }
+    },
+    {
+      "id": "gpu_info",
+      "type": "table",
+      "title": "GPU Info",
+      "description": "GPU details. Will show data once GPU metrics are configured.",
+      "config": {
+        "show_legends": true
+      },
+      "queryType": "sql",
+      "queries": [
+        {
+          "query": "SELECT * FROM nvidia_smi_gpu_utilization LIMIT 10",
+          "customQuery": true,
+          "fields": {
+            "stream": "nvidia_smi_gpu_utilization",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 0, "y": 10, "w": 12, "h": 5 }
+    }
+  ],
+  "variables": null
+}

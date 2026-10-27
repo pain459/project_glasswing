@@ -1,0 +1,344 @@
+{
+  "version": 2,
+  "title": "System Overview",
+  "description": "Host-level metrics: CPU, memory, disk, filesystem, network, load averages from hostmetricsreceiver.",
+  "panels": [
+    {
+      "id": "cpu_load_5m",
+      "type": "line",
+      "title": "CPU Load Average (5m)",
+      "description": "5-minute load average across all CPUs",
+      "config": {
+        "show_legends": true,
+        "unit": ""
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "system_cpu_load_average_5m{}",
+          "customQuery": true,
+          "fields": {
+            "stream": "system_cpu_load_average_5m",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{host_name}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 0, "y": 0, "w": 4, "h": 5 }
+    },
+    {
+      "id": "cpu_utilization",
+      "type": "line",
+      "title": "CPU Utilization",
+      "description": "CPU time spent in system, user, and wait states",
+      "config": {
+        "show_legends": true,
+        "unit": "percent-1"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "sum by(host_name) (irate(system_cpu_time{state=~\"system|user|wait\"}[5m]))",
+          "customQuery": true,
+          "fields": {
+            "stream": "system_cpu_time",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{host_name}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 4, "y": 0, "w": 4, "h": 5 }
+    },
+    {
+      "id": "cpu_idle",
+      "type": "line",
+      "title": "CPU Idle",
+      "description": "CPU idle percentage",
+      "config": {
+        "show_legends": true,
+        "unit": "percent-1"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "avg by(host_name) (irate(system_cpu_time{state=\"idle\"}[5m]))",
+          "customQuery": true,
+          "fields": {
+            "stream": "system_cpu_time",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{host_name}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 8, "y": 0, "w": 4, "h": 5 }
+    },
+    {
+      "id": "memory_used",
+      "type": "line",
+      "title": "Memory: Used",
+      "description": "Used memory in bytes",
+      "config": {
+        "show_legends": true,
+        "unit": "bytes"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "system_memory_usage{state=~\"used\"}",
+          "customQuery": true,
+          "fields": {
+            "stream": "system_memory_usage",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{host_name}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 0, "y": 5, "w": 4, "h": 5 }
+    },
+    {
+      "id": "memory_free",
+      "type": "line",
+      "title": "Memory: Free",
+      "description": "Free memory in bytes",
+      "config": {
+        "show_legends": true,
+        "unit": "bytes"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "system_memory_usage{state=~\"free\"}",
+          "customQuery": true,
+          "fields": {
+            "stream": "system_memory_usage",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{host_name}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 4, "y": 5, "w": 4, "h": 5 }
+    },
+    {
+      "id": "memory_inactive",
+      "type": "line",
+      "title": "Memory: Inactive",
+      "description": "Inactive memory in bytes",
+      "config": {
+        "show_legends": true,
+        "unit": "bytes"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "system_memory_usage{state=~\"inactive\"}",
+          "customQuery": true,
+          "fields": {
+            "stream": "system_memory_usage",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{host_name}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 8, "y": 5, "w": 4, "h": 5 }
+    },
+    {
+      "id": "filesystem_used",
+      "type": "line",
+      "title": "Filesystem: Used",
+      "description": "Disk space used per mount point (excluding loop devices and tmpfs)",
+      "config": {
+        "show_legends": true,
+        "unit": "bytes"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "system_filesystem_usage{state=\"used\",device!~\"/dev/loop.*\",device!~\"tmpfs|nsfs\"}",
+          "customQuery": true,
+          "fields": {
+            "stream": "system_filesystem_usage",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{host_name}-{device}-{mount_point}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 0, "y": 10, "w": 6, "h": 5 }
+    },
+    {
+      "id": "filesystem_free",
+      "type": "line",
+      "title": "Filesystem: Available",
+      "description": "Disk space available per mount point",
+      "config": {
+        "show_legends": true,
+        "unit": "bytes"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "system_filesystem_usage{state=\"free\",device!~\"/dev/loop.*\",device!~\"tmpfs|nsfs\"}",
+          "customQuery": true,
+          "fields": {
+            "stream": "system_filesystem_usage",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{host_name}-{device}-{mount_point}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 6, "y": 10, "w": 6, "h": 5 }
+    },
+    {
+      "id": "network_receive",
+      "type": "line",
+      "title": "Network: Received",
+      "description": "Network bytes received per second",
+      "config": {
+        "show_legends": true,
+        "unit": "bps"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "sum by(host_name) (irate(system_network_io{direction=\"receive\"}[5m]))",
+          "customQuery": true,
+          "fields": {
+            "stream": "system_network_io",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{host_name}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 0, "y": 15, "w": 6, "h": 5 }
+    },
+    {
+      "id": "network_transmit",
+      "type": "line",
+      "title": "Network: Transmitted",
+      "description": "Network bytes transmitted per second",
+      "config": {
+        "show_legends": true,
+        "unit": "bps"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "sum by(host_name) (irate(system_network_io{direction=\"transmit\"}[5m]))",
+          "customQuery": true,
+          "fields": {
+            "stream": "system_network_io",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{host_name}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 6, "y": 15, "w": 6, "h": 5 }
+    },
+    {
+      "id": "disk_io_read",
+      "type": "line",
+      "title": "Disk I/O: Read",
+      "description": "Disk read throughput",
+      "config": {
+        "show_legends": true,
+        "unit": "bps"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "irate(system_disk_io{device!~\"loop.*\",direction=\"read\"}[5m])",
+          "customQuery": true,
+          "fields": {
+            "stream": "system_disk_io",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{host_name}-{device}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 0, "y": 20, "w": 6, "h": 5 }
+    },
+    {
+      "id": "disk_io_write",
+      "type": "line",
+      "title": "Disk I/O: Write",
+      "description": "Disk write throughput",
+      "config": {
+        "show_legends": true,
+        "unit": "bps"
+      },
+      "queryType": "promql",
+      "queries": [
+        {
+          "query": "irate(system_disk_io{device!~\"loop.*\",direction=\"write\"}[5m])",
+          "customQuery": true,
+          "fields": {
+            "stream": "system_disk_io",
+            "stream_type": "metrics",
+            "x": [],
+            "y": []
+          },
+          "config": {
+            "promql_legend": "{host_name}-{device}",
+            "layer_type": "scatter"
+          }
+        }
+      ],
+      "layout": { "x": 6, "y": 20, "w": 6, "h": 5 }
+    }
+  ],
+  "variables": null
+}
