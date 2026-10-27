@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "dashboardId": "glasswing_service_error_tracking",
   "title": "Service Error Tracking",
   "description": "Error and warning logs from all Docker containers via Vector. Shows error rates, top error-producing services, and recent error entries.",
   "panels": [
