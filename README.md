@@ -14,6 +14,7 @@ The design goal is not maximum service count. It is a platform that stays unders
 - [Getting started](#getting-started)
 - [Everyday commands](#everyday-commands)
 - [Stacks](#stacks)
+- [Image management](#image-management)
 - [Secrets and Configuration](#secrets-and-configuration)
   - [How secret injection works](#how-secret-injection-works)
   - [Global variables](#global-variables)
@@ -24,6 +25,7 @@ The design goal is not maximum service count. It is a platform that stays unders
 - [Backups](#backups)
 - [Verification](#verification)
 - [Known limitations](#known-limitations)
+- [Related documents](#related-documents)
 
 ## Design principles
 
@@ -164,6 +166,7 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 | `otel-collector` | 4318, 13133 | Telemetry ingestion |
 | `vector` | 8686 | Docker log shipping |
 | `infisical` | 8095 | Secrets management |
+| `steel` | 3020 | Cloud browser automation |
 
 Ports in the Compose files are bound to `192.168.68.62`, the LAN address of Pathfinder. Change them for your own host, or parameterize them with `HOST_IP` the way the Infisical stack does.
 
@@ -179,9 +182,54 @@ flash attention. The numbers must agree in both stacks; see
 reconciles Ollama first and runs the preflight automatically, including GPU
 residency.
 
+## Image management
+
+All Docker images are pinned to explicit version tags. The only exception is `steel-browser`, which publishes no versioned tags and remains on `:latest`.
+
+### Checking for updates
+
+```bash
+# Terminal: compare running images against registry
+./scripts/check-updates.sh
+
+# UI: browse Portainer at https://192.168.68.62:9443
+# The Images tab shows orange badges for containers with newer images available
+```
+
+### Updating an image
+
+```bash
+# 1. Bump the tag in compose.yaml (shows diff before applying)
+./scripts/bump-image.sh ollama 0.40.11 0.40.12
+
+# 2. Commit the change
+git add stacks/ollama/compose.yaml
+git commit -m "bump: ollama to 0.40.12"
+
+# 3. Deploy and verify
+make up STACK=ollama
+make check STACK=ollama
+
+# 4. Rollback if needed
+git revert HEAD
+make up STACK=ollama
+```
+
+### Inspecting running images
+
+```bash
+# Show what image each stack container is actually running
+./scripts/inspect-images.sh
+
+# Show a specific stack
+./scripts/inspect-images.sh ollama
+```
+
+Portainer at `:9443` serves as a read-only dashboard. It monitors containers and detects available updates, but does not manage stacks. Git remains the source of truth for all configuration.
+
 ## Secrets and Configuration
 
-All 25 stacks load their secrets and configuration from Infisical at startup. No hardcoded passwords, API keys, or configuration values remain in compose files.
+All 24 stacks load their secrets and configuration from Infisical at startup. No hardcoded passwords, API keys, or configuration values remain in compose files.
 
 ### How secret injection works
 
@@ -357,6 +405,13 @@ A green container is not proof a service works. Check the destination too: telem
 - A full application-state restore has not been attempted end to end. An isolated configuration restore has.
 - Remote access is LAN-only. A VPN or tunnel is not configured.
 - Infisical serves a self-signed certificate, so clients need the CA explicitly.
+- `steel-browser` has no versioned image tags; it remains on `:latest` with no rollback path beyond git.
+
+## Related documents
+
+- **[MAINTENANCE.md](MAINTENANCE.md)** — Daily, weekly, and monthly maintenance tasks. Image updates, secret management, backup operations, troubleshooting, and adding new stacks.
+- **[DR_RUNBOOK.md](DR_RUNBOOK.md)** — Disaster recovery procedures for hardware failure, OS reinstall, or complete data loss. Step-by-step recovery from a fresh Ubuntu install.
+- **[backup/GLASSWING_RESTIC_BACKUP_RUNBOOK.md](backup/GLASSWING_RESTIC_BACKUP_RUNBOOK.md)** — Restic backup scope, encryption, restore procedures, and known risks.
 
 ## License
 
