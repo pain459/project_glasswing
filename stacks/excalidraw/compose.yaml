@@ -3,7 +3,7 @@ name: glasswing-excalidraw
 
 services:
   excalidraw:
-    image: excalidraw/excalidraw:latest
+    image: excalidraw/excalidraw:0.18.1
     container_name: glasswing-excalidraw
     restart: unless-stopped
 
