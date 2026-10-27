@@ -25,6 +25,9 @@ services:
     security_opt:
       - no-new-privileges:true
 
+    labels:
+      com.glasswing.service: adguard
+
 volumes:
   adguard_work:
     name: glasswing-adguard-work

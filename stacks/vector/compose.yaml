@@ -35,6 +35,9 @@ services:
     security_opt:
       - no-new-privileges:true
 
+    labels:
+      com.glasswing.service: vector
+
 volumes:
   vector_data:
     name: glasswing-vector-data

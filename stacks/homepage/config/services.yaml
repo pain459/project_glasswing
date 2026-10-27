@@ -92,6 +92,10 @@
         description: Workflow Scheduler & Cron Runner
         siteMonitor: http://192.168.68.62:3014/api/v1/health
 
+    - PostgreSQL:
+        icon: postgres.png
+        description: Shared Database Server
+
 - AI Platform:
     - Ollama:
         icon: ollama.png

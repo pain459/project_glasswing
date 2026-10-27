@@ -31,6 +31,9 @@ services:
     cap_add:
       - SYS_ADMIN
 
+    labels:
+      com.glasswing.service: anythingllm
+
 volumes:
   anythingllm_data:
     name: glasswing-anythingllm-data

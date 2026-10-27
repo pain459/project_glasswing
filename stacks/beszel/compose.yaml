@@ -25,6 +25,9 @@ services:
       retries: 5
       start_period: 15s
 
+    labels:
+      com.glasswing.service: beszel
+
 volumes:
   beszel_data:
     name: glasswing-beszel-data

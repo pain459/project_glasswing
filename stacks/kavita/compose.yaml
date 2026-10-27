@@ -28,6 +28,9 @@ services:
     security_opt:
       - no-new-privileges:true
 
+    labels:
+      com.glasswing.service: kavita
+
 volumes:
   kavita_config:
     name: glasswing-kavita-config

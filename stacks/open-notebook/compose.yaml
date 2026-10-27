@@ -54,6 +54,9 @@ services:
     volumes:
       - notebook_data:/app/data
 
+    labels:
+      com.glasswing.service: open-notebook
+
 volumes:
   surreal_data:
     name: glasswing-notebook-surreal-data

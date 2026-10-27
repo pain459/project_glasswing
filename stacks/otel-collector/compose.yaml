@@ -32,3 +32,6 @@ services:
 
     # Run as root so journald receiver can exec journalctl inside the chroot
     user: "0:0"
+
+    labels:
+      com.glasswing.service: otel-collector
