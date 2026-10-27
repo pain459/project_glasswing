@@ -86,6 +86,12 @@
         description: Centralized Docker Log Collector
         siteMonitor: http://192.168.68.62:8686/health
 
+    - Dagu:
+        icon: mdi-clock-alert
+        href: http://192.168.68.62:3014
+        description: Workflow Scheduler & Cron Runner
+        siteMonitor: http://192.168.68.62:3014/api/v1/health
+
 - AI Platform:
     - Ollama:
         icon: ollama.png

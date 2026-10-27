@@ -1,0 +1,44 @@
+# Example: System health check workflow
+#
+# Place this file inside the Dagu container at:
+#   /var/lib/dagu/dags/health-check.yaml
+#
+# Or mount it from the host via an additional volume in compose.yaml:
+#   - stacks/dags:/var/lib/dagu/dags
+#
+# Then trigger it from the Dagu Web UI or schedule it with cron syntax.
+
+name: health-check
+description: "Run system health checks and log results"
+
+schedule:
+  - "0 */6 * * *"          # Every 6 hours
+overlap_policy: skip       # Skip if previous run is still active
+
+steps:
+  # 1. Run a shell script (example: disk usage report)
+  - id: disk_usage
+    run: |
+      echo "=== Disk Usage Report ==="
+      df -h / /tmp 2>/dev/null || true
+      echo ""
+      echo "=== Top 5 Largest Directories ==="
+      du -sh /var/log/* 2>/dev/null | sort -rh | head -5 || true
+
+  # 2. Trigger an API endpoint (example: ping a health endpoint)
+  - id: api_ping
+    action: http.request
+    with:
+      method: GET
+      url: http://localhost:3018/healthz    # OpenObserve health check
+      timeout_sec: 10
+    continue_on:
+      failure: true                         # Don't fail the whole DAG
+
+  # 3. Save output summary (Dagu captures all step logs automatically)
+  - id: summary
+    run: |
+      echo "=== Health Check Complete ==="
+      echo "Timestamp: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+      echo "Disk step: ${steps.disk_usage.status}"
+      echo "API step:  ${steps.api_ping.status}"
