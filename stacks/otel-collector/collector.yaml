@@ -45,8 +45,8 @@ processors:
     log_statements:
       - context: log
         statements:
-          - set(body("host.name"), "pathfinder")
-          - set(body("deployment.environment"), "glasswing")
+          - set(Body("host.name"), "pathfinder")
+          - set(Body("deployment.environment"), "glasswing")
 
 extensions:
   health_check:
