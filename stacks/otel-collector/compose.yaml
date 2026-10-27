@@ -6,6 +6,7 @@ services:
     image: otel/opentelemetry-collector-contrib:0.164.0
     container_name: glasswing-otel-collector
     restart: unless-stopped
+    init: true
 
     command:
       - --config=/etc/otelcol-contrib/config.yaml
@@ -20,12 +21,17 @@ services:
     volumes:
       - ./collector.yaml:/etc/otelcol-contrib/config.yaml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Host filesystem for hostmetrics (disk, filesystem, network)
+      - /:/hostfs:ro
+      # System journals for journald receiver
+      - /var/log/journal:/var/log/journal:ro
+      - /run/log/journal:/run/log/journal:ro
 
     ports:
       - "192.168.68.62:4318:4318"
       - "192.168.68.62:13133:13133"
 
-    mem_limit: 512m
+    mem_limit: 768m
 
     security_opt:
       - no-new-privileges:true
