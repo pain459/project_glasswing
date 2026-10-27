@@ -14,7 +14,12 @@ The design goal is not maximum service count. It is a platform that stays unders
 - [Getting started](#getting-started)
 - [Everyday commands](#everyday-commands)
 - [Stacks](#stacks)
-- [Secrets](#secrets)
+- [Secrets and Configuration](#secrets-and-configuration)
+  - [How secret injection works](#how-secret-injection-works)
+  - [Global variables](#global-variables)
+  - [Per-stack secrets](#per-stack-secrets)
+  - [Variables intentionally excluded](#variables-intentionally-excluded)
+  - [Managing secrets via the Infisical API](#managing-secrets-via-the-infisical-api)
 - [Observability](#observability)
 - [Backups](#backups)
 - [Verification](#verification)
@@ -174,16 +179,44 @@ flash attention. The numbers must agree in both stacks; see
 reconciles Ollama first and runs the preflight automatically, including GPU
 residency.
 
-## Secrets
+## Secrets and Configuration
 
-Each stack declares the secret names it needs in its own `secrets.list` (one key per line, comments allowed):
+All 25 stacks load their secrets and configuration from Infisical at startup. No hardcoded passwords, API keys, or configuration values remain in compose files.
+
+### How secret injection works
 
 ```
-ZO_ROOT_USER_EMAIL
-ZO_ROOT_USER_PASSWORD
+.local/infisical/credentials.env  →  with-infisical.sh  →  secrets.list  →  docker compose
+       (git-ignored)                    (fetches by name)    (per stack)      (receives env)
 ```
 
-Compose fails fast when a value is missing:
+1. `scripts/with-infisical.sh` reads the machine identity from `.local/infisical/credentials.env`
+2. It authenticates to the Infisical API using universal auth
+3. It fetches global secrets from the `/global` Infisical path (listed in `stacks/global-secrets.list`)
+4. It fetches stack-specific secrets from `/<stack>` (or the path overridden by `INFISICAL_PATH`)
+5. All fetched values are exported as environment variables for a single `docker compose` command, then the wrapper exits
+
+Every `make` lifecycle target (`up`, `down`, `restart`, `logs`, `ps`, `check`) runs through the same `run_compose` macro, which validates the stack name, decides whether the stack declares secrets, and injects them through the wrapper. Secret injection cannot be forgotten.
+
+### Global variables
+
+The `/global` Infisical path holds variables shared by all stacks. They are loaded automatically before any stack-specific secrets:
+
+| Variable | Purpose |
+| --- | --- |
+| `GLASSWING_TZ` | Timezone (used as `TZ` in all stacks) |
+| `GLASSWING_HOST_IP` | LAN IP address for port bindings |
+| `GLASSWING_PUID` | Host user ID for container mappings |
+| `GLASSWING_PGID` | Host group ID for container mappings |
+| `OTEL_*` (6 variables) | OpenTelemetry collector configuration |
+
+Global variables are registered via `stacks/global-secrets.registry` and managed through `scripts/infisical-register.sh`.
+
+### Per-stack secrets
+
+Each stack declares its needed keys in `stacks/<name>/secrets.list` (one key per line, `#` for comments). The corresponding values are stored in Infisical under the `/<stack>` path, or a custom path when `INFISICAL_PATH` is set in the Makefile.
+
+Compose files reference variables with `${VAR:?Required from Infisical}` so they fail fast if a value is missing:
 
 ```yaml
 environment:
@@ -192,7 +225,87 @@ environment:
 
 This is deliberate. A service should refuse to start with a blank password rather than run with an insecure default.
 
-`make secrets-check` proves the path works end to end. It verifies the wrapper is executable, reads `tests/infisical-secrets.list`, and asserts that a known test value arrives in the command environment.
+Secret values are registered via `stacks/<name>/*.registry` files and managed through `scripts/infisical-register.sh`, which uses POST to create and PATCH to update (upsert semantics).
+
+### Variables intentionally excluded
+
+A small number of variables are kept outside Infisical by design:
+
+- **`DOCKER_GID`** — Host-specific, set at Makefile runtime via `$(getent group docker | cut -d: -f3)`
+- **`OTEL_SERVICE_NAME`** — Varies per stack, set inline in each compose file
+- **Bootstrap files** — Infisical's own `.env`, TLS certificates, CA key, and Restic password are host bootstrap artifacts, not runtime secrets
+
+### Managing secrets via the Infisical API
+
+The Infisical instance at `https://192.168.68.62:8095` exposes a REST API. All operations use universal auth with the machine identity credentials.
+
+#### Authentication
+
+```bash
+INFISICAL_URL="https://192.168.68.62:8095"
+INFISICAL_PROJECT_ID="4e0e2d1e-8e10-4a5f-8487-cdae84daaf6c"
+INFISICAL_ENV="prod"
+
+# Login and get access token
+TOKEN=$(curl -s -k "$INFISICAL_URL/api/v1/auth/universal-auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "clientId": "'"$(grep INFISICAL_CLIENT_ID .local/infisical/credentials.env | cut -d= -f2)"'",
+    "clientSecret": "'"$(grep INFISICAL_CLIENT_SECRET .local/infisical/credentials.env | cut -d= -f2)"'"
+  }' | jq -r '.data.accessToken')
+```
+
+#### Create a secret (POST)
+
+```bash
+curl -s -k "$INFISICAL_URL/api/v4/secrets/my-secret-key" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"secretKey\": \"MY_SECRET_KEY\",
+    \"secretValue\": \"my-secret-value\",
+    \"projectId\": \"$INFISICAL_PROJECT_ID\",
+    \"environmentId\": \"$(curl -s -k \"$INFISICAL_URL/api/v1/project/environments?projectId=$INFISICAL_PROJECT_ID\" -H \"Authorization: Bearer $TOKEN\" | jq -r '.data[] | select(.name==\"prod\") | ._id')\",
+    \"pathId\": \"$(curl -s -k \"$INFISICAL_URL/api/v1/path?projectId=$INFISICAL_PROJECT_ID\" -H \"Authorization: Bearer $TOKEN\" | jq -r '.data[] | select(.pathName==\"/my-stack\") | ._id')\"
+  }"
+```
+
+#### Update a secret (PATCH)
+
+```bash
+curl -s -k -X PATCH "$INFISICAL_URL/api/v4/secrets/my-secret-key" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"secretValue\": \"updated-value\"
+  }"
+```
+
+#### Read a secret (GET)
+
+```bash
+curl -s -k "$INFISICAL_URL/api/v4/secrets/my-secret-key" \
+  -H "Authorization: Bearer $TOKEN" | jq '.data'
+```
+
+#### Delete a secret (DELETE)
+
+```bash
+curl -s -k -X DELETE "$INFISICAL_URL/api/v4/secrets/my-secret-key" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+#### Batch upsert with the helper script
+
+For convenience, `scripts/infisical-register.sh` reads a `.registry` file and upserts all entries:
+
+```bash
+./scripts/infisical-register.sh stacks/opencode/opencode.registry
+```
+
+The script uses POST to create new secrets and PATCH to update existing ones, so it is safe to re-run.
+
+`make secrets-check` proves the injection pipeline works end to end. It verifies the wrapper is executable, reads `tests/infisical-secrets.list`, and asserts that a known test value arrives in the command environment.
 
 ## Observability
 
@@ -238,7 +351,7 @@ A green container is not proof a service works. Check the destination too: telem
 
 ## Known limitations
 
-- Ports are bound to a single hardcoded LAN address. Parameterizing `HOST_IP` across every stack is pending.
+- `GLASSWING_HOST_IP` is registered in Infisical `/global` but not all stacks use it for port bindings yet. Full parameterization is pending.
 - There is no off-host backup copy yet.
 - Backup scheduling is manual; systemd timers are planned.
 - A full application-state restore has not been attempted end to end. An isolated configuration restore has.
