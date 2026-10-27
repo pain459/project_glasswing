@@ -30,7 +30,6 @@ receivers:
     root_path: /hostfs
     journalctl_path: /usr/bin/journalctl
     directory: /var/log/journal
-    max_age: 12h
 
 processors:
   memory_limiter:
