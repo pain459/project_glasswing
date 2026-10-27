@@ -33,7 +33,7 @@
         href: http://192.168.68.62:61208
         description: Host System Monitor
         container: glasswing-glances
-        siteMonitor: http://127.0.0.1:61208/api/4/status
+        siteMonitor: http://192.168.68.62:61208/api/4/status
 
     - Portainer:
         icon: portainer.png
