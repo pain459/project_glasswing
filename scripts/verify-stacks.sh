@@ -30,6 +30,7 @@ STACKS=(
   forgejo
   plex
   beszel
+  glances
   adguard
   kavita
   uptime-kuma

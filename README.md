@@ -161,6 +161,7 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 | `open-notebook` | 8502, 5055 | Research workflows |
 | `opencode` | 3019 | Web coding agent with Ollama and Open Notebook RAG |
 | `beszel` | 8090 | Host health |
+| `glances` | 61208 (localhost) | Host system monitor (feeds Homepage widgets) |
 | `portainer` | 9443 | Container management |
 | `plex` | 32400 (host network) | Media server |
 | `otel-collector` | 4318, 13133 | Telemetry ingestion |
@@ -229,7 +230,7 @@ Portainer at `:9443` serves as a read-only dashboard. It monitors containers and
 
 ## Secrets and Configuration
 
-All 24 stacks load their secrets and configuration from Infisical at startup. No hardcoded passwords, API keys, or configuration values remain in compose files.
+All 25 stacks load their secrets and configuration from Infisical at startup. No hardcoded passwords, API keys, or configuration values remain in compose files.
 
 ### How secret injection works
 

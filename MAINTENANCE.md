@@ -4,6 +4,7 @@ Day-to-day operations for keeping the platform healthy, current, and backed up.
 
 **Host:** `pathfinder` (Ubuntu Server)  
 **Repository:** `/home/ravik/src_git/project_glasswing`  
+**Homepage:** `http://192.168.68.62:3006`  
 **Infisical:** `https://192.168.68.62:8095`  
 **Portainer:** `https://192.168.68.62:9443`
 
@@ -38,6 +39,13 @@ docker ps --filter "status=restarting" --filter "status=exited" -q | wc -l
 # 3. Disk space headroom
 df -hT / /mnt/storage /mnt/cold
 ```
+
+### Homepage dashboard
+
+Open `http://192.168.68.62:3006` and check:
+- **Top widgets** — Glances shows real host CPU, memory, disk I/O, network, temperature
+- **Service cards** — green status dots mean services are reachable
+- **Disk widgets** — `/`, `/mnt/storage`, `/mnt/cold` all have headroom
 
 ### Portainer dashboard
 

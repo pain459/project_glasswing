@@ -2,10 +2,33 @@
 # For configuration options and examples, please see:
 # https://gethomepage.dev/configs/info-widgets/
 
-- resources:
+- glances:
+    url: http://127.0.0.1:61208
+    version: 4
     cpu: true
     memory: true
-    disk: /
+    cputemp: true
+    tempmin: 0
+    tempmax: 100
+    uptime: true
+    disk:
+      - /
+      - /mnt/storage
+      - /mnt/cold
+    network: true
+
+- datetime:
+    format:
+      date: yyyy-MM-dd
+      time: HH:mm:ss
+
+- openmeteo:
+    label: Pathfinder
+    latitude: 28.6139
+    longitude: 77.209
+    key: ${OPENWEATHERMAP_API_KEY}
+    units: metric
+    degreeSymbol: C
 
 - search:
     provider: duckduckgo
