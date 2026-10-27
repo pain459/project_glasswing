@@ -1,6 +1,3 @@
 ---
-# For configuration options and examples, please see:
-# https://gethomepage.dev/configs/docker/
-
-local:
-  socket: /var/run/docker.sock
+# Docker integration disabled: container user lacks socket permissions.
+# Container references in services.yaml still work via name matching.
