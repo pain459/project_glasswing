@@ -1,4 +1,4 @@
-
+ 
 name: glasswing-dagu
 
 services:
@@ -11,12 +11,20 @@ services:
     restart: unless-stopped
     init: true
 
+    # Host networking so DAGs can reach other services on localhost
+    # (e.g. OpenObserve :3018, Ollama :11434) and the coordinator
+    # doesn't advertise an unreachable container IP.
+    network_mode: host
+
     environment:
       TZ: ${GLASSWING_TZ:?Required from Infisical}
       DAGU_TZ: ${GLASSWING_TZ:?Required from Infisical}
 
-      # Dagu Web UI port (internal)
-      DAGU_PORT: "8080"
+      # Dagu Web UI port (internal, bound directly on host with network_mode: host)
+      DAGU_PORT: "3014"
+
+      # DAG discovery directory
+      DAGU_DAGS_DIR: "/var/lib/dagu/dags"
 
       # Wiki pages live under data_dir (writable) rather than dags_dir
       # which is overlaid with read-only bind mounts.
@@ -25,10 +33,6 @@ services:
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-dagu
 
-    ports:
-      # Host 3014 -> container 8080 (Dagu Web UI)
-      - "192.168.68.62:3014:8080"
-
     volumes:
       # Persistent run history, logs, settings, and DAG definitions
       - dagu_data:/var/lib/dagu
@@ -36,22 +40,20 @@ services:
       # Dagu also writes wiki/ and runtime files here, so the named volume
       # provides the base and this bind mount overlays our DAG files.
       - ./dags/health-check.yaml:/var/lib/dagu/dags/health-check.yaml:ro
+      - ./dags/staged-image-update.yaml:/var/lib/dagu/dags/staged-image-update.yaml:ro
+      # Docker socket for DAGs that manage containers (e.g. staged-image-update)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Project directory so DAGs can read compose files and run docker compose
+      - /home/ravik/src_git/project_glasswing:/home/ravik/src_git/project_glasswing:ro
 
     healthcheck:
       test:
-        - CMD
-        - wget
-        - --no-verbose
-        - --tries=1
-        - --spider
-        - http://127.0.0.1:8080/api/v1/health
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-
-    security_opt:
-      - no-new-privileges:true
+        - CMD-SHELL
+        - curl -sf http://localhost:3014/health || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
     pids_limit: 256
     mem_limit: 512m
