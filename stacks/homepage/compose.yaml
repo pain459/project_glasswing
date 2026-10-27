@@ -23,5 +23,9 @@ services:
       # Docker socket for container stats and auto-discovery
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
+    # Resolve host for Glances API access
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
     security_opt:
       - no-new-privileges:true
