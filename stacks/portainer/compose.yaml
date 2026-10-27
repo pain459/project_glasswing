@@ -24,6 +24,9 @@ services:
     security_opt:
       - no-new-privileges:true
 
+    labels:
+      com.glasswing.service: portainer
+
     environment:
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-portainer

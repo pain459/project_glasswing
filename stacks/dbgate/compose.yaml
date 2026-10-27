@@ -23,6 +23,9 @@ services:
     security_opt:
       - no-new-privileges:true
 
+    labels:
+      com.glasswing.service: dbgate
+
 volumes:
   dbgate_data:
     name: glasswing-dbgate-data

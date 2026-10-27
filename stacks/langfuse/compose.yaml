@@ -159,6 +159,9 @@ services:
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-langfuse
 
+    labels:
+      com.glasswing.service: langfuse
+
 volumes:
   postgres_data:
   redis_data:

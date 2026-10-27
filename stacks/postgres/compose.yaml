@@ -1,0 +1,71 @@
+# Shared PostgreSQL server for Glasswing services.
+#
+# Provides a central database for services that need persistent storage
+# (Grafana, Gatus, Authentik, N8N, etc.). Individual services create their
+# own databases and users; this stack only manages the server itself.
+#
+# Access: internal Docker network only (no host port exposed).
+# Connect via: postgresql://<user>:<password>@glasswing-postgres:5432/<db>
+
+name: glasswing-postgres
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: glasswing-postgres
+    restart: unless-stopped
+
+    environment:
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+
+      # Superuser for cross-service administration. Individual services
+      # create their own users/databases via init scripts or their config.
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:?Required}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERPASSWORD:?Required}
+      POSTGRES_DB: ${POSTGRES_SUPERDB:?Required}
+
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-postgres
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://192.168.68.62:4318
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: otlp
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=glasswing,host.name=pathfinder
+
+    ports:
+      # Expose on internal IP only for DBGate/admin access.
+      # Services connect via Docker network name (glasswing-postgres:5432).
+      - "192.168.68.62:5432:5432"
+
+    volumes:
+      # Persistent database files
+      - postgres_data:/var/lib/postgresql/data
+      # Init scripts for creating databases/users on first boot
+      - ./init:/docker-entrypoint-initdb.d:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER:?Required} -d ${POSTGRES_SUPERDB:?Required}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+    security_opt:
+      - no-new-privileges:true
+
+    pids_limit: 256
+    mem_limit: 1g
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+    labels:
+      com.glasswing.service: postgres
+
+volumes:
+  postgres_data:
+    name: glasswing-postgres-data

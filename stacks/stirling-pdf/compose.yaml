@@ -36,6 +36,9 @@ services:
     security_opt:
       - no-new-privileges:true
 
+    labels:
+      com.glasswing.service: stirling-pdf
+
 volumes:
   stirling_configs:
     name: glasswing-stirling-configs

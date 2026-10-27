@@ -30,6 +30,9 @@ services:
     security_opt:
       - no-new-privileges:true
 
+    labels:
+      com.glasswing.service: openobserve
+
 volumes:
   openobserve_data:
     name: glasswing-openobserve-data

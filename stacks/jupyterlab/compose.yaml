@@ -26,6 +26,9 @@ services:
     security_opt:
       - no-new-privileges:true
 
+    labels:
+      com.glasswing.service: jupyterlab
+
 volumes:
   jupyterlab_data:
     name: glasswing-jupyterlab-data

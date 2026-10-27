@@ -16,3 +16,6 @@ services:
 
     security_opt:
       - no-new-privileges:true
+
+    labels:
+      com.glasswing.service: cyberchef

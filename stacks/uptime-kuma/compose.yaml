@@ -30,6 +30,9 @@ services:
     security_opt:
       - no-new-privileges:true
 
+    labels:
+      com.glasswing.service: uptime-kuma
+
 volumes:
   uptime_kuma_data:
     name: glasswing-uptime-kuma-data
