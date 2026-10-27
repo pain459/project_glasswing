@@ -12,12 +12,12 @@ services:
       - /etc/vector/vector.yaml
 
     environment:
-      TZ: Asia/Kolkata
-      DOCKER_HOST: unix:///var/run/docker.sock
-      ZO_ROOT_USER_EMAIL: ${ZO_ROOT_USER_EMAIL:?Required}
-      ZO_ROOT_USER_PASSWORD: ${ZO_ROOT_USER_PASSWORD:?Required}
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+      DOCKER_HOST: ${VECTOR_DOCKER_HOST:?Required from Infisical}
+      ZO_ROOT_USER_EMAIL: ${ZO_ROOT_USER_EMAIL:?Required from Infisical}
+      ZO_ROOT_USER_PASSWORD: ${ZO_ROOT_USER_PASSWORD:?Required from Infisical}
 
-      VECTOR_DANGEROUSLY_ALLOW_ENV_VAR_INTERPOLATION: "true"
+      VECTOR_DANGEROUSLY_ALLOW_ENV_VAR_INTERPOLATION: ${VECTOR_ALLOW_ENV_INTERPOLATION:?Required from Infisical}
 
     group_add:
       - "${DOCKER_GID:?Docker socket GID required}"

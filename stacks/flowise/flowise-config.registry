@@ -1,0 +1,9 @@
+# flowise stack config variables
+FLOWISE_PORT=3000
+FLOWISE_APP_URL=http://192.168.68.62:3002
+FLOWISE_DATABASE_TYPE=sqlite
+FLOWISE_DATABASE_PATH=/home/node/.flowise
+FLOWISE_SECRETKEY_PATH=/home/node/.flowise
+FLOWISE_LOG_PATH=/home/node/.flowise/logs
+FLOWISE_BLOB_STORAGE_PATH=/home/node/.flowise/storage
+FLOWISE_DISABLE_TELEMETRY=true

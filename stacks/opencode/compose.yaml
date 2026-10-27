@@ -44,10 +44,10 @@ services:
       - "192.168.68.62:3019:4096"
 
     environment:
-      HOME: /home/opencode
+      HOME: ${HOME:?Required from Infisical}
       OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD:?Required from Infisical}
-      OPENCODE_DISABLE_AUTOUPDATE: "1"
-      TZ: Asia/Kolkata
+      OPENCODE_DISABLE_AUTOUPDATE: ${OPENCODE_DISABLE_AUTOUPDATE:?Required from Infisical}
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
 
     command:
       - serve
@@ -97,15 +97,15 @@ services:
     init: true
 
     environment:
-      OPEN_NOTEBOOK_URL: http://192.168.68.62:5055
+      OPEN_NOTEBOOK_URL: ${OPEN_NOTEBOOK_URL:?Required from Infisical}
       OPEN_NOTEBOOK_PASSWORD: ${OPEN_NOTEBOOK_PASSWORD:?Required from Infisical}
-      HOST: 0.0.0.0
-      PORT: "8000"
-      MCP_PATH: /mcp
-      STATELESS_HTTP: "1"
-      JSON_RESPONSE: "1"
-      MCP_ALLOWED_HOSTS: open-notebook-mcp:8000,127.0.0.1:8000,localhost:8000
-      TZ: Asia/Kolkata
+      HOST: ${HOST:?Required from Infisical}
+      PORT: ${PORT:?Required from Infisical}
+      MCP_PATH: ${MCP_PATH:?Required from Infisical}
+      STATELESS_HTTP: ${STATELESS_HTTP:?Required from Infisical}
+      JSON_RESPONSE: ${JSON_RESPONSE:?Required from Infisical}
+      MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:?Required from Infisical}
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
 
     security_opt:
       - no-new-privileges:true
@@ -138,10 +138,10 @@ services:
 
     environment:
       # Point the MCP server at the self-hosted Steel service, not steel.dev.
-      STEEL_LOCAL: "true"
-      STEEL_BASE_URL: http://192.168.68.62:3100
-      STEEL_CONNECT_URL: ws://192.168.68.62:3100
-      TZ: Asia/Kolkata
+      STEEL_LOCAL: ${STEEL_LOCAL:?Required from Infisical}
+      STEEL_BASE_URL: ${STEEL_BASE_URL:?Required from Infisical}
+      STEEL_CONNECT_URL: ${STEEL_CONNECT_URL:?Required from Infisical}
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
 
     security_opt:
       - no-new-privileges:true

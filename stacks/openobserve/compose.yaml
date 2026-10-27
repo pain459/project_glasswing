@@ -11,24 +11,18 @@ services:
       - "192.168.68.62:3018:5080"
 
     environment:
-      TZ: Asia/Kolkata
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
 
       ZO_ROOT_USER_EMAIL: ${ZO_ROOT_USER_EMAIL:?Required from Infisical}
       ZO_ROOT_USER_PASSWORD: ${ZO_ROOT_USER_PASSWORD:?Required from Infisical}
 
-      ZO_LOCAL_MODE: "true"
-      ZO_DATA_DIR: /data
-      # OTEL ingetration
-      OTEL_SERVICE_NAME: glasswing-homepage
-      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://192.168.68.62:4318
-      OTEL_TRACES_EXPORTER: otlp
-      OTEL_METRICS_EXPORTER: otlp
-      OTEL_LOGS_EXPORTER: otlp
-      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=homelab,host.name=pathfinder
+      ZO_LOCAL_MODE: ${ZO_LOCAL_MODE:?Required from Infisical}
+      ZO_DATA_DIR: ${ZO_DATA_DIR:?Required from Infisical}
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-openobserve
 
-      ZO_COMPACT_ENABLED: "true"
-      ZO_COMPACT_DATA_RETENTION_DAYS: "10"
+      ZO_COMPACT_ENABLED: ${ZO_COMPACT_ENABLED:?Required from Infisical}
+      ZO_COMPACT_DATA_RETENTION_DAYS: ${ZO_COMPACT_DATA_RETENTION_DAYS:?Required from Infisical}
 
     volumes:
       - openobserve_data:/data

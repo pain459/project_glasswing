@@ -1,0 +1,7 @@
+# open-notebook stack config variables
+SURREAL_EXPERIMENTAL_GRAPHQL=true
+SURREAL_URL=ws://surrealdb:8000/rpc
+SURREAL_USER=root
+SURREAL_NAMESPACE=open_notebook
+SURREAL_DATABASE=open_notebook
+OPEN_NOTEBOOK_WORKER_MAX_TASKS=2

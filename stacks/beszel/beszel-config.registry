@@ -1,0 +1,2 @@
+# beszel stack config variables
+BESZEL_APP_URL=http://192.168.68.62:8090

@@ -1,0 +1,3 @@
+# stirling-pdf stack config variables
+STIRLING_SECURITY_ENABLELOGIN=true
+STIRLING_SYSTEM_DEFAULTLOCALE=en-US

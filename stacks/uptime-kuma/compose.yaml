@@ -14,7 +14,7 @@ services:
       - uptime_kuma_data:/app/data
 
     environment:
-      TZ: Asia/Kolkata
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
 
     healthcheck:
       test:
