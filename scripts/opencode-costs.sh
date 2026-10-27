@@ -11,6 +11,11 @@
 #   GPT-4o:            input $2.50   output $10.00
 #   Gemini 2.0 Pro:    input $1.25   output $7.50
 #
+# Power estimation (Ryzen 9 7950X + RTX 4090):
+#   Marginal power during inference: ~280W
+#   Inference speed: ~50 tokens/sec
+#   Electricity: ₹9/kWh
+#
 # Usage:
 #   ./scripts/opencode-costs.sh              # show summary
 #   ./scripts/opencode-costs.sh --detail     # show per-model breakdown
@@ -57,6 +62,20 @@ data['equivalent_cost'] = provider_costs.get('Qwen 3.6 Plus', 0)
 
 for m in data['models']:
     m['equivalent_cost'] = round(calc_cost(m['tokens'], 0.50, 3.00), 4)
+
+# Power estimate
+total_cache = data['tokens'].get('cache', {}).get('read', 0)
+fresh_input = max(data['tokens']['input'] - total_cache, 0)
+inf_tokens = fresh_input + data['tokens']['output']
+inf_sec = inf_tokens / 50
+energy = (inf_sec / 3600) * 0.28
+data['power_estimate'] = {
+    'machine': 'Ryzen 9 7950X + RTX 4090 (24GB)',
+    'inference_seconds': round(inf_sec, 1),
+    'energy_kwh': round(energy, 4),
+    'electricity_cost_inr': round(energy * 9, 4),
+    'electricity_cost_usd': round(energy * 9 / 84.5, 6),
+}
 
 json.dump(data, sys.stdout, indent=2)
 print()
@@ -130,6 +149,45 @@ print('  ' + '-' * 56)
 print(f'  {\"Local (Ollama)\":<20} {\"\$0.00\":>10}  {\"\$0.00\":>10}  {\"\$0.00\":>10}')
 print()
 print(f'  You saved up to {dollar(max_cost)} vs {max_provider}')
+print('=' * 60)
+
+# Power & electricity cost estimation
+MARGINAL_W = 280
+TOK_PER_S = 50
+RATE_INR = 9
+USD_PER_INR = 1 / 84.5
+
+total_cache = tokens.get('cache', {}).get('read', 0)
+fresh_input = max(total_input - total_cache, 0)
+inference_tokens = fresh_input + total_output
+inf_seconds = inference_tokens / TOK_PER_S
+energy_kwh = (inf_seconds / 3600) * (MARGINAL_W / 1000)
+elec_inr = energy_kwh * RATE_INR
+elec_usd = elec_inr * USD_PER_INR
+
+def inr_fmt(c):
+    if c >= 1: return f'₹{c:.2f}'
+    return f'₹{c:.3f}'
+
+print()
+print('  ⚡ Power & Electricity Cost (local inference)')
+print('  ' + '-' * 56)
+print(f'  Machine: Ryzen 9 7950X + RTX 4090 (24GB)')
+print(f'  Inference time:      {inf_seconds/60:.1f} min ({inf_seconds:.0f} s)')
+print(f'  Marginal energy:     {energy_kwh:.3f} kWh')
+print(f'  Electricity cost:    {inr_fmt(elec_inr)} ({dollar(elec_usd)})')
+print(f'  Rate: ₹{RATE_INR}/kWh, ~{MARGINAL_W}W marginal, ~{TOK_PER_S} tok/s')
+print('  ' + '-' * 56)
+
+net_usd = max_cost - elec_usd
+net_inr = net_usd / USD_PER_INR
+print()
+print(f'  💰 Net savings (vs {max_provider}):')
+print(f'     Cloud cost:      {dollar(max_cost)}')
+print(f'     Electricity:     -{dollar(elec_usd)} ({inr_fmt(elec_inr)})')
+print(f'     Net saved:       {dollar(net_usd)} ({inr_fmt(net_inr)})')
+if elec_usd > 0:
+    print(f'     ROI:               {max_cost/elec_usd:.0f}x')
 print('=' * 60)
 
 import os
