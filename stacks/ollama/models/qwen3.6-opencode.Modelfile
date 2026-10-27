@@ -1,0 +1,18 @@
+# Pathfinder coding model.
+#
+# Build with `make ollama-model`; this is the Pathfinder alias of the earlier
+# qwen3.6-resilient baseline. The two limits below are a contract with
+# stacks/opencode/config/opencode.jsonc:
+#
+#   num_ctx      131072  matches OpenCode's context limit
+#   num_predict   32768  matches OpenCode's output limit
+#   temperature     0.3
+#
+# The base model already carries top_p 0.95, top_k 20, min_p 0,
+# repeat_penalty 1 and presence_penalty 0. Do not restate them here unless the
+# base model changes.
+FROM qwen3.6:27b
+
+PARAMETER num_ctx 131072
+PARAMETER num_predict 32768
+PARAMETER temperature 0.3

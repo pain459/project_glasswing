@@ -106,7 +106,7 @@ make restart-all
 | Command | Effect |
 | --- | --- |
 | `make help` | List available targets |
-| `make up STACK=name` | Validate, inject secrets, start, wait for health |
+| `make up STACK=name` | Validate, inject secrets, start, run stack hooks, wait for health |
 | `make down STACK=name` | Stop and remove a stack's containers |
 | `make restart STACK=name` | Restart a stack's containers |
 | `make logs STACK=name` | Follow a stack's logs |
@@ -114,11 +114,20 @@ make restart-all
 | `make check STACK=name` | Validate Compose config, then show status |
 | `make status` | Show every running container |
 | `make list-stacks` | List discovered stacks |
+| `make ollama-model` | Rebuild the coding model from its checked-in Modelfile |
+| `make ai-preflight` | Validate GPU access, Ollama settings, model limits, and OpenCode connectivity |
 | `make restart-all` | Redeploy every stack in order |
 
 `make restart-all` uses `docker compose up`, not `docker restart`. Changed environment variables are applied, not ignored.
 
 Every lifecycle target calls the same `run_compose` macro. It validates the stack name, decides whether the stack declares secrets, injects them through `scripts/with-infisical.sh`, and runs one Compose command. Secret injection is therefore not something a target can forget.
+
+`up` also runs optional hooks owned by the stack: `stacks/<name>/pre-up.sh` before the Compose command and `stacks/<name>/post-up.sh` once the stack is healthy. Setup and validation live next to the stack instead of in extra top-level commands:
+
+- `make up STACK=ollama` starts Ollama, pulls the base model if it is missing, applies the checked-in Modelfile, and validates GPU access, runtime flags, model limits, and a non-truncated coding response.
+- `make up STACK=opencode` reconciles the Ollama stack first, starts OpenCode, and validates the full Ollama-to-OpenCode path.
+
+`make ollama-model` and `make ai-preflight` remain available for re-running one step without a redeploy.
 
 `INFISICAL_PATH` overrides the secret path for a stack. The default is `/<stack>`, and the collectors reuse `/openobserve`.
 
@@ -154,6 +163,14 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 Ports in the Compose files are bound to `192.168.68.62`, the LAN address of Pathfinder. Change them for your own host, or parameterize them with `HOST_IP` the way the Infisical stack does.
 
 `opencode` uses Open Notebook as a retrieval layer for context beyond the model window. See `stacks/opencode/README.md` for the required secrets, access details, and RAG workflow.
+
+`ollama` and `opencode` share one inference baseline: 131k context, 32k
+generation, temperature 0.3, thinking disabled, and a `q8_0` KV cache with
+flash attention. The numbers must agree in both stacks; see
+`stacks/ollama/README.md` and
+`stacks/opencode/README.md#inference-baseline`. `make up STACK=opencode`
+reconciles Ollama first and runs the preflight automatically, including GPU
+residency.
 
 ## Secrets
 

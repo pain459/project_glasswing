@@ -5,6 +5,8 @@ STACK ?= infisical
 STACK_DIR := stacks/$(STACK)
 COMPOSE_FILE := $(STACK_DIR)/compose.yaml
 SECRETS_FILE := $(STACK_DIR)/secrets.list
+PRE_UP_HOOK := $(STACK_DIR)/pre-up.sh
+POST_UP_HOOK := $(STACK_DIR)/post-up.sh
 
 # Default secret location: /<stack>. The collector reuses /openobserve.
 INFISICAL_PATH ?= $(if $(filter otel-collector vector,$(STACK)),/openobserve,/$(STACK))
@@ -21,17 +23,20 @@ help:
 	@echo "make core                         Start base stacks"
 	@echo "make infisical                    Start Infisical"
 	@echo "make homepage                     Start Homepage"
-	@echo "make up STACK=name                Start any stack"
+	@echo "make up STACK=name                Start a stack, run its hooks, wait for health"
 	@echo "make down STACK=name              Stop/remove stack containers"
 	@echo "make restart STACK=name           Restart stack containers"
 	@echo "make logs STACK=name              Follow stack logs"
 	@echo "make ps STACK=name                Show stack status"
 	@echo "make check STACK=name             Validate Compose configuration and show status"
 	@echo "make status                       Show all Docker containers"
+	@echo "make ollama-model                 Rebuild the coding model from its Modelfile"
+	@echo "make ai-preflight                 Validate the Ollama/OpenCode inference baseline"
 	@echo "make secrets-check                Verify Infisical integration"
 	@echo "make secrets-injection-check      Verify test-secret injection"
 	@echo ""
 	@echo "Optional: INFISICAL_PATH=/custom/path (default /<stack>)"
+	@echo "Optional: stacks/<name>/pre-up.sh and post-up.sh run automatically with make up"
 
 # Common runner keeps secrets available for every docker compose command.
 # Usage inside recipes: $(call run_compose,up -d --wait --wait-timeout 180)
@@ -47,8 +52,19 @@ set -eu; \
  fi
 endef
 
+# Optional stack-local hooks keep setup and validation with the stack that owns
+# it. `pre-up.sh` runs before Compose; `post-up.sh` runs after the stack is
+# healthy. Both are skipped when absent.
 up:
+	@if [ -x "$(PRE_UP_HOOK)" ]; then \
+	  echo "[INFO] Running $(PRE_UP_HOOK)"; \
+	  "$(PRE_UP_HOOK)"; \
+	fi
 	@$(call run_compose,up -d --wait --wait-timeout 180)
+	@if [ -x "$(POST_UP_HOOK)" ]; then \
+	  echo "[INFO] Running $(POST_UP_HOOK)"; \
+	  "$(POST_UP_HOOK)"; \
+	fi
 	@echo "[PASS] Stack $(STACK) started"
 
 down:
@@ -112,7 +128,7 @@ secrets-injection-check:
 # Glasswing platform-wide lifecycle management
 # --------------------------------------------------
 
-.PHONY: list-stacks restart-all
+.PHONY: list-stacks restart-all ollama-model ai-preflight
 
 # Discover all independently managed Compose projects.
 STACKS := $(patsubst stacks/%/compose.yaml,%,$(wildcard stacks/*/compose.yaml))
@@ -143,6 +159,28 @@ restart-all:
 	echo ""; \
 	echo "[PASS] All Glasswing stacks reconciled"
 
+
+
+# --------------------------------------------------
+# Pathfinder local inference baseline
+# --------------------------------------------------
+
+OLLAMA_CONTAINER ?= glasswing-ollama
+OLLAMA_MODEL ?= qwen3.6-opencode:latest
+OLLAMA_BASE_MODEL ?= qwen3.6:27b
+OLLAMA_MODELFILE ?= stacks/ollama/models/qwen3.6-opencode.Modelfile
+
+# Stack hooks and the build script read these; command-line overrides still win.
+export OLLAMA_CONTAINER OLLAMA_MODEL OLLAMA_BASE_MODEL OLLAMA_MODELFILE
+export SKIP_PREFLIGHT FORCE
+
+# Lower-level target. `make up STACK=ollama` runs this automatically through
+# stacks/ollama/post-up.sh, including pulling the base model when it is missing.
+ollama-model:
+	@./stacks/ollama/build-model.sh
+
+ai-preflight:
+	@./scripts/ai-preflight.sh --opencode
 
 
 # --------------------------------------------------
