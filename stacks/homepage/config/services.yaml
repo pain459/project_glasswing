@@ -2,6 +2,31 @@
 # Glasswing — Homepage services.yaml
 # Base URL: 192.168.68.62
 
+- System Monitoring:
+    - CPU Usage:
+        icon: mdi-speedometer
+        widget:
+            type: glances
+            url: http://192.168.68.62:61208
+            version: 4
+            metric: cpu
+
+    - Memory Usage:
+        icon: mdi-memory
+        widget:
+            type: glances
+            url: http://192.168.68.62:61208
+            version: 4
+            metric: memory
+
+    - Top Processes:
+        icon: mdi-sitemap
+        widget:
+            type: glances
+            url: http://192.168.68.62:61208
+            version: 4
+            metric: process
+
 - Core Infrastructure:
     - Infisical:
         icon: infisical.png
