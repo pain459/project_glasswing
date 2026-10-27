@@ -1,0 +1,34 @@
+# Staged Image Update
+#
+# Safely updates Docker images across Glasswing stacks with health
+# verification and rollback.
+#
+# How it works:
+#
+#   MUTABLE tags (:latest, :public, :lts, :2, :4, etc.)
+#     → Pull new image → Restart → Healthcheck → Monitor 3 min → Rollback if broken
+#
+#   PINNED tags (:2.24.0, :v2.7.0, :0.60.0-debian, etc.)
+#     → Check for newer version → Report if available (no auto-update)
+#
+# Critical infrastructure (Infisical, OTel, Vector, Postgres, Dagu
+# itself) are excluded entirely — update those manually.
+#
+# The actual work is done by scripts/update-stacks.sh which runs
+# inside this container (Docker socket + project dir are mounted).
+# The script installs docker CLI if needed, then handles everything
+# including pre/post snapshots and cleanup.
+
+name: staged-image-update
+description: "Safely update Docker images with health verification and rollback"
+
+schedule:
+  - "0 5 * * 0"        # Every Sunday at 05:00 local time
+overlap_policy: skip
+
+steps:
+  # Run the update script (includes pre/post snapshots and cleanup)
+  - id: run_updates
+    run: |
+      sudo bash /home/ravik/src_git/project_glasswing/scripts/update-stacks.sh
+    timeout_sec: 3600    # Up to 1 hour for all stacks
