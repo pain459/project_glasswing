@@ -12,6 +12,7 @@ sources:
     auto_partial_merge: true
     exclude_containers:
       - glasswing-vector
+      - glasswing-otel-collector
 
 transforms:
   glasswing_enrich:
@@ -23,9 +24,21 @@ transforms:
       .environment = "glasswing"
       .service_name = .container_name
       .log_source = "docker"
+      # Parse log level from message if present
+      if log_level := regex(.message, r"^(?P<level>ERROR|WARN|INFO|DEBUG|TRACE)", "i"); log_level != "" {
+        .log_level = upcase(log_level)
+      } else {
+        .log_level = "INFO"
+      }
+
+  error_logs:
+    type: filter
+    inputs:
+      - glasswing_enrich
+    condition: '.log_level == "ERROR" || .log_level == "WARN"'
 
 sinks:
-  openobserve:
+  openobserve_all:
     type: http
     inputs:
       - glasswing_enrich
@@ -51,6 +64,38 @@ sinks:
     buffer:
       type: disk
       max_size: 1073741824
+      when_full: block
+
+    healthcheck:
+      enabled: true
+      uri: http://192.168.68.62:3018/healthz
+
+  openobserve_errors:
+    type: http
+    inputs:
+      - error_logs
+
+    uri: http://192.168.68.62:3018/api/default/glasswing_errors/_json
+    method: post
+
+    auth:
+      strategy: basic
+      user: ${ZO_ROOT_USER_EMAIL}
+      password: ${ZO_ROOT_USER_PASSWORD}
+
+    encoding:
+      codec: json
+      timestamp_format: rfc3339
+
+    compression: gzip
+
+    batch:
+      max_events: 200
+      timeout_secs: 3
+
+    buffer:
+      type: memory
+      max_size: 524288
       when_full: block
 
     healthcheck:

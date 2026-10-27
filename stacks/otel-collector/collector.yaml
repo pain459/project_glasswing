@@ -14,15 +14,38 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu: {}
+      memory: {}
+      disk: {}
+      filesystem: {}
+      network: {}
+      paging: {}
+      load: {}
+
+  journald:
+    include_units:
+      - systemd-journald.service
+    max_age: 12h
+
 processors:
   memory_limiter:
     check_interval: 5s
-    limit_mib: 384
-    spike_limit_mib: 96
+    limit_mib: 512
+    spike_limit_mib: 128
 
   batch:
     timeout: 10s
     send_batch_size: 1000
+
+  transform/host:
+    log_statements:
+      - context: log
+        statements:
+          - set(body("host.name"), "pathfinder")
+          - set(body("deployment.environment"), "glasswing")
 
 extensions:
   health_check:
@@ -40,6 +63,11 @@ exporters:
     auth:
       authenticator: basicauth/openobserve
 
+  otlphttp/openobserve-logs:
+    endpoint: http://192.168.68.62:3018/api/default/glasswing_host/_otlp
+    auth:
+      authenticator: basicauth/openobserve
+
 service:
   extensions:
     - health_check
@@ -50,6 +78,7 @@ service:
       receivers:
         - docker_stats
         - otlp
+        - hostmetrics
       processors:
         - memory_limiter
         - batch
@@ -73,3 +102,13 @@ service:
         - batch
       exporters:
         - otlphttp/openobserve
+
+    logs/host:
+      receivers:
+        - journald
+      processors:
+        - memory_limiter
+        - transform/host
+        - batch
+      exporters:
+        - otlphttp/openobserve-logs
