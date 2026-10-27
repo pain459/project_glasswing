@@ -39,15 +39,16 @@ make check STACK=opencode
 make up STACK=opencode
 ```
 
-The first deployment builds three local images:
+The three local images are rebuilt from their Dockerfiles on every deployment:
 
 - `glasswing/opencode:2.1.2`
 - `glasswing/open-notebook-mcp:0.3.0`
 - `glasswing/steel-mcp:3.0.0`
 
-`make up STACK=opencode` first reconciles the Ollama stack, starts OpenCode, then
-runs the full preflight. A deployment that does not meet the inference baseline
-fails instead of reporting success.
+`make up STACK=opencode` builds those images, reconciles the Ollama stack, starts
+OpenCode, then runs the full preflight. A deployment that does not meet the
+inference baseline fails instead of reporting success. Layer caching keeps the
+rebuild cheap when only a service file changed.
 
 ## Inference baseline
 
@@ -267,9 +268,36 @@ and a Steel service that is down (`/v1/health`).
 | --- | --- | --- |
 | `/srv/glasswing/opencode/home` | `/home/opencode` | Sessions, database, cache, logs |
 | `/srv/glasswing/opencode/workspace` | `/workspace` | Persistent project workspace |
+| `/home/ravik` | `/home/ravik` | Repositories, dotfiles, SSH keys |
+| `/mnt/storage` | `/mnt/storage` | Ollama models, Glasswing backups |
+| `/mnt/cold` | `/mnt/cold` | Books, games, media, Open WebUI data |
 
-The one-shot init service creates these directories and gives them to UID/GID
-`1000`, matching the `ravik` user on Pathfinder.
+The one-shot init service creates the first two directories and gives them to
+UID/GID `1000`, matching the `ravik` user on Pathfinder.
+
+The remaining mounts are the host itself. The container runs as `1000:1000`,
+which is the same uid and gid as `ravik`, so the agent reads and writes those
+paths directly, at their real absolute paths. There is no copy step and no
+workspace synchronisation.
+
+Two consequences are deliberate:
+
+- The agent can change any file `ravik` can change, including the Git
+  checkouts in `/home/ravik/src_git`. Do not give the server password to
+  anyone who should not have that access.
+- `/home/ravik/.ssh` is visible, so the agent can clone and push over SSH. It
+  can also read any key stored there.
+
+The mount roots themselves must be writable by `ravik`. On Pathfinder they
+shipped as `root:root`, which made `/mnt/storage` and `/mnt/cold` read-only
+even though their subdirectories were not:
+
+```bash
+sudo chown ravik:ravik /mnt/storage /mnt/cold
+```
+
+The children keep their own owners, so Ollama's model directory stays
+`995:docker` and the backup directories stay `root`.
 
 `config/` is mounted read-only at `/etc/opencode`, which is OpenCode's system
 configuration directory.

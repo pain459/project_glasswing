@@ -164,6 +164,8 @@ Ports in the Compose files are bound to `192.168.68.62`, the LAN address of Path
 
 `opencode` uses Open Notebook as a retrieval layer for context beyond the model window. See `stacks/opencode/README.md` for the required secrets, access details, and RAG workflow.
 
+That stack also mounts `/home/ravik`, `/mnt/storage` and `/mnt/cold` read-write at their real paths. The container runs as `1000:1000`, the same uid and gid as `ravik` on Pathfinder, so the agent works on the repositories and files in place instead of a copy. Anything `ravik` can change, the agent can change; see the security notes in `stacks/opencode/README.md`.
+
 `ollama` and `opencode` share one inference baseline: 131k context, 32k
 generation, temperature 0.3, thinking disabled, and a `q8_0` KV cache with
 flash attention. The numbers must agree in both stacks; see
