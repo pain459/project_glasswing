@@ -16,6 +16,7 @@ receivers:
 
   hostmetrics:
     collection_interval: 30s
+    root_path: /hostfs
     scrapers:
       cpu: {}
       memory: {}
@@ -26,8 +27,9 @@ receivers:
       load: {}
 
   journald:
-    include_units:
-      - systemd-journald.service
+    root_path: /hostfs
+    journalctl_path: /usr/bin/journalctl
+    directory: /var/log/journal
     max_age: 12h
 
 processors:

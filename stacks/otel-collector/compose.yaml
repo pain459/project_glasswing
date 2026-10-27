@@ -21,11 +21,8 @@ services:
     volumes:
       - ./collector.yaml:/etc/otelcol-contrib/config.yaml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      # Host filesystem for hostmetrics (disk, filesystem, network)
+      # Host filesystem for hostmetrics and journald chroot
       - /:/hostfs:ro
-      # System journals for journald receiver
-      - /var/log/journal:/var/log/journal:ro
-      - /run/log/journal:/run/log/journal:ro
 
     ports:
       - "192.168.68.62:4318:4318"
