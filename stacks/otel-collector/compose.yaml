@@ -30,4 +30,5 @@ services:
 
     mem_limit: 768m
 
-    # no-new-privileges removed: journald receiver needs to fork/exec journalctl
+    # Run as root so journald receiver can exec journalctl inside the chroot
+    user: "0:0"
