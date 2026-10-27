@@ -5,3 +5,23 @@
 providers:
   openweathermap: openweathermapapikey
   weatherapi: weatherapiapikey
+
+theme: dark
+
+background: transparent
+
+headerStyle: clean
+
+layout:
+  Core Infrastructure:
+    style: column
+    columns: 2
+  AI Platform:
+    style: column
+    columns: 2
+  Developer Workbench:
+    style: column
+    columns: 3
+  Entertainment:
+    style: column
+    columns: 2

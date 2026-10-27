@@ -20,6 +20,8 @@ services:
     volumes:
       - ./config:/app/config
       - ./icons:/app/public/icons:ro
+      # Docker socket for container stats and auto-discovery
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
     security_opt:
       - no-new-privileges:true
