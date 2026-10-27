@@ -11,6 +11,8 @@ Shows costs across multiple providers for comparison:
   - GPT-4o (OpenAI)
   - Gemini 2.0 Pro (Google)
 
+Also estimates electricity cost from local inference and shows net savings.
+
 All pricing per 1M tokens, October 2026 rates.
 
 Usage:
@@ -48,6 +50,24 @@ COMPARISON_PROVIDERS = {
     "Gemini 2.0 Pro": (1.25, 7.50),  # Google, ≤128K context
 }
 
+# ── Power estimation for local inference ──
+# Machine: AMD Ryzen 9 7950X (16-core, 170W TDP) + RTX 4090 (24GB, 450W TDP) + 128GB RAM
+#
+# During LLM inference (Qwen 3.6 27B on Ollama):
+#   - GPU does the heavy lifting: ~300W (idle ~25W, marginal ~275W)
+#   - CPU handles orchestration + KV cache: ~80W extra (idle ~60W, marginal ~20W)
+#   - System baseline (idle): ~130W (CPU + GPU + motherboard + RAM + fans)
+#   - System during inference: ~410W
+#   - Marginal power (extra over idle): ~280W
+#
+# Inference speed for Qwen 3.6 (27B) with GPU offload: ~40-60 tokens/sec
+# Electricity rate: ₹9 per kWh (1 unit)
+# USD/INR rate: ~84.5 (October 2026)
+MARGINAL_POWER_WATTS = 280       # extra watts during inference over idle (CPU + GPU)
+TOKENS_PER_SECOND = 50           # estimated inference speed with GPU offload
+ELECTRICITY_RATE_INR_PER_KWH = 9  # ₹9 per unit (kWh)
+USD_PER_INR = 1 / 84.5          # ~₹84.5 per $1
+
 
 def get_stats():
     """Fetch session stats from OpenCode API."""
@@ -69,6 +89,78 @@ def find_pricing(model_id: str):
         if pattern in model_lower:
             return price
     return DEFAULT_PRICING
+
+
+def estimate_inference_time_seconds(total_tokens: int) -> float:
+    """Estimate how many seconds of CPU inference time were used.
+
+    Only counts tokens that actually went through inference.
+    Cache reads are fast lookups, not full inference.
+    """
+    return total_tokens / TOKENS_PER_SECOND
+
+
+def estimate_inference_time_from_stats(stats: dict) -> float:
+    """Estimate inference time more accurately from model token data.
+
+    Uses output tokens as the main driver (they're always generated fresh).
+    Input tokens are partially cached, so we estimate based on output +
+    a fraction of input that wasn't cached.
+    """
+    data = stats.get("data", {})
+    models = data.get("models", [])
+    total_output = 0
+    total_input = 0
+    total_cache = 0
+    for m in models:
+        tok = m.get("tokens", {})
+        total_output += tok.get("output", 0)
+        total_input += tok.get("input", 0)
+        total_cache += tok.get("cache", {}).get("read", 0)
+
+    # Fresh input = total input minus cache reads (capped at 0)
+    fresh_input = max(total_input - total_cache, 0)
+
+    # Output tokens are generated at TOKENS_PER_SECOND
+    # Fresh input tokens are processed at similar speed
+    inference_tokens = fresh_input + total_output
+    return inference_tokens / TOKENS_PER_SECOND
+
+
+def estimate_energy_kwh(total_tokens: int) -> float:
+    """Estimate kWh consumed for inference (marginal over idle)."""
+    hours = estimate_inference_time_seconds(total_tokens) / 3600
+    return hours * (MARGINAL_POWER_WATTS / 1000)
+
+
+def estimate_energy_from_stats(stats: dict) -> float:
+    """Estimate kWh from actual token breakdown."""
+    seconds = estimate_inference_time_from_stats(stats)
+    hours = seconds / 3600
+    return hours * (MARGINAL_POWER_WATTS / 1000)
+
+
+def estimate_electricity_cost_usd(total_tokens: int) -> float:
+    """Estimate electricity cost in USD for inference."""
+    kwh = estimate_energy_kwh(total_tokens)
+    cost_inr = kwh * ELECTRICITY_RATE_INR_PER_KWH
+    return cost_inr * USD_PER_INR
+
+
+def estimate_electricity_from_stats(stats: dict) -> float:
+    """Estimate electricity cost in USD from actual token breakdown."""
+    kwh = estimate_energy_from_stats(stats)
+    cost_inr = kwh * ELECTRICITY_RATE_INR_PER_KWH
+    return cost_inr * USD_PER_INR
+
+
+def format_inr(rupees: float) -> str:
+    """Format Indian Rupee amount."""
+    if rupees >= 1:
+        return f"₹{rupees:.2f}"
+    elif rupees >= 0.01:
+        return f"₹{rupees:.3f}"
+    return f"₹{rupees:.4f}"
 
 
 def format_tokens(n: int) -> str:
@@ -180,6 +272,35 @@ def pretty_print(stats: dict):
     print(f"  🏠 Running locally via Ollama = $0.00")
     print("=" * 62)
 
+    # ── Power & electricity cost estimation ──
+    inference_seconds = estimate_inference_time_from_stats(stats)
+    energy_kwh = estimate_energy_from_stats(stats)
+    elec_cost_inr = energy_kwh * ELECTRICITY_RATE_INR_PER_KWH
+    elec_cost_usd = estimate_electricity_from_stats(stats)
+
+    print()
+    print("  ⚡ Power & Electricity Cost (local inference)")
+    print("  " + "-" * 58)
+    print(f"  Machine: Ryzen 9 7950X + RTX 4090 (24GB)")
+    print(f"  Estimated inference time:  {inference_seconds/60:.1f} min ({inference_seconds:.0f} s)")
+    print(f"  Marginal energy used:      {energy_kwh:.3f} kWh ({energy_kwh * 1000:.0f} Wh)")
+    print(f"  Electricity cost:          {format_inr(elec_cost_inr)} ({format_cost(elec_cost_usd)})")
+    print(f"  Rate: ₹{ELECTRICITY_RATE_INR_PER_KWH}/kWh, ~{MARGINAL_POWER_WATTS}W marginal, ~{TOKENS_PER_SECOND} tok/s")
+    print("  " + "-" * 58)
+
+    max_cost_usd = max_savings
+    net_savings_usd = max_cost_usd - elec_cost_usd
+    net_savings_inr = net_savings_usd / USD_PER_INR
+
+    print()
+    print(f"  💰 Net savings (vs {max_savings_provider}):")
+    print(f"     Cloud cost:      {format_cost(max_cost_usd)}")
+    print(f"     Electricity:     -{format_cost(elec_cost_usd)} ({format_inr(elec_cost_inr)})")
+    print(f"     Net saved:       {format_cost(net_savings_usd)} ({format_inr(net_savings_inr)})")
+    if elec_cost_usd > 0:
+        print(f"     ROI:               {max_cost_usd / elec_cost_usd:.0f}x")
+    print("=" * 62)
+
     # Per-day breakdown using the Qwen baseline (actual equivalent)
     qwen_inp, qwen_out = COMPARISON_PROVIDERS.get("Qwen 3.6 Plus", DEFAULT_PRICING)
     qwen_cost = (grand_input / 1_000_000) * qwen_inp + (grand_output / 1_000_000) * qwen_out
@@ -209,6 +330,7 @@ def main():
         data = stats["data"]
         total_input = sum(m.get("tokens", {}).get("input", 0) for m in data.get("models", []))
         total_output = sum(m.get("tokens", {}).get("output", 0) for m in data.get("models", []))
+        total_tokens = total_input + total_output
 
         provider_costs = {}
         for provider_name, (inp_price, out_price) in COMPARISON_PROVIDERS.items():
@@ -226,8 +348,24 @@ def main():
             cost = (in_t / 1_000_000) * input_price + (out_t / 1_000_000) * output_price
             m["estimated_cost"] = round(cost, 6)
 
+        # Power & energy estimates
+        inference_sec = estimate_inference_time_from_stats(stats)
+        energy_kwh = estimate_energy_from_stats(stats)
+        elec_cost_usd = estimate_electricity_from_stats(stats)
+        elec_cost_inr = energy_kwh * ELECTRICITY_RATE_INR_PER_KWH
+
         data["provider_comparison_costs"] = provider_costs
         data["estimated_total_cost"] = provider_costs.get("Qwen 3.6 Plus", 0)
+        data["power_estimate"] = {
+            "machine": "Ryzen 9 7950X + RTX 4090 (24GB)",
+            "inference_seconds": round(inference_sec, 1),
+            "energy_kwh": round(energy_kwh, 4),
+            "electricity_cost_inr": round(elec_cost_inr, 4),
+            "electricity_cost_usd": round(elec_cost_usd, 6),
+            "rate_inr_per_kwh": ELECTRICITY_RATE_INR_PER_KWH,
+            "marginal_power_watts": MARGINAL_POWER_WATTS,
+            "tokens_per_second": TOKENS_PER_SECOND,
+        }
         print(json.dumps(stats, indent=2))
     else:
         pretty_print(stats)
