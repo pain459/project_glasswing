@@ -3,6 +3,9 @@
   "dashboardId": "glasswing_gpu_monitoring",
   "title": "GPU Monitoring",
   "description": "NVIDIA RTX 4090 metrics. NOTE: This dashboard requires GPU metrics to be configured. Currently no GPU data source is active. To enable: add DCGM exporter or nvidia-smi scraping to the OTel collector pipeline.",
+  "role": "",
+  "owner": "",
+  "created": "2026-10-27T00:00:00.000Z",
   "panels": [
     {
       "id": "gpu_utilization",
@@ -11,7 +14,10 @@
       "description": "GPU compute utilization percentage. Requires DCGM exporter or nvidia-smi metrics.",
       "config": {
         "show_legends": true,
-        "unit": "percent-1"
+        "legends_position": null,
+        "unit": "percent-1",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -22,15 +28,18 @@
             "stream": "nvidia_smi_gpu_utilization",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{gpu_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 0, "w": 6, "h": 5 }
+      "layout": { "x": 0, "y": 0, "w": 6, "h": 5, "i": 1 }
     },
     {
       "id": "gpu_memory",
@@ -39,7 +48,10 @@
       "description": "VRAM usage in bytes. Requires DCGM exporter or nvidia-smi metrics.",
       "config": {
         "show_legends": true,
-        "unit": "bytes"
+        "legends_position": null,
+        "unit": "bytes",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -50,15 +62,18 @@
             "stream": "nvidia_smi_memory_used",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{gpu_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 6, "y": 0, "w": 6, "h": 5 }
+      "layout": { "x": 6, "y": 0, "w": 6, "h": 5, "i": 2 }
     },
     {
       "id": "gpu_temperature",
@@ -67,7 +82,10 @@
       "description": "GPU temperature in Celsius. Requires DCGM exporter or nvidia-smi metrics.",
       "config": {
         "show_legends": true,
-        "unit": "celsius"
+        "legends_position": null,
+        "unit": "celsius",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -78,15 +96,18 @@
             "stream": "nvidia_smi_gpu_temperature",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{gpu_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 5, "w": 6, "h": 5 }
+      "layout": { "x": 0, "y": 5, "w": 6, "h": 5, "i": 3 }
     },
     {
       "id": "gpu_power",
@@ -95,7 +116,10 @@
       "description": "GPU power consumption in watts. Requires DCGM exporter or nvidia-smi metrics.",
       "config": {
         "show_legends": true,
-        "unit": "watts"
+        "legends_position": null,
+        "unit": "watts",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -106,15 +130,18 @@
             "stream": "nvidia_smi_power_draw",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{gpu_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 6, "y": 5, "w": 6, "h": 5 }
+      "layout": { "x": 6, "y": 5, "w": 6, "h": 5, "i": 4 }
     },
     {
       "id": "gpu_info",
@@ -122,7 +149,10 @@
       "title": "GPU Info",
       "description": "GPU details. Will show data once GPU metrics are configured.",
       "config": {
-        "show_legends": true
+        "show_legends": true,
+        "legends_position": null,
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "sql",
       "queries": [
@@ -133,14 +163,17 @@
             "stream": "nvidia_smi_gpu_utilization",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 10, "w": 12, "h": 5 }
+      "layout": { "x": 0, "y": 10, "w": 12, "h": 5, "i": 5 }
     }
   ],
   "variables": null

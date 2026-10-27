@@ -3,6 +3,9 @@
   "dashboardId": "glasswing_service_error_tracking",
   "title": "Service Error Tracking",
   "description": "Error and warning logs from all Docker containers via Vector. Shows error rates, top error-producing services, and recent error entries.",
+  "role": "",
+  "owner": "",
+  "created": "2026-10-27T00:00:00.000Z",
   "panels": [
     {
       "id": "error_count",
@@ -11,7 +14,10 @@
       "description": "Count of ERROR level log entries",
       "config": {
         "show_legends": true,
-        "decimals": 0
+        "legends_position": null,
+        "decimals": 0,
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "sql",
       "queries": [
@@ -22,14 +28,17 @@
             "stream": "glasswing_errors",
             "stream_type": "logs",
             "x": [],
-            "y": ["total_errors"]
+            "y": ["total_errors"],
+            "z": [],
+            "filter": []
           },
           "config": {
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 0, "w": 4, "h": 4 }
+      "layout": { "x": 0, "y": 0, "w": 4, "h": 4, "i": 1 }
     },
     {
       "id": "warn_count",
@@ -38,7 +47,10 @@
       "description": "Count of WARN level log entries",
       "config": {
         "show_legends": true,
-        "decimals": 0
+        "legends_position": null,
+        "decimals": 0,
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "sql",
       "queries": [
@@ -49,14 +61,17 @@
             "stream": "glasswing_errors",
             "stream_type": "logs",
             "x": [],
-            "y": ["total_warnings"]
+            "y": ["total_warnings"],
+            "z": [],
+            "filter": []
           },
           "config": {
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 4, "y": 0, "w": 4, "h": 4 }
+      "layout": { "x": 4, "y": 0, "w": 4, "h": 4, "i": 2 }
     },
     {
       "id": "error_rate",
@@ -64,7 +79,10 @@
       "title": "Error Rate Over Time",
       "description": "Errors and warnings per minute",
       "config": {
-        "show_legends": true
+        "show_legends": true,
+        "legends_position": null,
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "sql",
       "queries": [
@@ -75,18 +93,21 @@
             "stream": "glasswing_errors",
             "stream_type": "logs",
             "x": ["time_bucket"],
-            "y": ["errors"]
+            "y": ["errors"],
+            "z": [],
+            "filter": []
           },
           "config": {
             "x_axis": "time_bucket",
             "y_axis": "errors",
             "color_key": "log_level",
             "labels_key": "log_level",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 8, "y": 0, "w": 4, "h": 4 }
+      "layout": { "x": 8, "y": 0, "w": 4, "h": 4, "i": 3 }
     },
     {
       "id": "errors_by_service",
@@ -94,7 +115,10 @@
       "title": "Errors by Service",
       "description": "Error count grouped by service/container name",
       "config": {
-        "show_legends": true
+        "show_legends": true,
+        "legends_position": null,
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "sql",
       "queries": [
@@ -105,16 +129,19 @@
             "stream": "glasswing_errors",
             "stream_type": "logs",
             "x": ["service_name"],
-            "y": ["error_count"]
+            "y": ["error_count"],
+            "z": [],
+            "filter": []
           },
           "config": {
             "x_axis": "service_name",
             "y_axis": "error_count",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 4, "w": 6, "h": 5 }
+      "layout": { "x": 0, "y": 4, "w": 6, "h": 5, "i": 4 }
     },
     {
       "id": "warnings_by_service",
@@ -122,7 +149,10 @@
       "title": "Warnings by Service",
       "description": "Warning count grouped by service/container name",
       "config": {
-        "show_legends": true
+        "show_legends": true,
+        "legends_position": null,
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "sql",
       "queries": [
@@ -133,16 +163,19 @@
             "stream": "glasswing_errors",
             "stream_type": "logs",
             "x": ["service_name"],
-            "y": ["warn_count"]
+            "y": ["warn_count"],
+            "z": [],
+            "filter": []
           },
           "config": {
             "x_axis": "service_name",
             "y_axis": "warn_count",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 6, "y": 4, "w": 6, "h": 5 }
+      "layout": { "x": 6, "y": 4, "w": 6, "h": 5, "i": 5 }
     },
     {
       "id": "recent_errors",
@@ -150,7 +183,10 @@
       "title": "Recent Error Entries",
       "description": "Latest error log messages from all services",
       "config": {
-        "show_legends": true
+        "show_legends": true,
+        "legends_position": null,
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "sql",
       "queries": [
@@ -161,14 +197,17 @@
             "stream": "glasswing_errors",
             "stream_type": "logs",
             "x": ["time"],
-            "y": ["service_name", "log_level", "message"]
+            "y": ["service_name", "log_level", "message"],
+            "z": [],
+            "filter": []
           },
           "config": {
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 9, "w": 12, "h": 5 }
+      "layout": { "x": 0, "y": 9, "w": 12, "h": 5, "i": 6 }
     },
     {
       "id": "docker_log_errors",
@@ -176,7 +215,10 @@
       "title": "Docker Log Error Rate",
       "description": "Error rate from all Docker container logs",
       "config": {
-        "show_legends": true
+        "show_legends": true,
+        "legends_position": null,
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "sql",
       "queries": [
@@ -187,16 +229,19 @@
             "stream": "glasswing_docker",
             "stream_type": "logs",
             "x": ["time_bucket"],
-            "y": ["log_count"]
+            "y": ["log_count"],
+            "z": [],
+            "filter": []
           },
           "config": {
             "x_axis": "time_bucket",
             "y_axis": "log_count",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 14, "w": 12, "h": 5 }
+      "layout": { "x": 0, "y": 14, "w": 12, "h": 5, "i": 7 }
     }
   ],
   "variables": null

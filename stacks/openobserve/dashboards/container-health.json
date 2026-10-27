@@ -3,6 +3,9 @@
   "dashboardId": "glasswing_container_health",
   "title": "Container Health",
   "description": "Per-container resource usage from docker_stats receiver. Shows CPU, memory, network, and restart counts for all Glasswing services.",
+  "role": "",
+  "owner": "",
+  "created": "2026-10-27T00:00:00.000Z",
   "panels": [
     {
       "id": "container_cpu",
@@ -11,7 +14,10 @@
       "description": "CPU usage per container over time",
       "config": {
         "show_legends": true,
-        "unit": "percent-1"
+        "legends_position": null,
+        "unit": "percent-1",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -22,15 +28,18 @@
             "stream": "container_cpu_usage_percent",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{container_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 0, "w": 12, "h": 5 }
+      "layout": { "x": 0, "y": 0, "w": 12, "h": 5, "i": 1 }
     },
     {
       "id": "container_memory_used",
@@ -39,7 +48,10 @@
       "description": "Memory used per container",
       "config": {
         "show_legends": true,
-        "unit": "bytes"
+        "legends_position": null,
+        "unit": "bytes",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -50,15 +62,18 @@
             "stream": "container_memory_usage_bytes",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{container_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 5, "w": 12, "h": 5 }
+      "layout": { "x": 0, "y": 5, "w": 12, "h": 5, "i": 2 }
     },
     {
       "id": "container_memory_limit",
@@ -67,7 +82,10 @@
       "description": "Memory limit per container",
       "config": {
         "show_legends": true,
-        "unit": "bytes"
+        "legends_position": null,
+        "unit": "bytes",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -78,15 +96,18 @@
             "stream": "container_memory_limit",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{container_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 10, "w": 12, "h": 5 }
+      "layout": { "x": 0, "y": 10, "w": 12, "h": 5, "i": 3 }
     },
     {
       "id": "container_network_rx",
@@ -95,7 +116,10 @@
       "description": "Network bytes received per container",
       "config": {
         "show_legends": true,
-        "unit": "bps"
+        "legends_position": null,
+        "unit": "bps",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -106,15 +130,18 @@
             "stream": "container_network_io",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{container_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 15, "w": 6, "h": 5 }
+      "layout": { "x": 0, "y": 15, "w": 6, "h": 5, "i": 4 }
     },
     {
       "id": "container_network_tx",
@@ -123,7 +150,10 @@
       "description": "Network bytes transmitted per container",
       "config": {
         "show_legends": true,
-        "unit": "bps"
+        "legends_position": null,
+        "unit": "bps",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -134,15 +164,18 @@
             "stream": "container_network_io",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{container_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 6, "y": 15, "w": 6, "h": 5 }
+      "layout": { "x": 6, "y": 15, "w": 6, "h": 5, "i": 5 }
     },
     {
       "id": "container_block_read",
@@ -151,7 +184,10 @@
       "description": "Block read bytes per container",
       "config": {
         "show_legends": true,
-        "unit": "bps"
+        "legends_position": null,
+        "unit": "bps",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -162,15 +198,18 @@
             "stream": "container_block_io",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{container_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 20, "w": 6, "h": 5 }
+      "layout": { "x": 0, "y": 20, "w": 6, "h": 5, "i": 6 }
     },
     {
       "id": "container_block_write",
@@ -179,7 +218,10 @@
       "description": "Block write bytes per container",
       "config": {
         "show_legends": true,
-        "unit": "bps"
+        "legends_position": null,
+        "unit": "bps",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -190,15 +232,18 @@
             "stream": "container_block_io",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{container_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 6, "y": 20, "w": 6, "h": 5 }
+      "layout": { "x": 6, "y": 20, "w": 6, "h": 5, "i": 7 }
     },
     {
       "id": "container_restarts",
@@ -207,7 +252,10 @@
       "description": "Number of container restarts",
       "config": {
         "show_legends": true,
-        "unit": ""
+        "legends_position": null,
+        "unit": "",
+        "base_map": { "type": "osm" },
+        "map_view": { "zoom": 1, "lat": 0, "lng": 0 }
       },
       "queryType": "promql",
       "queries": [
@@ -218,15 +266,18 @@
             "stream": "container_restart_count",
             "stream_type": "metrics",
             "x": [],
-            "y": []
+            "y": [],
+            "z": [],
+            "filter": []
           },
           "config": {
             "promql_legend": "{container_name}",
-            "layer_type": "scatter"
+            "layer_type": "scatter",
+            "weight_fixed": 1
           }
         }
       ],
-      "layout": { "x": 0, "y": 25, "w": 12, "h": 5 }
+      "layout": { "x": 0, "y": 25, "w": 12, "h": 5, "i": 8 }
     }
   ],
   "variables": null
