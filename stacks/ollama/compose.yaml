@@ -15,6 +15,15 @@ services:
       OLLAMA_KEEP_ALIVE: 30m
       OLLAMA_MODELS: /root/.ollama
 
+      # Inference baseline shared with the opencode stack.
+      # Flash attention plus an 8-bit KV cache keeps more of the 131k context
+      # on the 4090. One request and one loaded model prevent a second session
+      # from splitting VRAM with the coding model.
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_KV_CACHE_TYPE: q8_0
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+
       # OpenTelemetry resource identity
       OTEL_SERVICE_NAME: glasswing-ollama
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf

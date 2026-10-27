@@ -16,10 +16,14 @@ for retrieval-augmented context.
 
 - The `open-notebook` stack is running: `make up STACK=open-notebook`.
 - The `steel` stack is running: `make up STACK=steel` (browser tools).
-- Ollama is running with:
-  - `qwen3.6-opencode:latest` for coding. The model is built with
-    `num_ctx 131072`, and this stack declares that as the context limit.
-  - `nomic-embed-text:latest` for Open Notebook embeddings.
+- Ollama is reconciled automatically by `make up STACK=opencode`, and can be
+  run alone with `make up STACK=ollama`. It starts the container, pulls
+  `qwen3.6:27b` if missing, and builds `qwen3.6-opencode:latest` from the
+  checked-in
+  [`../ollama/models/qwen3.6-opencode.Modelfile`](../ollama/models/qwen3.6-opencode.Modelfile)
+  with `num_ctx 131072`, `num_predict 32768` and `temperature 0.3`.
+- `nomic-embed-text:latest` is required by Open Notebook for embeddings; it is
+  not used by OpenCode.
 - Add these secrets under the Infisical path `/opencode`:
   - `OPENCODE_SERVER_PASSWORD` — a long random password for the web UI/API.
   - `OPEN_NOTEBOOK_PASSWORD` — the same value used by `/open-notebook`.
@@ -40,6 +44,68 @@ The first deployment builds three local images:
 - `glasswing/opencode:2.1.2`
 - `glasswing/open-notebook-mcp:0.3.0`
 - `glasswing/steel-mcp:3.0.0`
+
+`make up STACK=opencode` first reconciles the Ollama stack, starts OpenCode, then
+runs the full preflight. A deployment that does not meet the inference baseline
+fails instead of reporting success.
+
+## Inference baseline
+
+The coding model and both containers are tuned together. The numbers below are
+one contract: a context window declared in OpenCode does not allocate anything
+in Ollama, and a generation budget declared in Ollama can silently truncate a
+response that OpenCode believes is complete.
+
+| Component | Setting | Where |
+| --- | --- | --- |
+| Context window | 131,072 tokens | `num_ctx` in the Modelfile and `limit.context` |
+| Generation budget | 32,768 tokens | `num_predict` in the Modelfile and `limit.output` |
+| Temperature | 0.3 | Modelfile and request `body` |
+| Reasoning | Disabled | `body.reasoning_effort: "none"` |
+| Compaction | Auto, keep 24k, reserve 20k | `compaction.auto`, `keep.tokens`, `buffer` |
+| KV cache | `q8_0` with flash attention | `../ollama/compose.yaml` |
+| Parallel requests / loaded models | 1 / 1 | `../ollama/compose.yaml` |
+
+Thinking is off because this model emits a separate `thinking` trace before the
+answer. For the same one-line coding prompt, thinking on used 1,108 characters
+of reasoning and 323 completion tokens, while thinking off used 23 tokens. In
+the earlier setup a 2,048-token budget was exhausted by the trace, returning
+`done_reason=length` with no visible answer.
+
+The KV-cache and concurrency limits are for GPU residency. A 27B model at a
+131k context does not fit in 24 GB of VRAM with an f16 KV cache, so Ollama
+offloads some layers to the CPU. `q8_0` halves the cache, flash attention makes
+it usable, and one request at a time stops two sessions from competing for the
+same memory. Offloading is measured, not assumed.
+
+## Preflight
+
+`make up STACK=opencode` runs this automatically. To rerun it without
+redeploying:
+
+```bash
+make ai-preflight
+```
+
+The script is read-only. It checks, in order:
+
+1. Both containers are running.
+2. Ollama can see the RTX 4090 from inside its container.
+3. `OLLAMA_FLASH_ATTENTION`, `OLLAMA_KV_CACHE_TYPE`, `OLLAMA_NUM_PARALLEL`,
+   `OLLAMA_MAX_LOADED_MODELS` and `OLLAMA_KEEP_ALIVE` have the agreed values.
+4. The model's effective parameters match the Modelfile.
+5. The OpenCode model, limits, temperature, reasoning and compaction agree.
+6. OpenCode reaches Ollama's `/v1/models` from inside its own container.
+7. A small coding prompt returns `finish_reason=stop` with a non-empty answer
+   and no thinking trace; the thinking-on run is reported for comparison.
+8. `ollama ps` reports how much of the model is actually in VRAM.
+
+A baseline measured on 2026-10-27, before the KV-cache flags were applied, put
+`qwen3.6-opencode` at 72.1% GPU (15.1 GB of 20.9 GB in VRAM) with the full 131k
+context. Re-measure after deploying; the earlier tuned setup reached about 91%.
+
+`make up STACK=ollama` runs only the Ollama part, equivalent to
+`./scripts/ai-preflight.sh --ollama`.
 
 ## Access
 
@@ -79,9 +145,9 @@ password) or a session cookie.
 
 ## Context and RAG
 
-The model window is 131,072 tokens. RAG does not make the window literally
-unlimited; it lets OpenCode work over a larger corpus by retrieving only the
-relevant passages.
+The model window is 131,072 tokens and the generation budget is 32,768
+tokens. RAG does not make the window literally unlimited; it lets OpenCode work
+over a larger corpus by retrieving only the relevant passages.
 
 Open Notebook is the document store and retrieval engine. OpenCode reaches it
 through the `open-notebook` MCP server. The global instructions in
@@ -130,6 +196,12 @@ In the Open Notebook UI at <http://192.168.68.62:8502> you can confirm what is
 indexed: **Notebooks** lists the sources, and each source shows its embedding
 status. The UI does not stream other clients' queries live, so the transcript
 and the container log are the real-time views.
+
+Insights are **not** chat output. A source's insight count only grows when a
+transformation is run against it: open the source, go to **Insights** and use
+**Generate New Insight**. Chat, `ask_question` and the MCP bridge never create
+them, so a source added from OpenCode always starts at 0 insights. Insights are
+embedded as well, so they also appear in vector search results.
 
 To check the whole path end to end, put a unique token in a notebook source
 (for example `BLUE-LANTERN-42`), then ask OpenCode a question whose answer is

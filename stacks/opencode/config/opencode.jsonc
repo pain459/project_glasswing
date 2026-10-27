@@ -9,16 +9,30 @@
   "providers": {
     "ollama": {
       "settings": {
+        // The Ollama and OpenCode stacks use separate Compose networks. If
+        // they are ever joined to a shared network, use
+        // http://glasswing-ollama:11434/v1 instead of the host address.
         "baseURL": "http://192.168.68.62:11434/v1"
       },
       "models": {
         "qwen3.6-opencode:latest": {
           "name": "Qwen 3.6 OpenCode (Ollama, 128k)",
           // Ollama's model is built with num_ctx 131072, even though its
-          // metadata advertises a larger architectural maximum.
+          // metadata advertises a larger architectural maximum. These limits
+          // must stay equal to num_ctx and num_predict in
+          // stacks/ollama/models/qwen3.6-opencode.Modelfile. Declaring a
+          // window here does not allocate it in Ollama.
           "limit": {
             "context": 131072,
-            "output": 16384
+            "output": 32768
+          },
+          // Thinking is off for coding. With it on, the trace consumed the
+          // entire generation budget in testing and the request ended with
+          // done_reason=length and no visible answer. Ollama exposes a
+          // boolean thinking toggle for this model, so "none" means think=false.
+          "body": {
+            "reasoning_effort": "none",
+            "temperature": 0.3
           }
         }
       }
@@ -45,6 +59,8 @@
   },
 
   // Keep enough recent detail for coding work while leaving room for retrieval.
+  // `buffer` is the reserved context below the 131k limit (the V1 `reserved`
+  // setting); V2 uses keep.tokens plus buffer instead of V1 pruning.
   "compaction": {
     "auto": true,
     "keep": {
