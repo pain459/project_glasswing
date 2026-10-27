@@ -1,0 +1,70 @@
+
+name: glasswing-dagu
+
+services:
+  dagu:
+    # Dagu is a self-hosted workflow orchestrator: schedule cron jobs, run
+    # scripts, trigger APIs, and review outputs via a built-in Web UI.
+    # Single binary, file-backed state, no external database required.
+    image: ghcr.io/dagucloud/dagu:2.24.0
+    container_name: glasswing-dagu
+    restart: unless-stopped
+    init: true
+
+    environment:
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+      DAGU_TZ: ${GLASSWING_TZ:?Required from Infisical}
+
+      # Dagu Web UI port (internal)
+      DAGU_PORT: "8080"
+
+      # Wiki pages live under data_dir (writable) rather than dags_dir
+      # which is overlaid with read-only bind mounts.
+      DAGU_WIKI_DIR: "/var/lib/dagu/data/wiki"
+
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-dagu
+
+    ports:
+      # Host 3014 -> container 8080 (Dagu Web UI)
+      - "192.168.68.62:3014:8080"
+
+    volumes:
+      # Persistent run history, logs, settings, and DAG definitions
+      - dagu_data:/var/lib/dagu
+      # Version-controlled DAG definitions mounted under the dags directory.
+      # Dagu also writes wiki/ and runtime files here, so the named volume
+      # provides the base and this bind mount overlays our DAG files.
+      - ./dags/health-check.yaml:/var/lib/dagu/dags/health-check.yaml:ro
+
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --no-verbose
+        - --tries=1
+        - --spider
+        - http://127.0.0.1:8080/api/v1/health
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+    security_opt:
+      - no-new-privileges:true
+
+    pids_limit: 256
+    mem_limit: 512m
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+    labels:
+      com.glasswing.service: dagu
+
+volumes:
+  dagu_data:
+    name: glasswing-dagu-data
