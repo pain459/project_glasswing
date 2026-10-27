@@ -60,6 +60,14 @@ services:
       - /srv/glasswing/opencode/home:/home/opencode
       - /srv/glasswing/opencode/workspace:/workspace
       - ./config:/etc/opencode:ro
+      # Host access. The container runs as 1000:1000, which is the same uid and
+      # gid as the host's `ravik`, so these paths stay read-write with no
+      # ownership translation. Mounted at their real paths so absolute paths
+      # from the host work unchanged. /home/ravik includes .ssh, so the agent
+      # can clone and push over SSH.
+      - /home/ravik:/home/ravik
+      - /mnt/storage:/mnt/storage
+      - /mnt/cold:/mnt/cold
 
     security_opt:
       - no-new-privileges:true

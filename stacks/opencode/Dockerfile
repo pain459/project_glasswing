@@ -6,7 +6,12 @@ RUN apk add --no-cache \
       curl \
       git \
       jq \
+      make \
+      nodejs \
+      npm \
       openssh-client \
+      py3-pip \
+      python3 \
       tzdata
 
 ENV HOME=/home/opencode
