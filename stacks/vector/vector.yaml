@@ -25,11 +25,16 @@ transforms:
       .service_name = .container_name
       .log_source = "docker"
       # Parse log level from message if present
-      .log_level, err = regex(.message, r"^(ERROR|WARN|INFO|DEBUG|TRACE)"i)
-      if err != null {
-        .log_level = "INFO"
-      } else {
-        .log_level = upcase(.log_level)
+      .log_level = "INFO"
+      message_lower = downcase(string!(.message))
+      if contains(message_lower, "error") {
+        .log_level = "ERROR"
+      } else if contains(message_lower, "warn") {
+        .log_level = "WARN"
+      } else if contains(message_lower, "debug") {
+        .log_level = "DEBUG"
+      } else if contains(message_lower, "trace") {
+        .log_level = "TRACE"
       }
 
   error_logs:
