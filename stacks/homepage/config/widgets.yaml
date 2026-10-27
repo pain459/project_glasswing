@@ -7,14 +7,7 @@
     version: 4
     cpu: true
     memory: true
-    cputemp: true
-    tempmin: 0
-    tempmax: 100
     uptime: true
-    disk:
-      - /
-      - /mnt/storage
-      - /mnt/cold
     network: true
 
 - datetime:
@@ -23,12 +16,12 @@
       time: HH:mm:ss
 
 - openmeteo:
-    label: Pathfinder
+    label: New Delhi
     latitude: 28.6139
     longitude: 77.209
-    key: ${OPENWEATHERMAP_API_KEY}
+    timezone: Asia/Kolkata
     units: metric
-    degreeSymbol: C
+    cache: 10
 
 - search:
     provider: duckduckgo
