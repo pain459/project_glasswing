@@ -272,4 +272,4 @@ router.register('/', () => renderer.showHome());
 
 // Initialize
 renderer.init();
-router.start();
+// router.start() is called after all definition files have loaded (see tools.js)

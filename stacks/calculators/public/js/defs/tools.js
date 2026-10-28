@@ -134,3 +134,6 @@ R('what-is-my-ip-address', {
 });
 
 })(calculatorRegistry);
+
+// All definition files loaded — start the router
+router.start();

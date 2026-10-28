@@ -483,8 +483,8 @@ R('fibonacci-calculator', {
     }
     html += '</table>';
     return {
-      'F(' + (n - 1) + ')': core.formatNumber(fib[n - 1], 0),
-      'Sum of first ' + n + ' terms': core.formatNumber(fib.slice(0, n).reduce(function(a, b) { return a + b; }, 0), 0),
+      ['F(' + (n - 1) + ')']: core.formatNumber(fib[n - 1], 0),
+      ['Sum of first ' + n + ' terms']: core.formatNumber(fib.slice(0, n).reduce(function(a, b) { return a + b; }, 0), 0),
       html: html,
     };
   }
@@ -507,7 +507,7 @@ R('multifactorials', {
       result *= i;
     }
     return {
-      'n!_k (' + v.n + '!' + '!'.repeat(v.k - 1) + ')': core.formatNumber(result, 0),
+      ['n!_k (' + v.n + '!' + '!'.repeat(v.k - 1) + ')']: core.formatNumber(result, 0),
       'Description': v.k === 1 ? 'Ordinary factorial' : v.k === 2 ? 'Double factorial' : v.k === 3 ? 'Triple factorial' : v.k + '-factorial',
     };
   }
