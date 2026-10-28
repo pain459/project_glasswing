@@ -11,11 +11,16 @@ services:
 
     ports:
       - "${STEEL_BIND_IP:?Missing STEEL_BIND_IP}:${STEEL_PORT:?Missing STEEL_PORT}:3000"
+      # CDP debugger port – needed for Chrome DevTools Protocol debugging
+      - "${STEEL_BIND_IP:?Missing STEEL_BIND_IP}:9223:9223"
 
     environment:
       NODE_ENV: ${STEEL_NODE_ENV:?Required from Infisical}
       LOG_STORAGE_ENABLED: ${STEEL_LOG_STORAGE_ENABLED:?Required from Infisical}
       LOG_STORAGE_PATH: ${STEEL_LOG_STORAGE_PATH:?Required from Infisical}
+      # Enable the Commands API so the MCP server can drive the browser
+      # (navigate, snapshot, click, type, etc.). Off by default.
+      ENABLE_COMMANDS_API: "true"
       TZ: ${GLASSWING_TZ:?Required from Infisical}
 
     volumes:
@@ -24,6 +29,13 @@ services:
       - /srv/glasswing/steel/exports:/tmp/steel-browser-exports
 
     shm_size: "1gb"
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/v1/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 45s
+      retries: 3
 
     security_opt:
       - no-new-privileges:true
