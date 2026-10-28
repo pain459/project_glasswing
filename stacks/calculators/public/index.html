@@ -9,64 +9,40 @@
 <body>
   <nav>
     <div class="nav-inner">
-      <a href="index.html" class="nav-brand"><span>🧮</span> Glasswing Calculators</a>
+      <a href="#/" class="nav-brand"><span>🧮</span> Glasswing Calculators</a>
       <div class="nav-links">
-        <a href="index.html" class="active">Home</a>
+        <a href="#/" class="nav-home">Home</a>
+        <a href="#/search" class="nav-search">🔍 Search</a>
       </div>
     </div>
   </nav>
 
-  <main>
-    <div class="home-heading">
-      <h1>Calculator Hub</h1>
-      <p>Quick math, finance, conversions, and more — all offline, no ads.</p>
-    </div>
-
-    <div class="category-grid">
-      <a href="pages/financial/loan.html" class="category-card">
-        <div class="category-icon">💰</div>
-        <div>
-          <h2>Financial</h2>
-          <p>Loans, interest, ROI, and more</p>
-        </div>
-      </a>
-
-      <a href="pages/math/percentage.html" class="category-card">
-        <div class="category-icon">🔢</div>
-        <div>
-          <h2>Math</h2>
-          <p>Percentages, fractions, GCF, LCM</p>
-        </div>
-      </a>
-
-      <a href="pages/conversions/distance.html" class="category-card">
-        <div class="category-icon">📏</div>
-        <div>
-          <h2>Conversions</h2>
-          <p>Distance, weight, temperature, area</p>
-        </div>
-      </a>
-
-      <a href="pages/health/bmi.html" class="category-card">
-        <div class="category-icon">❤️</div>
-        <div>
-          <h2>Health</h2>
-          <p>BMI and body metrics</p>
-        </div>
-      </a>
-
-      <a href="pages/statistics/mean-median-mode.html" class="category-card">
-        <div class="category-icon">📊</div>
-        <div>
-          <h2>Statistics</h2>
-          <p>Mean, median, mode, and more</p>
-        </div>
-      </a>
-    </div>
-  </main>
+  <main id="app"></main>
 
   <footer>
-    Glasswing Calculators &mdash; self-hosted, offline-capable, no ads.
+    Glasswing Calculators &mdash; self-hosted, offline-capable, no ads. ~400 calculators.
   </footer>
+
+  <script src="js/core.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/calculator-registry.js"></script>
+  <script src="js/renderer.js"></script>
+
+  <!-- Calculator definitions by category -->
+  <script src="js/defs/financial.js"></script>
+  <script src="js/defs/math.js"></script>
+  <script src="js/defs/conversions.js"></script>
+  <script src="js/defs/algebra.js"></script>
+  <script src="js/defs/statistics.js"></script>
+  <script src="js/defs/geometry-plane.js"></script>
+  <script src="js/defs/geometry-solids.js"></script>
+  <script src="js/defs/time.js"></script>
+  <script src="js/defs/physics.js"></script>
+  <script src="js/defs/health.js"></script>
+  <script src="js/defs/construction.js"></script>
+  <script src="js/defs/discretemathematics.js"></script>
+  <script src="js/defs/trigonometry.js"></script>
+  <script src="js/defs/technology.js"></script>
+  <script src="js/defs/tools.js"></script>
 </body>
 </html>

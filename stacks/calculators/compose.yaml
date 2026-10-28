@@ -8,15 +8,15 @@ networks:
 
 services:
   calculators:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: glasswing/calculators:latest
     container_name: glasswing-calculators
     restart: unless-stopped
 
     ports:
       - "192.168.68.62:3021:80"
-
-    volumes:
-      - ./public:/usr/share/nginx/html:ro
 
     healthcheck:
       test:
