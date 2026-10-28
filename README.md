@@ -153,6 +153,7 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 | `forgejo` | 3011, 2222 | Self-hosted Git and SSH |
 | `anythingllm` | 3012 | Document chat over local models |
 | `cyberchef` | 3013 | Data transformations |
+| `calculators` | 3021 | Math, finance, and conversion calculators |
 | `it-tools` | 3015 | Small utilities |
 | `stirling-pdf` | 3016 | PDF operations |
 | `kavita` | 3017 | Book library |

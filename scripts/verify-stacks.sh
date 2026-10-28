@@ -37,6 +37,7 @@ STACKS=(
   cyberchef
   excalidraw
   it-tools
+  calculators
   portainer
   jupyterlab
   dbgate

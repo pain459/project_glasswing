@@ -176,6 +176,12 @@
         description: Developer Utilities and Converters
         siteMonitor: http://192.168.68.62:3015
 
+    - Calculators:
+        icon: mdi-calculator-variant
+        href: http://192.168.68.62:3021
+        description: Math, Finance and Conversion Calculators
+        siteMonitor: http://192.168.68.62:3021
+
     - Stirling-PDF:
         icon: stirling-pdf.png
         href: http://192.168.68.62:3016
