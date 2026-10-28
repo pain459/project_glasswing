@@ -172,7 +172,7 @@ R('order-of-operations', {
   formula: '<p>Follows standard order: Parentheses, Exponents, Multiply/Divide, Add/Subtract.</p>',
   calculate: function(v) {
     try {
-      const sanitized = v.expr.replace(/[^0-9+\\-*/().^\\s]/g, '').replace(/\^/g, '**');
+      const sanitized = v.expr.replace(/[^0-9+\-*/().^\s]/g, '').replace(/\^/g, '**');
       const result = Function('"use strict"; return (' + sanitized + ')')();
       return { Result: core.formatNumber(result) };
     } catch(e) { return { error: 'Invalid expression' }; }
@@ -620,7 +620,7 @@ R('squareroots', {
   fields: [{ id: 'n', label: 'Number', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 144' }],
   calculate: function(v) {
     const r = Math.sqrt(v.n);
-    return { '√' + v.n: core.formatNumber(r, 8), 'Perfect Square?': Number.isInteger(r) ? 'Yes' : 'No' };
+    return { ['√' + v.n]: core.formatNumber(r, 8), 'Perfect Square?': Number.isInteger(r) ? 'Yes' : 'No' };
   }
 });
 
@@ -629,7 +629,7 @@ R('cuberoots', {
   description: 'Calculate the cube root of a number.',
   tags: ['cube root'],
   fields: [{ id: 'n', label: 'Number', type: 'number', step: 0.01, placeholder: 'e.g. 27' }],
-  calculate: function(v) { return { '∛' + v.n: core.formatNumber(Math.cbrt(v.n), 8) }; }
+  calculate: function(v) { return { ['∛' + v.n]: core.formatNumber(Math.cbrt(v.n), 8) }; }
 });
 
 R('fourthroots', {
@@ -637,7 +637,7 @@ R('fourthroots', {
   description: 'Calculate the fourth root of a number.',
   tags: ['fourth root'],
   fields: [{ id: 'n', label: 'Number', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 81' }],
-  calculate: function(v) { return { '⁴√' + v.n: core.formatNumber(Math.pow(v.n, 0.25), 8) }; }
+  calculate: function(v) { return { ['⁴√' + v.n]: core.formatNumber(Math.pow(v.n, 0.25), 8) }; }
 });
 
 R('fifthroots', {
@@ -645,7 +645,7 @@ R('fifthroots', {
   description: 'Calculate the fifth root of a number.',
   tags: ['fifth root'],
   fields: [{ id: 'n', label: 'Number', type: 'number', step: 0.01, placeholder: 'e.g. 32' }],
-  calculate: function(v) { return { '⁵√' + v.n: core.formatNumber(Math.pow(v.n, 0.2), 8) }; }
+  calculate: function(v) { return { ['⁵√' + v.n]: core.formatNumber(Math.pow(v.n, 0.2), 8) }; }
 });
 
 R('radical', {
@@ -1073,7 +1073,7 @@ R('continued-fraction', {
       if (Math.abs(frac) < 1e-10) break;
       x = 1 / frac;
     }
-    return { 'Continued Fraction': `[${terms.join('; )}]` };
+    return { 'Continued Fraction': '[' + terms.join('; ') + ']' };
   }
 });
 
@@ -1411,8 +1411,8 @@ R('lcd', {
     const lcd = core.lcm(v.d1, v.d2);
     return {
       'LCD': lcd,
-      `${v.d1} → ${lcd}`: `Multiply by ${lcd / v.d1}`,
-      `${v.d2} → ${lcd}`: `Multiply by ${lcd / v.d2}`,
+      [v.d1 + ' → ' + lcd]: 'Multiply by ' + (lcd / v.d1),
+      [v.d2 + ' → ' + lcd]: 'Multiply by ' + (lcd / v.d2),
     };
   }
 });
@@ -1640,7 +1640,7 @@ R('math', {
   formula: '<p>Supports +, −, ×, ÷, ^, parentheses, and standard math functions.</p>',
   calculate: function(v) {
     try {
-      const sanitized = v.expr.replace(/[^0-9+\\-*/().^\\s]/g, '').replace(/\^/g, '**');
+      const sanitized = v.expr.replace(/[^0-9+\-*/().^\s]/g, '').replace(/\^/g, '**');
       const result = Function('"use strict"; return (' + sanitized + ')')();
       return {
         'Result': core.formatNumber(result),

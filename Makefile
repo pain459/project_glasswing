@@ -60,7 +60,7 @@ up:
 	  echo "[INFO] Running $(PRE_UP_HOOK)"; \
 	  "$(PRE_UP_HOOK)"; \
 	fi
-	@$(call run_compose,up -d --wait --wait-timeout 180)
+	@$(call run_compose,up -d --build --wait --wait-timeout 180)
 	@if [ -x "$(POST_UP_HOOK)" ]; then \
 	  echo "[INFO] Running $(POST_UP_HOOK)"; \
 	  "$(POST_UP_HOOK)"; \

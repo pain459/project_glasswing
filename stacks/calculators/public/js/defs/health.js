@@ -433,7 +433,7 @@ R('pregnancy-weight-gain-calculator', {
       'Pre-pregnancy BMI': core.formatNumber(bmi, 1) + ' (' + cat + ')',
       'Recommended Total Gain': lo + ' – ' + hi + ' kg',
       'Weight Gained So Far': core.formatNumber(gained, 1) + ' kg',
-      'Expected Gain by Week ' + v.weeks: core.formatNumber(expectedGain, 1) + ' kg',
+      ['Expected Gain by Week ' + v.weeks]: core.formatNumber(expectedGain, 1) + ' kg',
       'Status': gained > expectedGain * 1.1 ? 'Above expected' : gained < expectedGain * 0.9 ? 'Below expected' : 'On track',
     };
   }
