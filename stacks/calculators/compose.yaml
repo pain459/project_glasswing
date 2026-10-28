@@ -1,0 +1,42 @@
+
+name: glasswing-calculators
+
+services:
+  calculators:
+    image: nginx:alpine
+    container_name: glasswing-calculators
+    restart: unless-stopped
+
+    ports:
+      - "192.168.68.62:3021:80"
+
+    volumes:
+      - ./public:/usr/share/nginx/html:ro
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://127.0.0.1:80
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+    environment:
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-calculators
+
+    security_opt:
+      - no-new-privileges:true
+
+    labels:
+      com.glasswing.service: calculators
+      com.glasswing.category: utilities
+      com.glasswing.monitoring: "true"
+
+    read_only: true
+
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run

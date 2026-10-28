@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Distance &amp; Length Converter</title>
+  <link rel="stylesheet" href="../../css/site.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="../../index.html" class="nav-brand"><span>🧮</span> Glasswing Calculators</a>
+      <div class="nav-links">
+        <a href="../../index.html">Home</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="calc-header">
+      <h1>Distance &amp; Length Converter</h1>
+      <p>Convert between meters, feet, miles, kilometers, and more.</p>
+    </div>
+
+    <div class="calc-card">
+      <form id="convertForm">
+        <div class="field">
+          <label for="inputValue">Value</label>
+          <input type="number" id="inputValue" step="any" placeholder="e.g. 100" required>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="fromUnit">From</label>
+            <select id="fromUnit"></select>
+          </div>
+          <div class="field">
+            <label for="toUnit">To</label>
+            <select id="toUnit"></select>
+          </div>
+        </div>
+        <button type="submit">Convert</button>
+      </form>
+      <div id="result" class="result"></div>
+    </div>
+
+    <div class="explanation">
+      <h3>Conversion Table</h3>
+      <p>All conversions are relative to the meter (SI base unit). The result is computed as:</p>
+      <p><code>result = value × (fromFactor / toFactor)</code></p>
+    </div>
+  </main>
+
+  <footer>
+    Glasswing Calculators &mdash; self-hosted, offline-capable, no ads.
+  </footer>
+
+  <script src="../../js/core.js"></script>
+  <script src="../../js/calculators/distance-convert.js"></script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Percentage Calculator</title>
+  <link rel="stylesheet" href="../../css/site.css">
+</head>
+<body>
+  <nav>
+    <div class="nav-inner">
+      <a href="../../index.html" class="nav-brand"><span>🧮</span> Glasswing Calculators</a>
+      <div class="nav-links">
+        <a href="../../index.html">Home</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <a href="../../index.html" class="back-link">← Back</a>
+    <div class="calc-header">
+      <h1>Percentage Calculator</h1>
+      <p>Three common percentage calculations in one place.</p>
+    </div>
+
+    <!-- What is X% of Y -->
+    <div class="calc-card" style="margin-bottom:1.5rem">
+      <h3 style="margin-bottom:1rem">What is <em>X</em>% of <em>Y</em>?</h3>
+      <form id="form1">
+        <div class="field-row">
+          <div class="field">
+            <label for="p1_x">X (%)</label>
+            <input type="number" id="p1_x" step="any" required>
+          </div>
+          <div class="field">
+            <label for="p1_y">Y</label>
+            <input type="number" id="p1_y" step="any" required>
+          </div>
+        </div>
+        <button type="submit">Calculate</button>
+      </form>
+      <div id="result1" class="result"></div>
+    </div>
+
+    <!-- X is what % of Y -->
+    <div class="calc-card" style="margin-bottom:1.5rem">
+      <h3 style="margin-bottom:1rem"><em>X</em> is what % of <em>Y</em>?</h3>
+      <form id="form2">
+        <div class="field-row">
+          <div class="field">
+            <label for="p2_x">X</label>
+            <input type="number" id="p2_x" step="any" required>
+          </div>
+          <div class="field">
+            <label for="p2_y">Y</label>
+            <input type="number" id="p2_y" step="any" required>
+          </div>
+        </div>
+        <button type="submit">Calculate</button>
+      </form>
+      <div id="result2" class="result"></div>
+    </div>
+
+    <!-- % change from X to Y -->
+    <div class="calc-card">
+      <h3 style="margin-bottom:1rem">% Change from <em>X</em> to <em>Y</em></h3>
+      <form id="form3">
+        <div class="field-row">
+          <div class="field">
+            <label for="p3_x">X (original)</label>
+            <input type="number" id="p3_x" step="any" required>
+          </div>
+          <div class="field">
+            <label for="p3_y">Y (new)</label>
+            <input type="number" id="p3_y" step="any" required>
+          </div>
+        </div>
+        <button type="submit">Calculate</button>
+      </form>
+      <div id="result3" class="result"></div>
+    </div>
+
+    <div class="explanation">
+      <h3>Formulas</h3>
+      <p><strong>X% of Y:</strong> <code>(X / 100) × Y</code></p>
+      <p><strong>X is what % of Y:</strong> <code>(X / Y) × 100</code></p>
+      <p><strong>% Change:</strong> <code>((Y − X) / |X|) × 100</code></p>
+    </div>
+  </main>
+
+  <footer>
+    Glasswing Calculators &mdash; self-hosted, offline-capable, no ads.
+  </footer>
+
+  <script src="../../js/core.js"></script>
+  <script src="../../js/calculators/percentage.js"></script>
+</body>
+</html>
