@@ -1,6 +1,11 @@
 
 name: glasswing-calculators
 
+networks:
+  default:
+    name: glasswing-it-tools_default
+    external: true
+
 services:
   calculators:
     image: nginx:alpine
