@@ -48,8 +48,10 @@ x-langfuse-depends: &langfuse-depends
 
 services:
   postgres:
+    extends:
+      file: ../base.yaml
+      service: base
     image: postgres:17-alpine
-    restart: unless-stopped
 
     environment:
       POSTGRES_USER: ${LANGFUSE_POSTGRES_USER:?Required from Infisical}
@@ -69,8 +71,10 @@ services:
       - internal
 
   redis:
+    extends:
+      file: ../base.yaml
+      service: base
     image: redis:7
-    restart: unless-stopped
 
     environment:
       REDIS_PASSWORD: ${LANGFUSE_REDIS_PASSWORD:?Required}
@@ -95,8 +99,10 @@ services:
       - internal
 
   clickhouse:
+    extends:
+      file: ../base.yaml
+      service: base
     image: clickhouse/clickhouse-server:25.12
-    restart: unless-stopped
     user: "101:101"
 
     environment:
@@ -120,8 +126,10 @@ services:
       - internal
 
   minio:
+    extends:
+      file: ../base.yaml
+      service: base
     image: cgr.dev/chainguard/minio:latest
-    restart: unless-stopped
 
     entrypoint: sh
     command:
@@ -148,8 +156,10 @@ services:
       - internal
 
   langfuse-worker:
+    extends:
+      file: ../base.yaml
+      service: base
     image: docker.langfuse.com/langfuse/langfuse-worker:4
-    restart: unless-stopped
 
     depends_on: *langfuse-depends
 
@@ -160,8 +170,10 @@ services:
       - internal
 
   langfuse-web:
+    extends:
+      file: ../base.yaml
+      service: base
     image: docker.langfuse.com/langfuse/langfuse:4
-    restart: unless-stopped
 
     depends_on: *langfuse-depends
 

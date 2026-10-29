@@ -3,9 +3,11 @@ name: glasswing-vector
 
 services:
   vector:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: timberio/vector:0.60.0-debian
     container_name: glasswing-vector
-    restart: unless-stopped
 
     command:
       - --config
@@ -31,9 +33,6 @@ services:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:8686:8686"
 
     mem_limit: 512m
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: vector

@@ -3,9 +3,11 @@ name: glasswing-kavita
 
 services:
   kavita:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: ghcr.io/kareadita/kavita:0.9.1
     container_name: glasswing-kavita
-    restart: unless-stopped
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3017:5000"
@@ -24,9 +26,6 @@ services:
         read_only: true
         bind:
           create_host_path: false
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: kavita

@@ -3,9 +3,11 @@ name: glasswing-stirling-pdf
 
 services:
   stirling-pdf:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: docker.stirlingpdf.com/stirlingtools/stirling-pdf:3.2.2
     container_name: glasswing-stirling-pdf
-    restart: unless-stopped
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3016:8080"
@@ -32,9 +34,6 @@ services:
       - stirling_tessdata:/usr/share/tessdata
 
     mem_limit: 4g
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: stirling-pdf

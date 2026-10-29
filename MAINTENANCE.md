@@ -21,6 +21,7 @@ Day-to-day operations for keeping the platform healthy, current, and backed up.
 - [Backup operations](#backup-operations)
 - [Docker network capacity](#docker-network-capacity)
 - [Host address and access map](#host-address-and-access-map)
+- [Compose conventions](#compose-conventions)
 - [Health troubleshooting](#health-troubleshooting)
 - [Adding a new stack](#adding-a-new-stack)
 
@@ -481,6 +482,43 @@ make access-check    # exit 1 with a diff when ACCESS.md is stale
 Regenerate after adding, removing, or renumbering a port; `make access-check` is
 the guard against a table that lies. `make doctor` also fails when a compose file
 hardcodes an IPv4 address instead of `${GLASSWING_HOST_IP}`.
+
+## Compose conventions
+
+Every stack is one file, `stacks/<stack>/compose.yaml`; that path is what the
+Makefile uses to discover stacks. Settings that must never drift live in
+`stacks/base.yaml`:
+
+| Base service | Provides |
+| --- | --- |
+| `base` | `restart: unless-stopped`, json-file logging rotated at 5 MB × 2 |
+| `hardened` | `base` plus `security_opt: [no-new-privileges:true]` |
+
+A service opts in with three lines:
+
+```yaml
+services:
+  homepage:
+    extends:
+      file: ../base.yaml
+      service: base
+```
+
+Rules:
+
+- `base` is the default. `hardened` is used only where the stack already declared
+  `no-new-privileges`, because it also blocks setuid and setgid helpers.
+- `extends` merges the service block only. Each compose file still declares its
+  own top-level `networks:` block, its ports, and everything stack-specific.
+- A service keeps an explicit `restart`, `logging` or `security_opt` when it needs
+  a different value: `init-permissions` sets `restart: "no"`, opencode and steel
+  rotate at 10 MB × 3.
+- Changing retention or the restart policy is one edit in `stacks/base.yaml` and a
+  `make restart-all`; no stack lists it any more.
+
+The refactor did not change any container's privileges. It did standardise log
+rotation: 35 services that previously had no limit now rotate at 5 MB × 2, which
+is what the disk-pressure incidents needed.
 
 ## Health troubleshooting
 

@@ -3,9 +3,11 @@ name: glasswing-portainer
 
 services:
   portainer:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: portainer/portainer-ce:lts
     container_name: glasswing-portainer
-    restart: unless-stopped
 
     command:
       - --sslcert
@@ -20,9 +22,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
       - ./certs:/certs:ro
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: portainer

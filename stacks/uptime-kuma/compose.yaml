@@ -3,9 +3,11 @@ name: glasswing-uptime-kuma
 
 services:
   uptime-kuma:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: louislam/uptime-kuma:2
     container_name: glasswing-uptime-kuma
-    restart: unless-stopped
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3003:3001"
@@ -26,9 +28,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: uptime-kuma

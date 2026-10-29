@@ -3,9 +3,11 @@ name: glasswing-forgejo
 
 services:
   forgejo:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: codeberg.org/forgejo/forgejo:17
     container_name: glasswing-forgejo
-    restart: unless-stopped
 
     environment:
       USER_UID: ${FORGEJO_USER_UID:?Required from Infisical}
@@ -30,9 +32,6 @@ services:
     volumes:
       - forgejo_data:/data
       - /etc/localtime:/etc/localtime:ro
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: forgejo

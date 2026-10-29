@@ -197,6 +197,10 @@ reachable on the LAN and nowhere else. [ACCESS.md](ACCESS.md) is the generated,
 complete list of URLs: `make access` rebuilds it from the compose files and
 `make access-check` fails when it is stale.
 
+Shared service defaults — restart policy, log rotation, and the opt-in
+`no-new-privileges` setting — live in `stacks/base.yaml` and reach each service
+through `extends`. See [Compose conventions](MAINTENANCE.md#compose-conventions).
+
 `opencode` uses Open Notebook as a retrieval layer for context beyond the model window. See `stacks/opencode/README.md` for the required secrets, access details, and RAG workflow.
 
 That stack also mounts `/home/ravik`, `/mnt/storage` and `/mnt/cold` read-write at their real paths. The container runs as `1000:1000`, the same uid and gid as `ravik` on Pathfinder, so the agent works on the repositories and files in place instead of a copy. Anything `ravik` can change, the agent can change; see the security notes in `stacks/opencode/README.md`.

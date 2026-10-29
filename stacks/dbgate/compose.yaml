@@ -3,9 +3,11 @@ name: glasswing-dbgate
 
 services:
   dbgate:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: dbgate/dbgate:7.3.2
     container_name: glasswing-dbgate
-    restart: unless-stopped
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3004:3000"
@@ -19,9 +21,6 @@ services:
 
     volumes:
       - dbgate_data:/root/.dbgate
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: dbgate

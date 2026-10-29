@@ -51,7 +51,9 @@ def service_blocks(lines):
     out, cur, end = [], None, len(lines)
     for i in range(start + 1, len(lines)):
         line = lines[i]
-        if line and not line.startswith((" ", "\t")):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if not line.startswith((" ", "\t")):
             end = i
             break
         m = re.match(r"^  ([A-Za-z0-9_.-]+):\s*(#.*)?$", line)

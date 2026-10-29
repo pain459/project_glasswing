@@ -3,8 +3,10 @@ name: glasswing-infisical
 
 services:
   postgres:
+    extends:
+      file: ../base.yaml
+      service: base
     image: postgres:17-alpine
-    restart: unless-stopped
     environment:
       POSTGRES_USER: infisical
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
@@ -27,8 +29,10 @@ services:
     networks: [internal]
 
   redis:
+    extends:
+      file: ../base.yaml
+      service: base
     image: redis:7-alpine
-    restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis_data:/data
@@ -49,8 +53,10 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: deployment.environment=homelab,host.name=pathfinder
 
   infisical:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: infisical/infisical:v0.167.4
-    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -82,12 +88,12 @@ services:
       start_period: 30s
 
     networks: [internal]
-    security_opt:
-      - no-new-privileges:true
 
   gateway:
+    extends:
+      file: ../base.yaml
+      service: base
     image: nginx:stable-alpine
-    restart: unless-stopped
     depends_on:
       infisical:
         condition: service_healthy

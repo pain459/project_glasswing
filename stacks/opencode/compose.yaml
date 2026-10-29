@@ -2,6 +2,9 @@ name: glasswing-opencode
 
 services:
   init-permissions:
+    extends:
+      file: ../base.yaml
+      service: base
     image: alpine:3.20
     user: root
     command:
@@ -24,12 +27,14 @@ services:
       - glasswing
 
   opencode:
+    extends:
+      file: ../base.yaml
+      service: hardened
     build:
       context: .
       dockerfile: Dockerfile
     image: glasswing/opencode:2.1.2
     container_name: glasswing-opencode
-    restart: unless-stopped
     init: true
 
     depends_on:
@@ -72,9 +77,6 @@ services:
       - /mnt/storage:/mnt/storage
       - /mnt/cold:/mnt/cold
 
-    security_opt:
-      - no-new-privileges:true
-
     pids_limit: 512
     mem_limit: 8g
     cpus: 4.0
@@ -94,12 +96,14 @@ services:
       - glasswing
 
   open-notebook-mcp:
+    extends:
+      file: ../base.yaml
+      service: hardened
     build:
       context: ./mcp
       dockerfile: Dockerfile
     image: glasswing/open-notebook-mcp:0.3.0
     container_name: glasswing-open-notebook-mcp
-    restart: unless-stopped
     init: true
 
     environment:
@@ -112,9 +116,6 @@ services:
       JSON_RESPONSE: ${JSON_RESPONSE:?Required from Infisical}
       MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:?Required from Infisical}
       TZ: ${GLASSWING_TZ:?Required from Infisical}
-
-    security_opt:
-      - no-new-privileges:true
 
     pids_limit: 128
     mem_limit: 512m
@@ -138,12 +139,14 @@ services:
       - glasswing
 
   steel-mcp:
+    extends:
+      file: ../base.yaml
+      service: hardened
     build:
       context: ./steel-mcp
       dockerfile: Dockerfile
     image: glasswing/steel-mcp:3.0.0
     container_name: glasswing-steel-mcp
-    restart: unless-stopped
     init: true
 
     environment:
@@ -152,9 +155,6 @@ services:
       STEEL_BASE_URL: ${STEEL_BASE_URL:?Required from Infisical}
       STEEL_CONNECT_URL: ${STEEL_CONNECT_URL:?Required from Infisical}
       TZ: ${GLASSWING_TZ:?Required from Infisical}
-
-    security_opt:
-      - no-new-privileges:true
 
     pids_limit: 256
     mem_limit: 1g

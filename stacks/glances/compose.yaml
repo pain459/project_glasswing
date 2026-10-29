@@ -3,11 +3,13 @@ name: glasswing-glances
 
 services:
   glances:
+    extends:
+      file: ../base.yaml
+      service: hardened
     # Glances monitors the host. The -full variant includes psutil extras
     # for disk I/O, sensors, and container stats.
     image: nicolargo/glances:ubuntu-4.5.8-full
     container_name: glasswing-glances
-    restart: unless-stopped
     init: true
 
     environment:
@@ -26,17 +28,8 @@ services:
 
     pid: host
 
-    security_opt:
-      - no-new-privileges:true
-
     pids_limit: 256
     mem_limit: 512m
-
-    logging:
-      driver: json-file
-      options:
-        max-size: "5m"
-        max-file: "2"
 
     labels:
       com.glasswing.service: glances

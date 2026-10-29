@@ -3,9 +3,11 @@ name: glasswing-jupyterlab
 
 services:
   jupyterlab:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: quay.io/jupyter/scipy-notebook:2026-07-28
     container_name: glasswing-jupyterlab
-    restart: unless-stopped
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:8889:8888"
@@ -22,9 +24,6 @@ services:
 
     volumes:
       - jupyterlab_data:/home/jovyan/work
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: jupyterlab

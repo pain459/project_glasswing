@@ -3,9 +3,11 @@ name: glasswing-cyberchef
 
 services:
   cyberchef:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: ghcr.io/gchq/cyberchef:11.5.0
     container_name: glasswing-cyberchef
-    restart: unless-stopped
 
     environment:
       # OTEL integration
@@ -13,9 +15,6 @@ services:
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3013:8080"
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: cyberchef

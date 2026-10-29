@@ -3,9 +3,11 @@ name: glasswing-ollama
 
 services:
   ollama:
+    extends:
+      file: ../base.yaml
+      service: base
     image: ollama/ollama:0.40.11
     container_name: glasswing-ollama
-    restart: unless-stopped
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:11434:11434"

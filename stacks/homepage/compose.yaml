@@ -3,8 +3,10 @@ name: glasswing-homepage
 
 services:
   homepage:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: ghcr.io/gethomepage/homepage:v2.7.0
-    restart: unless-stopped
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3006:3000"
@@ -24,9 +26,6 @@ services:
     # Resolve host for Glances API access
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: homepage

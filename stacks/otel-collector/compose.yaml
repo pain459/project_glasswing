@@ -3,9 +3,11 @@ name: glasswing-otel-collector
 
 services:
   otel-collector:
+    extends:
+      file: ../base.yaml
+      service: base
     image: otel/opentelemetry-collector-contrib:0.164.0
     container_name: glasswing-otel-collector
-    restart: unless-stopped
     init: true
 
     command:
