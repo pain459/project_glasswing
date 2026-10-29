@@ -21,6 +21,10 @@ GLASSWING_NETWORK_SUBNET ?= 10.89.0.0/24
 # shared network everywhere.
 export GLASSWING_NETWORK
 
+# How many stacks `make restart-all` deploys at once. Infisical and Ollama always
+# start first (secrets and the inference backend); the rest are independent.
+JOBS ?= 4
+
 # Single source of truth for the LAN address in every port binding. Resolution
 # order: `make GLASSWING_HOST_IP=...`, the shell environment, then the host-local
 # bootstrap file Infisical reads for itself (gitignored; HOST_IP is the old name).
@@ -43,6 +47,7 @@ help:
 	@echo "make down STACK=name              Stop/remove stack containers"
 	@echo "make rebuild STACK=name           Rebuild image and redeploy stack"
 	@echo "make restart STACK=name           Restart stack containers"
+	@echo "make restart-all [JOBS=n]         Redeploy every stack, n at a time (default 4)"
 	@echo "make logs STACK=name              Follow stack logs"
 	@echo "make ps STACK=name                Show stack status"
 	@echo "make check STACK=name             Validate Compose configuration and show status"
@@ -66,7 +71,8 @@ define run_compose
 set -eu; \
  test -f "$(COMPOSE_FILE)" || { echo "[FAIL] Unknown stack: $(STACK)"; exit 1; }; \
  docker network inspect $(GLASSWING_NETWORK) >/dev/null 2>&1 || \
-   docker network create --driver bridge --subnet $(GLASSWING_NETWORK_SUBNET) $(GLASSWING_NETWORK) >/dev/null; \
+   docker network create --driver bridge --subnet $(GLASSWING_NETWORK_SUBNET) $(GLASSWING_NETWORK) >/dev/null 2>&1 || \
+   docker network inspect $(GLASSWING_NETWORK) >/dev/null 2>&1; \
  if [ -s "$(SECRETS_FILE)" ]; then \
    echo "[INFO] Infisical path: $(INFISICAL_PATH)"; \
    ./scripts/with-infisical.sh "$(INFISICAL_PATH)" "$(SECRETS_FILE)" -- \
@@ -132,8 +138,9 @@ network:
 	  subnet=$$(docker network inspect $(GLASSWING_NETWORK) --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}'); \
 	  echo "[PASS] Network $(GLASSWING_NETWORK) exists ($${subnet:-no fixed subnet})"; \
 	else \
-	  docker network create --driver bridge --subnet $(GLASSWING_NETWORK_SUBNET) $(GLASSWING_NETWORK) >/dev/null; \
-	  echo "[PASS] Created network $(GLASSWING_NETWORK) with subnet $(GLASSWING_NETWORK_SUBNET)"; \
+	  docker network create --driver bridge --subnet $(GLASSWING_NETWORK_SUBNET) $(GLASSWING_NETWORK) >/dev/null 2>&1 \
+	    || docker network inspect $(GLASSWING_NETWORK) >/dev/null; \
+	  echo "[PASS] Network $(GLASSWING_NETWORK) is ready with subnet $(GLASSWING_NETWORK_SUBNET)"; \
 	fi
 
 docker-pool:
@@ -192,23 +199,42 @@ list-stacks:
 # This recreates containers only when their configuration has changed.
 # Run Infisical first to ensure secret injection remains available.
 restart-all:
-	@set -e; \
+	@set -u; \
 	echo "========================================"; \
 	echo " Glasswing - Platform Redeployment"; \
 	echo "========================================"; \
 	echo ""; \
-	if [ -f stacks/infisical/compose.yaml ]; then \
-	  echo "[INFO] Starting Infisical"; \
-	  $(MAKE) --no-print-directory up STACK=infisical; \
-	fi; \
-	for stack in $(sort $(filter-out infisical,$(STACKS))); do \
-	  echo ""; \
-	  echo "========================================"; \
-	  echo "[INFO] Deploying $$stack"; \
-	  echo "========================================"; \
-	  $(MAKE) --no-print-directory up STACK=$$stack || exit 1; \
-	done; \
+	$(MAKE) --no-print-directory network; \
+	echo "[INFO] Starting Infisical (secret source)"; \
+	$(MAKE) --no-print-directory up STACK=infisical || exit 1; \
+	echo "[INFO] Starting Ollama (inference backend)"; \
+	$(MAKE) --no-print-directory up STACK=ollama || exit 1; \
+	logdir=$$(mktemp -d); \
 	echo ""; \
+	echo "[INFO] Reconciling $(words $(filter-out infisical ollama,$(STACKS))) stacks, $(JOBS) at a time"; \
+	running=0; \
+	for stack in $(filter-out infisical ollama,$(STACKS)); do \
+	  echo "[INFO] Deploying $$stack"; \
+	  ( \
+	    if $(MAKE) --no-print-directory up STACK=$$stack >"$$logdir/$$stack.log" 2>&1; then \
+	      echo "[PASS] $$stack"; \
+	    else \
+	      echo "[FAIL] $$stack"; \
+	      sed 's/^/    /' "$$logdir/$$stack.log"; \
+	      : > "$$logdir/failed"; \
+	    fi \
+	  ) & \
+	  running=$$((running + 1)); \
+	  if [ "$$running" -ge "$(JOBS)" ]; then wait; running=0; fi; \
+	done; \
+	wait; \
+	echo ""; \
+	if [ -e "$$logdir/failed" ]; then \
+	  echo "[FAIL] Some stacks did not reconcile; rerun: make up STACK=<name>"; \
+	  rm -rf "$$logdir"; \
+	  exit 1; \
+	fi; \
+	rm -rf "$$logdir"; \
 	echo "[PASS] All Glasswing stacks reconciled"
 
 
