@@ -232,6 +232,34 @@ if [ -n "$UNBOUND" ]; then
   done <<< "$UNBOUND"
 fi
 
+# --- 6b. Service names unique on the shared network ---------------------------
+# Docker DNS resolves a bare service name to any container carrying it on a
+# shared network. Two stacks with a `postgres` service on `glasswing` make
+# DATABASE_URL land on the wrong database (this is how langfuse failed).
+SHARED_NET="${GLASSWING_NETWORK:-glasswing}"
+if docker network inspect "$SHARED_NET" >/dev/null 2>&1; then
+  SERVICE_REPORT="$(
+    docker network inspect "$SHARED_NET" --format '{{range .Containers}}{{.Name}} {{end}}' |
+      tr ' ' '\n' | sort -u |
+      while IFS= read -r name; do
+        [ -n "$name" ] || continue
+        svc="$(docker inspect -f '{{index .Config.Labels "com.docker.compose.service"}}' "$name" 2>/dev/null)"
+        proj="$(docker inspect -f '{{index .Config.Labels "com.docker.compose.project"}}' "$name" 2>/dev/null)"
+        [ -n "$svc" ] && [ "$svc" != "<no value>" ] && printf '%s %s\n' "$svc" "$proj"
+      done |
+      sort | awk '{ n[$1]++; p[$1] = p[$1] " " $2 } END { for (s in n) if (n[s] > 1) printf "%s:%s\n", s, p[s] }'
+  )"
+  if [ -n "$SERVICE_REPORT" ]; then
+    while IFS= read -r line; do
+      fail "Duplicate service name on '${SHARED_NET}': ${line} (DNS will resolve it to one of them)"
+    done <<< "$SERVICE_REPORT"
+  else
+    pass "Service names on '${SHARED_NET}' are unique across stacks"
+  fi
+else
+  warn "Shared network '${SHARED_NET}' does not exist yet; run: make network"
+fi
+
 # --- 7. Restart loops --------------------------------------------------------
 LOOPING="$(docker ps --filter status=restarting --format '{{.Names}}')"
 if [ -n "$LOOPING" ]; then

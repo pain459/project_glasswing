@@ -548,6 +548,13 @@ Rules:
   rotate at 10 MB × 3.
 - Changing retention or the restart policy is one edit in `stacks/base.yaml` and a
   `make restart-all`; no stack lists it any more.
+- Only the stack's public-facing service joins the shared `glasswing` network.
+  Backend services (`postgres`, `redis`, `clickhouse`, `minio`) stay on the
+  stack's own `internal` network. Docker DNS resolves a bare name to *any*
+  container carrying it on a shared network, so a second `postgres` on
+  `glasswing` sends `DATABASE_URL` to the wrong database — which is exactly how
+  Langfuse ended up in a restart loop. `make doctor` now fails on duplicate
+  service names across stacks on that network.
 
 The refactor did not change any container's privileges. It did standardise log
 rotation: 35 services that previously had no limit now rotate at 5 MB × 2, which
