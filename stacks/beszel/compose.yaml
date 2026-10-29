@@ -13,7 +13,7 @@ services:
       OTEL_SERVICE_NAME: glasswing-beszel
 
     ports:
-      - "192.168.68.62:8090:8090"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:8090:8090"
 
     volumes:
       - beszel_data:/beszel_data

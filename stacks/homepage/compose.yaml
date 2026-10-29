@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "192.168.68.62:3006:3000"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3006:3000"
 
     environment:
       HOMEPAGE_ALLOWED_HOSTS: ${HOMEPAGE_ALLOWED_HOSTS:?Required from Infisical}

@@ -20,6 +20,7 @@ Day-to-day operations for keeping the platform healthy, current, and backed up.
 - [Secret management](#secret-management)
 - [Backup operations](#backup-operations)
 - [Docker network capacity](#docker-network-capacity)
+- [Host address and access map](#host-address-and-access-map)
 - [Health troubleshooting](#health-troubleshooting)
 - [Adding a new stack](#adding-a-new-stack)
 
@@ -438,6 +439,48 @@ nothing references them:
 docker network ls --filter dangling=true
 docker network prune -f        # only removes unused networks
 ```
+
+## Host address and access map
+
+There is no internal DNS: every service is reached as `IP:port`. One variable,
+`GLASSWING_HOST_IP`, decides that IP for the whole platform.
+
+```bash
+# resolution order used by the Makefile
+make GLASSWING_HOST_IP=192.168.68.50 ...   # 1. command line or the shell
+cat stacks/infisical/.env                  # 2. host-local bootstrap file (gitignored)
+GLASSWING_HOST_IP=192.168.68.62
+```
+
+Infisical cannot provide its bootstrap configuration, so the value must exist in
+`stacks/infisical/.env` (or the environment) before `make infisical`. Every
+compose file then requires it:
+
+```yaml
+ports:
+  - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3006:3000"
+```
+
+The same value is registered in `/global`, so stacks started through
+`with-infisical.sh` receive it as a runtime variable too. Nothing binds to
+`0.0.0.0` except the Dagu and Plex host-network services, which expose their own
+ports.
+
+### ACCESS.md
+
+`make access` regenerates [ACCESS.md](ACCESS.md) from the `ports:` entries, sorted
+by host port, with the scheme (`http`, `https`, `dns`, `ssh`, `postgres`) each
+binding needs. It reads the same variable, so the table always shows the address
+the platform actually binds.
+
+```bash
+make access          # rewrite ACCESS.md
+make access-check    # exit 1 with a diff when ACCESS.md is stale
+```
+
+Regenerate after adding, removing, or renumbering a port; `make access-check` is
+the guard against a table that lies. `make doctor` also fails when a compose file
+hardcodes an IPv4 address instead of `${GLASSWING_HOST_IP}`.
 
 ## Health troubleshooting
 

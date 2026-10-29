@@ -8,10 +8,10 @@ services:
     restart: unless-stopped
 
     ports:
-      - "192.168.68.62:53:53/tcp"
-      - "192.168.68.62:53:53/udp"
-      - "192.168.68.62:3007:80/tcp"
-      - "192.168.68.62:3008:3000/tcp"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:53:53/tcp"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:53:53/udp"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3007:80/tcp"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3008:3000/tcp"
 
     volumes:
       - adguard_work:/opt/adguardhome/work

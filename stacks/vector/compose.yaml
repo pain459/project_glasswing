@@ -28,7 +28,7 @@ services:
       - vector_data:/var/lib/vector
 
     ports:
-      - "192.168.68.62:8686:8686"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:8686:8686"
 
     mem_limit: 512m
 

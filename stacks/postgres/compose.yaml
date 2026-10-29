@@ -27,7 +27,7 @@ services:
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-postgres
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://192.168.68.62:4318
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:4318
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
       OTEL_LOGS_EXPORTER: otlp
@@ -36,7 +36,7 @@ services:
     ports:
       # Expose on internal IP only for DBGate/admin access.
       # Services connect via Docker network name (glasswing-postgres:5432).
-      - "192.168.68.62:5432:5432"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:5432:5432"
 
     volumes:
       # Persistent database files

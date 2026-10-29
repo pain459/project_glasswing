@@ -162,26 +162,45 @@ else
   pass "No orphan stack networks"
 fi
 
-# --- 5. Published host ports -------------------------------------------------
+# --- 5. Host IP ---------------------------------------------------------------
+HOST_IP="$(printf '%s' "${GLASSWING_HOST_IP:-}")"
+if [ -z "$HOST_IP" ] && [ -f stacks/infisical/.env ]; then
+  HOST_IP="$(sed -n 's/^GLASSWING_HOST_IP=//p;s/^HOST_IP=//p' stacks/infisical/.env | head -n1 | tr -d '"'"'")"
+fi
+if [ -z "$HOST_IP" ]; then
+  warn "GLASSWING_HOST_IP is not configured; Compose port bindings will refuse to start"
+  warn "  fix: add GLASSWING_HOST_IP=<lan ip> to stacks/infisical/.env (or export it)"
+else
+  pass "Port bindings use GLASSWING_HOST_IP=${HOST_IP}"
+fi
+
+# --- 6. Published host ports -------------------------------------------------
 PORT_REPORT="$(python3 - <<'PY'
 import collections, pathlib, re
 
-pub = collections.defaultdict(list)
+# A binding is either "${GLASSWING_HOST_IP:?...}:3006:3000" or "1.2.3.4:3006:3000".
+HOST = r"(?:\$\{[^}]+\}|\d+\.\d+\.\d+\.\d+)"
+pub = collections.defaultdict(set)
+literal = collections.defaultdict(set)
 unbound = []
+
 for f in sorted(pathlib.Path("stacks").glob("*/compose.yaml")):
     stack = f.parent.name
     for line in f.read_text().splitlines():
-        m = re.search(r'-\s*"(\d+\.\d+\.\d+\.\d+):(\d+):(\d+)"', line)
+        m = re.search(r'-\s*"' + HOST + r':(\d+):(\d+)', line)
         if m:
-            pub[m.group(2)].append(stack)
+            pub[m.group(1)].add(stack)
+            if re.search(r'-\s*"\d+\.\d+\.\d+\.\d+:', line):
+                literal[stack].add(m.group(1))
             continue
         m = re.search(r'-\s*"(\d+):(\d+)"\s*(?:/tcp)?\s*$', line.strip())
         if m:
             unbound.append(f"{stack}:{m.group(1)}")
 
-dupes = {p: s for p, s in pub.items() if len(s) > 1}
-for port, stacks in sorted(dupes.items(), key=lambda kv: int(kv[0])):
-    print(f"DUP {port} {' '.join(stacks)}")
+for port, stacks in sorted((p, s) for p, s in pub.items() if len(s) > 1):
+    print(f"DUP {port} {' '.join(sorted(stacks))}")
+for stack, ports in sorted(literal.items()):
+    print(f"LITERAL {stack} {','.join(sorted(ports, key=int))}")
 for item in unbound:
     print(f"UNBOUND {item}")
 print(f"COUNT {len(pub)}")
@@ -189,13 +208,22 @@ PY
 )"
 
 DUPES="$(printf '%s\n' "$PORT_REPORT" | grep '^DUP ' || true)"
+LITERAL="$(printf '%s\n' "$PORT_REPORT" | grep '^LITERAL ' || true)"
 UNBOUND="$(printf '%s\n' "$PORT_REPORT" | grep '^UNBOUND ' || true)"
 PORT_COUNT="$(printf '%s\n' "$PORT_REPORT" | awk '/^COUNT /{print $2}')"
 
+if [ -n "$LITERAL" ]; then
+  while IFS= read -r line; do
+    fail "Hardcoded host IP in ${line#LITERAL } (use \${GLASSWING_HOST_IP})"
+  done <<< "$LITERAL"
+fi
+
 if [ -n "$DUPES" ]; then
   while IFS= read -r line; do fail "Host port collision: ${line#DUP }"; done <<< "$DUPES"
-else
-  pass "${PORT_COUNT} published host ports, no duplicates across stacks"
+fi
+
+if [ -z "$LITERAL" ] && [ -z "$DUPES" ]; then
+  pass "${PORT_COUNT} published host ports, no duplicates, no hardcoded IPs"
 fi
 
 if [ -n "$UNBOUND" ]; then
@@ -204,7 +232,7 @@ if [ -n "$UNBOUND" ]; then
   done <<< "$UNBOUND"
 fi
 
-# --- 6. Restart loops --------------------------------------------------------
+# --- 7. Restart loops --------------------------------------------------------
 LOOPING="$(docker ps --filter status=restarting --format '{{.Names}}')"
 if [ -n "$LOOPING" ]; then
   while IFS= read -r name; do fail "Container in a restart loop: $name"; done <<< "$LOOPING"
@@ -212,7 +240,7 @@ else
   pass "No containers in a restart loop"
 fi
 
-# --- 7. Infisical health (make depends on it) --------------------------------
+# --- 8. Infisical health (make depends on it) --------------------------------
 INFISICAL_HEALTH="$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' glasswing-infisical-infisical-1 2>/dev/null || true)"
 case "$INFISICAL_HEALTH" in
   healthy) pass "Infisical reports healthy" ;;

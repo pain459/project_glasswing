@@ -21,11 +21,17 @@ GLASSWING_NETWORK_SUBNET ?= 10.89.0.0/24
 # shared network everywhere.
 export GLASSWING_NETWORK
 
+# Single source of truth for the LAN address in every port binding. Resolution
+# order: `make GLASSWING_HOST_IP=...`, the shell environment, then the host-local
+# bootstrap file Infisical reads for itself (gitignored; HOST_IP is the old name).
+GLASSWING_HOST_IP ?= $(shell sed -n 's/^GLASSWING_HOST_IP=//p;s/^HOST_IP=//p' stacks/infisical/.env 2>/dev/null | head -n1 | tr -d '"')
+export GLASSWING_HOST_IP
+
 # Needed by the OTEL collector to access /var/run/docker.sock as non-root.
 export DOCKER_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null)
 
 .PHONY: help up down restart rebuild logs ps check infisical homepage core status \
-        secrets-check secrets-injection-check network docker-pool doctor
+        secrets-check secrets-injection-check network docker-pool doctor access access-check
 
 help:
 	@echo "Glasswing Stack Manager"
@@ -48,6 +54,8 @@ help:
 	@echo "make doctor                       Preflight Docker pool, ports, orphans, restart loops"
 	@echo "make network                      Create the shared 'glasswing' bridge network"
 	@echo "make docker-pool                  Widen the Docker address pool (sudo, restarts Docker)"
+	@echo "make access                       Regenerate ACCESS.md from compose port bindings"
+	@echo "make access-check                 Fail if ACCESS.md is out of date"
 	@echo ""
 	@echo "Optional: INFISICAL_PATH=/custom/path (default /<stack>)"
 	@echo "Optional: stacks/<name>/pre-up.sh and post-up.sh run automatically with make up"
@@ -133,6 +141,12 @@ docker-pool:
 
 doctor:
 	@./scripts/doctor.sh
+
+access:
+	@./scripts/access-map.sh
+
+access-check:
+	@./scripts/access-map.sh --check
 
 status:
 	@docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'

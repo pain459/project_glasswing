@@ -11,7 +11,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "192.168.68.62:3021:80"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3021:80"
 
     healthcheck:
       test:

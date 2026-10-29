@@ -12,7 +12,7 @@ services:
       OTEL_SERVICE_NAME: glasswing-cyberchef
 
     ports:
-      - "192.168.68.62:3013:8080"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3013:8080"
 
     security_opt:
       - no-new-privileges:true

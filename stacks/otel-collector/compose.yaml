@@ -25,8 +25,8 @@ services:
       - /:/hostfs:ro
 
     ports:
-      - "192.168.68.62:4318:4318"
-      - "192.168.68.62:13133:13133"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:4318:4318"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:13133:13133"
 
     mem_limit: 768m
 

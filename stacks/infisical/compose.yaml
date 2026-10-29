@@ -12,7 +12,7 @@ services:
       # OTEL ingetration
       OTEL_SERVICE_NAME: glasswing-homepage
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://192.168.68.62:4318
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:4318
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
       OTEL_LOGS_EXPORTER: otlp
@@ -42,7 +42,7 @@ services:
       # OTEL ingetration
       OTEL_SERVICE_NAME: glasswing-homepage
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://192.168.68.62:4318
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:4318
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
       OTEL_LOGS_EXPORTER: otlp
@@ -66,7 +66,7 @@ services:
       # OTEL ingetration
       OTEL_SERVICE_NAME: glasswing-homepage
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://192.168.68.62:4318
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:4318
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
       OTEL_LOGS_EXPORTER: otlp
@@ -92,7 +92,7 @@ services:
       infisical:
         condition: service_healthy
     ports:
-      - "${HOST_IP:?required}:8095:443"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:8095:443"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       - ./tls:/etc/nginx/tls:ro
@@ -100,7 +100,7 @@ services:
       # OTEL ingetration
       OTEL_SERVICE_NAME: glasswing-homepage
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://192.168.68.62:4318
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:4318
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
       OTEL_LOGS_EXPORTER: otlp

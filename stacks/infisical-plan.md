@@ -52,7 +52,7 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 | `ENCRYPTION_KEY` | 🔒 | `stacks/infisical/.env` | ⏭️ Bootstrap. Keep in `.env`. |
 | `AUTH_SECRET` | 🔒 | `stacks/infisical/.env` | ⏭️ Bootstrap. Keep in `.env`. |
 | `SITE_URL` | ⚙️ | `stacks/infisical/.env` | ⏭️ Bootstrap. Keep in `.env`. |
-| `HOST_IP` | ⚙️ | `stacks/infisical/.env` | ⏭️ Bootstrap. Keep in `.env`. |
+| `GLASSWING_HOST_IP` | ⚙️ | `stacks/infisical/.env` | ⏭️ Bootstrap. Keep in `.env`; the Makefile exports it to every stack. |
 | TLS `cert.pem` / `key.pem` | 🔒 | `stacks/infisical/tls/` | ⏭️ File-based. Nginx mounts directly. |
 
 **Rationale:** Infisical's own `.env` is the bootstrap file. It must exist before Infisical runs. These values are git-ignored and never leave the host.

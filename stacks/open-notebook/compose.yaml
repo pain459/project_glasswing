@@ -36,8 +36,8 @@ services:
       - surrealdb
 
     ports:
-      - "192.168.68.62:8502:8502"
-      - "192.168.68.62:5055:5055"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:8502:8502"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:5055:5055"
 
     environment:
       OPEN_NOTEBOOK_ENCRYPTION_KEY: ${OPEN_NOTEBOOK_ENCRYPTION_KEY:?Required from Infisical}

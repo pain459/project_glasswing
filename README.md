@@ -94,6 +94,22 @@ INFISICAL_CLIENT_SECRET=
 
 The wrapper also expects the Infisical CA certificate at `stacks/infisical/tls/cert.pem`. It authenticates with universal auth, fetches only the keys listed in each stack's `secrets.list`, exports them for a single `docker compose` command, and exits.
 
+### Host address
+
+Every published port binds to a single LAN address, `GLASSWING_HOST_IP`. Because
+Infisical cannot supply its own bootstrap configuration, that value also lives in
+the gitignored `stacks/infisical/.env`:
+
+```
+GLASSWING_HOST_IP=192.168.68.62
+```
+
+The Makefile exports it to every stack and the compose files require it
+(`"${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3006:3000"`), so `make up`
+fails loudly instead of silently binding the wrong interface. `/global` in
+Infisical holds the same value for runtime use. `make access` writes
+[ACCESS.md](ACCESS.md) with the resulting IP:port URL for every service.
+
 ### Start the core
 
 ```bash
@@ -126,6 +142,8 @@ make restart-all
 | `make doctor` | Preflight Docker pool headroom, port collisions, orphan networks, restart loops |
 | `make network` | Create the shared `glasswing` bridge (explicit subnet, no pool slot) |
 | `make docker-pool` | Widen Docker's address pool to 4096 networks (sudo; restarts Docker) |
+| `make access` | Regenerate `ACCESS.md` from the compose port bindings |
+| `make access-check` | Fail if `ACCESS.md` is out of date |
 | `make restart-all` | Redeploy every stack in order |
 
 `make restart-all` uses `docker compose up`, not `docker restart`. Changed environment variables are applied, not ignored.
@@ -174,7 +192,10 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 | `steel` | 3020 | Cloud browser automation |
 | `dagu` | 3014 | Workflow orchestrator (scheduled DAGs for updates, health checks) |
 
-Ports in the Compose files are bound to `192.168.68.62`, the LAN address of Pathfinder. Change them for your own host, or parameterize them with `HOST_IP` the way the Infisical stack does.
+Every port above binds to `GLASSWING_HOST_IP`, not to `0.0.0.0`, so the platform is
+reachable on the LAN and nowhere else. [ACCESS.md](ACCESS.md) is the generated,
+complete list of URLs: `make access` rebuilds it from the compose files and
+`make access-check` fails when it is stale.
 
 `opencode` uses Open Notebook as a retrieval layer for context beyond the model window. See `stacks/opencode/README.md` for the required secrets, access details, and RAG workflow.
 
@@ -433,7 +454,6 @@ A green container is not proof a service works. Check the destination too: telem
 
 ## Known limitations
 
-- `GLASSWING_HOST_IP` is registered in Infisical `/global` but not all stacks use it for port bindings yet. Full parameterization is pending.
 - There is no off-host backup copy yet.
 - Backup scheduling is manual; systemd timers are planned.
 - A full application-state restore has not been attempted end to end. An isolated configuration restore has.
@@ -443,6 +463,8 @@ A green container is not proof a service works. Check the destination too: telem
 - Some mutable-tag stacks (langfuse, steel) have slow startup times that exceed the 120s healthcheck timeout, causing unnecessary rollbacks. The timeout may need adjustment per-stack.
 
 ## Related documents
+
+- [ACCESS.md](ACCESS.md) — generated IP:port map for every stack (`make access`)
 
 - **[MAINTENANCE.md](MAINTENANCE.md)** — Daily, weekly, and monthly maintenance tasks. Image updates, secret management, backup operations, troubleshooting, and adding new stacks.
 - **[DR_RUNBOOK.md](DR_RUNBOOK.md)** — Disaster recovery procedures for hardware failure, OS reinstall, or complete data loss. Step-by-step recovery from a fresh Ubuntu install.
