@@ -193,8 +193,8 @@ working:
 
 ```bash
 ./scripts/04-certificates.sh --force
-make up STACK=infisical
-make up STACK=portainer
+make restart STACK=infisical     # restart, not up: only a mounted file changed
+make restart STACK=portainer
 make certificates-check
 ```
 

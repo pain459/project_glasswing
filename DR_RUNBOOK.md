@@ -268,9 +268,19 @@ certificate. One command does both:
 ```bash
 ./scripts/04-certificates.sh --force   # new CA + Infisical + Portainer
 make certificates-check
-make up STACK=infisical
-make up STACK=portainer
 ```
+
+If the platform is already running, restart the two services that mount the
+certificates (`up` is a no-op: the Compose config did not change, only the
+mounted files):
+
+```bash
+make restart STACK=infisical
+make restart STACK=portainer
+```
+
+On a fresh restore you are still in Phase 4; Phase 6 starts both with the new
+certificates.
 
 Clients that trusted the old CA must install the new
 `.local/ca/glasswing-ca.crt` (fingerprint and trust steps in

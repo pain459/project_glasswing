@@ -133,7 +133,9 @@ make certificates-check   # covers the host IP, not expiring
 The Infisical certificate is deliberately self-signed: `scripts/with-infisical.sh`
 and every documented `curl` verify it with `--cacert stacks/infisical/tls/cert.pem`,
 which only works while that file is its own issuer. Rerun
-`./scripts/04-certificates.sh --force` when the host address changes.
+`./scripts/04-certificates.sh --force` when the host address changes, then
+`make restart STACK=infisical` and `make restart STACK=portainer` if they are
+already running (`make up` is a no-op there: only mounted files changed).
 
 **Check:** `make certificates-check` passes for all three certificates.
 
