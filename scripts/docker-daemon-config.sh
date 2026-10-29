@@ -12,6 +12,7 @@
 #
 # Usage:
 #   ./scripts/docker-daemon-config.sh --check   # report drift, exit 1 if unset
+#                                               # (exit 2 if daemon.json is unreadable)
 #   ./scripts/docker-daemon-config.sh --apply   # write the pool and restart Docker
 #   ./scripts/docker-daemon-config.sh --show    # print the current effective pool
 #
@@ -34,11 +35,29 @@ CAPACITY=$(( 1 << (POOL_SIZE - POOL_PREFIX) ))
 
 current_pools() {
   python3 - "$DAEMON_JSON" <<'PY'
-import json, sys
+import json, subprocess, sys
+
+path = sys.argv[1]
 try:
-    data = json.load(open(sys.argv[1]))
+    with open(path) as fh:
+        raw = fh.read()
 except FileNotFoundError:
-    data = {}
+    raw = "{}"
+except PermissionError:
+    # daemon.json is root-only on Debian/Ubuntu; fall back to passwordless sudo
+    # so `--check` can run from a normal account without a traceback.
+    try:
+        raw = subprocess.run(
+            ["sudo", "-n", "cat", path], capture_output=True, text=True, check=True
+        ).stdout
+    except (OSError, subprocess.CalledProcessError):
+        print("UNREADABLE")
+        raise SystemExit(0)
+try:
+    data = json.loads(raw or "{}")
+except json.JSONDecodeError:
+    print("INVALID")
+    raise SystemExit(0)
 print(json.dumps(data.get("default-address-pools", []), separators=(",", ":")))
 PY
 }
@@ -47,22 +66,37 @@ desired_pools() {
   printf '[{"base":"%s","size":%s}]' "$POOL_BASE" "$POOL_SIZE"
 }
 
+POOLS="$(current_pools)"
+
+case "$POOLS" in
+  UNREADABLE)
+    echo "[WARN] $DAEMON_JSON is not readable as $(id -un) and sudo -n is unavailable"
+    echo "       run: sudo $0 $MODE"
+    exit 2
+    ;;
+  INVALID)
+    echo "[FAIL] $DAEMON_JSON is not valid JSON; refusing to continue"
+    echo "       inspect it manually before running --apply"
+    exit 1
+    ;;
+esac
+
 case "$MODE" in
   --show)
     echo "daemon.json: $DAEMON_JSON"
-    echo "pools:       $(current_pools)"
+    echo "pools:       $POOLS"
     echo "desired:     $(desired_pools)  (${CAPACITY} networks)"
     exit 0
     ;;
 esac
 
-if [ "$(current_pools)" = "$(desired_pools)" ]; then
+if [ "$POOLS" = "$(desired_pools)" ]; then
   echo "[PASS] Docker address pool already set to ${POOL_BASE} with /${POOL_SIZE} slices (${CAPACITY} networks)"
   exit 0
 fi
 
 if [ "$MODE" = "--check" ]; then
-  echo "[FAIL] Docker address pool is $(current_pools)"
+  echo "[FAIL] Docker address pool is $POOLS"
   echo "       expected ${POOL_BASE} with /${POOL_SIZE} slices (${CAPACITY} networks; stock pools allow ~16)"
   echo "       fix: sudo ./scripts/docker-daemon-config.sh --apply"
   exit 1
