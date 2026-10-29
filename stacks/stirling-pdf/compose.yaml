@@ -39,6 +39,9 @@ services:
     labels:
       com.glasswing.service: stirling-pdf
 
+    networks:
+      - glasswing
+
 volumes:
   stirling_configs:
     name: glasswing-stirling-configs
@@ -52,3 +55,8 @@ volumes:
     name: glasswing-stirling-storage
   stirling_tessdata:
     name: glasswing-stirling-tessdata
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

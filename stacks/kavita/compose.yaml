@@ -31,6 +31,14 @@ services:
     labels:
       com.glasswing.service: kavita
 
+    networks:
+      - glasswing
+
 volumes:
   kavita_config:
     name: glasswing-kavita-config
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

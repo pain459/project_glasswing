@@ -19,3 +19,11 @@ services:
 
     labels:
       com.glasswing.service: cyberchef
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

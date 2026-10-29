@@ -31,6 +31,14 @@ services:
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-portainer
 
+    networks:
+      - glasswing
+
 volumes:
   portainer_data:
     name: glasswing-portainer-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

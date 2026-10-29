@@ -20,6 +20,9 @@ services:
       - /srv/glasswing/opencode/workspace:/workspace
     restart: "no"
 
+    networks:
+      - glasswing
+
   opencode:
     build:
       context: .
@@ -87,6 +90,9 @@ services:
       com.glasswing.category: ai
       com.glasswing.monitoring: "true"
 
+    networks:
+      - glasswing
+
   open-notebook-mcp:
     build:
       context: ./mcp
@@ -127,6 +133,10 @@ services:
 
   # Self-hosted Steel gives the model a real Chrome. steel-mcp speaks stdio only,
   # so supergateway fronts it with the streamable HTTP transport OpenCode uses.
+
+    networks:
+      - glasswing
+
   steel-mcp:
     build:
       context: ./steel-mcp
@@ -160,3 +170,11 @@ services:
       com.glasswing.service: steel-mcp
       com.glasswing.category: ai
       com.glasswing.monitoring: "true"
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

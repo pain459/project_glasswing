@@ -41,3 +41,11 @@ services:
 
     labels:
       com.glasswing.service: ollama
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

@@ -11,11 +11,21 @@ POST_UP_HOOK := $(STACK_DIR)/post-up.sh
 # Default secret location: /<stack>. The collector reuses /openobserve.
 INFISICAL_PATH ?= $(if $(filter otel-collector vector,$(STACK)),/openobserve,/$(STACK))
 
+# One shared bridge for every published service. An explicit subnet does not
+# draw from Docker's address pool, so the platform stops creating one network
+# per stack (which exhausted the stock pool at ~16 networks).
+GLASSWING_NETWORK ?= glasswing
+GLASSWING_NETWORK_SUBNET ?= 10.89.0.0/24
+
+# Compose files read ${GLASSWING_NETWORK:-glasswing}, so one variable renames the
+# shared network everywhere.
+export GLASSWING_NETWORK
+
 # Needed by the OTEL collector to access /var/run/docker.sock as non-root.
 export DOCKER_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null)
 
 .PHONY: help up down restart rebuild logs ps check infisical homepage core status \
-        secrets-check secrets-injection-check
+        secrets-check secrets-injection-check network docker-pool doctor
 
 help:
 	@echo "Glasswing Stack Manager"
@@ -35,6 +45,9 @@ help:
 	@echo "make ai-preflight                 Validate the Ollama/OpenCode inference baseline"
 	@echo "make secrets-check                Verify Infisical integration"
 	@echo "make secrets-injection-check      Verify test-secret injection"
+	@echo "make doctor                       Preflight Docker pool, ports, orphans, restart loops"
+	@echo "make network                      Create the shared 'glasswing' bridge network"
+	@echo "make docker-pool                  Widen the Docker address pool (sudo, restarts Docker)"
 	@echo ""
 	@echo "Optional: INFISICAL_PATH=/custom/path (default /<stack>)"
 	@echo "Optional: stacks/<name>/pre-up.sh and post-up.sh run automatically with make up"
@@ -44,6 +57,8 @@ help:
 define run_compose
 set -eu; \
  test -f "$(COMPOSE_FILE)" || { echo "[FAIL] Unknown stack: $(STACK)"; exit 1; }; \
+ docker network inspect $(GLASSWING_NETWORK) >/dev/null 2>&1 || \
+   docker network create --driver bridge --subnet $(GLASSWING_NETWORK_SUBNET) $(GLASSWING_NETWORK) >/dev/null; \
  if [ -s "$(SECRETS_FILE)" ]; then \
    echo "[INFO] Infisical path: $(INFISICAL_PATH)"; \
    ./scripts/with-infisical.sh "$(INFISICAL_PATH)" "$(SECRETS_FILE)" -- \
@@ -102,6 +117,22 @@ core:
 	@$(MAKE) --no-print-directory infisical
 	@$(MAKE) --no-print-directory homepage
 	@echo "[PASS] Glasswing core stacks started"
+
+network:
+	@set -eu; \
+	if docker network inspect $(GLASSWING_NETWORK) >/dev/null 2>&1; then \
+	  subnet=$$(docker network inspect $(GLASSWING_NETWORK) --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}'); \
+	  echo "[PASS] Network $(GLASSWING_NETWORK) exists ($${subnet:-no fixed subnet})"; \
+	else \
+	  docker network create --driver bridge --subnet $(GLASSWING_NETWORK_SUBNET) $(GLASSWING_NETWORK) >/dev/null; \
+	  echo "[PASS] Created network $(GLASSWING_NETWORK) with subnet $(GLASSWING_NETWORK_SUBNET)"; \
+	fi
+
+docker-pool:
+	@./scripts/docker-daemon-config.sh --apply
+
+doctor:
+	@./scripts/doctor.sh
 
 status:
 	@docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'

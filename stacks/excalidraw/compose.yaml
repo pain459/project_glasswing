@@ -29,3 +29,11 @@ services:
 
     labels:
       com.glasswing.service: excalidraw
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

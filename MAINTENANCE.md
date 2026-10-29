@@ -19,6 +19,7 @@ Day-to-day operations for keeping the platform healthy, current, and backed up.
 - [Image updates](#image-updates)
 - [Secret management](#secret-management)
 - [Backup operations](#backup-operations)
+- [Docker network capacity](#docker-network-capacity)
 - [Health troubleshooting](#health-troubleshooting)
 - [Adding a new stack](#adding-a-new-stack)
 
@@ -355,6 +356,83 @@ make backup-retention
 See [backup/GLASSWING_RESTIC_BACKUP_RUNBOOK.md](backup/GLASSWING_RESTIC_BACKUP_RUNBOOK.md) for scope, encryption, restore procedures, and known risks.
 
 ---
+
+## Docker network capacity
+
+Docker takes every new bridge network from `default-address-pools`. The stock
+pools yield roughly **16** networks, and this platform used to create **one per
+stack** (27 stack networks on the host). The failure mode is:
+
+```
+Error response from daemon: all predefined address pools have been fully subnetted
+```
+
+Two layers prevent it.
+
+### 1. One shared network instead of one per stack
+
+Every published service joins the external `glasswing` bridge, created once with
+an explicit subnet (`10.89.0.0/24` by default). An explicit subnet does not draw
+from the pool, so the platform's own footprint is one shared network plus three
+private per-stack networks:
+
+| Network | Owner |
+| --- | --- |
+| `glasswing` | every front-end service |
+| `glasswing-infisical_internal` | Infisical, PostgreSQL, Redis, gateway |
+| `glasswing-langfuse_internal` | Langfuse's PostgreSQL, ClickHouse, Redis, MinIO |
+| `glasswing-open-notebook_internal` | Open Notebook and SurrealDB |
+
+```bash
+make network                      # create glasswing if missing
+```
+
+The name is a single knob: `GLASSWING_NETWORK` is exported by the Makefile and
+every stack reads `${GLASSWING_NETWORK:-glasswing}`. Renaming it needs
+`make network` **and** `make restart-all` with the same value exported, because
+running containers stay attached to the old network.
+
+Host-network stacks (`dagu`, `plex`) declare no network at all, so they create
+none.
+
+### 2. A wider address pool for the remaining networks
+
+```bash
+make docker-pool          # writes /etc/docker/daemon.json, restarts Docker
+./scripts/docker-daemon-config.sh --check    # report drift only
+```
+
+The script merges `default-address-pools: [{base: 172.16.0.0/12, size: 24}]` into
+`/etc/docker/daemon.json` (4096 networks, clear of the `192.168.68.0/24` LAN),
+preserves every other key — including the NVIDIA runtime — and backs up the
+previous file. `172.16.0.0/12` at `/24` is the durable fix; existing networks
+keep the subnets they already have.
+
+Restarting Docker drops every container for a few seconds; `restart: unless-stopped`
+brings them back.
+
+### Verify
+
+```bash
+make doctor
+docker network ls | wc -l
+docker info --format '{{.ServerVersion}}'
+```
+
+`make doctor` fails when the pool is unset or exhausted, when two stacks claim
+the same host port, when a container is in a restart loop, and when Infisical is
+not healthy enough for secret injection. It warns about services bound to
+`0.0.0.0` and about networks no container is using.
+
+### Reclaim after a migration
+
+Old per-stack networks are not deleted by `docker compose up`; they linger until
+nothing references them:
+
+```bash
+docker network ls --filter dangling=true
+docker network prune -f        # only removes unused networks
+```
 
 ## Health troubleshooting
 

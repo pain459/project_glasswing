@@ -44,6 +44,9 @@ services:
       init-permissions:
         condition: service_completed_successfully
 
+    networks:
+      - glasswing
+
   init-permissions:
     image: alpine:3.20
     user: root
@@ -52,6 +55,14 @@ services:
       - flowise_data:/data
     restart: "no"
 
+    networks:
+      - glasswing
+
 volumes:
   flowise_data:
     name: glasswing-flowise-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

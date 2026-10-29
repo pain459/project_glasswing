@@ -33,6 +33,14 @@ services:
     labels:
       com.glasswing.service: uptime-kuma
 
+    networks:
+      - glasswing
+
 volumes:
   uptime_kuma_data:
     name: glasswing-uptime-kuma-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

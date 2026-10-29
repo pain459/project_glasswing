@@ -28,6 +28,14 @@ services:
     labels:
       com.glasswing.service: beszel
 
+    networks:
+      - glasswing
+
 volumes:
   beszel_data:
     name: glasswing-beszel-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

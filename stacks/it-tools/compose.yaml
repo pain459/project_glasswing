@@ -26,3 +26,11 @@ services:
       - /tmp
       - /var/cache/nginx
       - /var/run
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

@@ -28,9 +28,17 @@ services:
     labels:
       com.glasswing.service: adguard
 
+    networks:
+      - glasswing
+
 volumes:
   adguard_work:
     name: glasswing-adguard-work
 
   adguard_conf:
     name: glasswing-adguard-conf
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
