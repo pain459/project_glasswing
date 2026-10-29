@@ -1,7 +1,7 @@
 ## Step 1 — Generate a local trusted certificate
 
 Portainer is now reached through the Glasswing reverse proxy at
-`https://portainer.glasswing.lan`. The certificate below is still used on
+`https://192.168.68.62:9443`. The certificate below is still used on
 Portainer's internal `9443` listener; the proxy terminates client TLS with the
 wildcard certificate from `stacks/proxy/certs/`. Both certificates are signed
 by the same Glasswing CA, so clients only need to trust `.local/ca/glasswing-ca.crt`.
@@ -138,7 +138,7 @@ Then verify HTTPS without `-k`:
 ```
 curl --fail --silent --show-error \
   --cacert .local/ca/glasswing-ca.crt \
-  https://portainer.glasswing.lan/ \
+  https://192.168.68.62:9443/ \
   -o /dev/null
 
 echo "[PASS] Portainer trusted TLS"
@@ -176,7 +176,7 @@ This grants the Glasswing CA trust on the Mac, including for any future certific
 
 Now open:
 
-[Portainer — Trusted HTTPS](https://portainer.glasswing.lan)
+[Portainer — Trusted HTTPS](https://192.168.68.62:9443)
 
 Safari should display the page without certificate warnings. Restart the browser if it continues using a previously cached TLS connection.
 
@@ -186,7 +186,7 @@ In `glasswing-infrastructure` → `prod` → `/portainer`, add these records:
 
 | Key                        | Purpose                      |
 | -------------------------- | ---------------------------- |
-| `PORTAINER_URL`            | `https://portainer.glasswing.lan` |
+| `PORTAINER_URL`            | `https://192.168.68.62:9443` |
 | `PORTAINER_TLS_EXPIRY`     | Certificate expiration date  |
 | `PORTAINER_ADMIN_USERNAME` | Administrator username       |
 | `PORTAINER_ADMIN_PASSWORD` | Administrator password       |

@@ -53,6 +53,11 @@ services:
     labels:
       com.glasswing.service: open-notebook
 
+    ports:
+      # Direct IP access: reachable without DNS.
+      - "192.168.68.62:8502:8502"
+      - "192.168.68.62:5055:5055"
+
     networks:
       default:
       proxy:

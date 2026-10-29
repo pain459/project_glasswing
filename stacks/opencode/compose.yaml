@@ -84,6 +84,10 @@ services:
       com.glasswing.category: ai
       com.glasswing.monitoring: "true"
 
+    ports:
+      # Direct IP access: reachable without DNS.
+      - "192.168.68.62:3019:4096"
+
     networks:
       - default
       - proxy

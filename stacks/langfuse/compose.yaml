@@ -126,6 +126,10 @@ services:
     volumes:
       - minio_data:/data
 
+    ports:
+      # Direct IP access: reachable without DNS.
+      - "192.168.68.62:9090:9000"
+
     networks:
       default:
       proxy:
@@ -158,6 +162,10 @@ services:
       NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:?Required}
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-langfuse
+
+    ports:
+      # Direct IP access: reachable without DNS.
+      - "192.168.68.62:3010:3000"
 
     labels:
       com.glasswing.service: langfuse

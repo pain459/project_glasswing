@@ -1,8 +1,8 @@
-# Reverse proxy
+# Reverse proxy (optional)
 
-`glasswing-proxy` is the single HTTP/HTTPS entry point for the platform. It is
-an nginx container that joins the shared `glasswing-proxy` Docker network and
-routes by hostname:
+`glasswing-proxy` is an optional single HTTP/HTTPS entry point for the platform.
+It is an nginx container that joins the shared `glasswing-proxy` Docker network
+and routes by hostname:
 
 ```
 https://homepage.glasswing.lan  ->  glasswing-homepage:3000
@@ -10,10 +10,12 @@ https://forgejo.glasswing.lan   ->  glasswing-forgejo:3000
 https://opencode.glasswing.lan  ->  glasswing-opencode:4096
 ```
 
-Only ports **80** and **443** are published for web traffic. Web services no
-longer publish their own HTTP ports; they join the shared network and are
-reached by container name. The exceptions are listed under
-[Ports that stay direct](#ports-that-stay-direct).
+The default access path is **plain IP and port** (`http://192.168.68.62:<port>`),
+which needs no DNS on the client. Every web UI therefore also publishes its own
+host port; see `make access` for the generated map. The proxy is only worth
+starting (`make proxy`) when the clients on the network can resolve
+`glasswing.lan` and trust the Glasswing CA — hostname routing is not used by
+`make core` or `make restart-all`.
 
 ## Why hostnames instead of paths
 

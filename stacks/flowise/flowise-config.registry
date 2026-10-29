@@ -1,6 +1,6 @@
 # flowise stack config variables
 FLOWISE_PORT=3000
-FLOWISE_APP_URL=https://flowise.glasswing.lan
+FLOWISE_APP_URL=http://192.168.68.62:3002
 FLOWISE_DATABASE_TYPE=sqlite
 FLOWISE_DATABASE_PATH=/home/node/.flowise
 FLOWISE_SECRETKEY_PATH=/home/node/.flowise

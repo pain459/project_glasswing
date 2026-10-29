@@ -145,42 +145,50 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 
 | Stack | URL / direct port | Purpose |
 | --- | --- | --- |
-| `proxy` | `https://glasswing.lan` (`:80`, `:443`) | nginx reverse proxy and TLS termination |
-| `ollama` | `https://ollama.glasswing.lan` (API `:11434`) | Local LLM inference on the RTX 4090 |
-| `flowise` | `https://flowise.glasswing.lan` | Visual agent flows |
-| `uptime-kuma` | `https://uptime.glasswing.lan` | Availability checks |
-| `dbgate` | `https://dbgate.glasswing.lan` | Database client |
-| `homepage` | `https://homepage.glasswing.lan` | Dashboard and service map |
-| `adguard` | `https://adguard.glasswing.lan` (DNS `:53`) | DNS filtering |
-| `excalidraw` | `https://excalidraw.glasswing.lan` | Diagrams |
-| `langfuse` | `https://langfuse.glasswing.lan` (media `https://minio.glasswing.lan`) | LLM tracing and evaluation |
-| `forgejo` | `https://forgejo.glasswing.lan` (SSH `:2222`) | Self-hosted Git and SSH |
-| `anythingllm` | `https://anythingllm.glasswing.lan` | Document chat over local models |
-| `cyberchef` | `https://cyberchef.glasswing.lan` | Data transformations |
-| `calculators` | `https://calculators.glasswing.lan` | Math, finance, and conversion calculators |
-| `it-tools` | `https://it-tools.glasswing.lan` | Small utilities |
-| `stirling-pdf` | `https://stirling.glasswing.lan` | PDF operations |
-| `kavita` | `https://kavita.glasswing.lan` | Book library |
-| `openobserve` | `https://openobserve.glasswing.lan` (ingestion `:3018`) | Logs, metrics, traces |
-| `jupyterlab` | `https://jupyter.glasswing.lan` | GPU notebooks |
-| `open-notebook` | `https://notebook.glasswing.lan` (API `https://notebook-api.glasswing.lan`) | Research workflows |
-| `opencode` | `https://opencode.glasswing.lan` | Web coding agent with Ollama and Open Notebook RAG |
-| `beszel` | `https://beszel.glasswing.lan` | Host health |
-| `glances` | `https://glances.glasswing.lan` | Host system monitor (feeds Homepage widgets) |
-| `portainer` | `https://portainer.glasswing.lan` | Container management |
+| `ollama` | `http://192.168.68.62:11434` | Local LLM inference on the RTX 4090 |
+| `flowise` | `http://192.168.68.62:3002` | Visual agent flows |
+| `uptime-kuma` | `http://192.168.68.62:3003` | Availability checks |
+| `dbgate` | `http://192.168.68.62:3004` | Database client |
+| `homepage` | `http://192.168.68.62:3006` | Dashboard and service map |
+| `adguard` | `http://192.168.68.62:3007` (DNS `:53`) | DNS filtering |
+| `excalidraw` | `http://192.168.68.62:3009` | Diagrams |
+| `langfuse` | `http://192.168.68.62:3010` (media `:9090`) | LLM tracing and evaluation |
+| `forgejo` | `http://192.168.68.62:3011` (SSH `:2222`) | Self-hosted Git and SSH |
+| `anythingllm` | `http://192.168.68.62:3012` | Document chat over local models |
+| `cyberchef` | `http://192.168.68.62:3013` | Data transformations |
+| `dagu` | `http://192.168.68.62:3014` (host network) | Workflow orchestrator (scheduled DAGs for updates, health checks) |
+| `it-tools` | `http://192.168.68.62:3015` | Small utilities |
+| `stirling-pdf` | `http://192.168.68.62:3016` | PDF operations |
+| `kavita` | `http://192.168.68.62:3017` | Book library |
+| `openobserve` | `http://192.168.68.62:3018` (ingestion `:3018`) | Logs, metrics, traces |
+| `opencode` | `http://192.168.68.62:3019` | Web coding agent with Ollama and Open Notebook RAG |
+| `calculators` | `http://192.168.68.62:3021` | Math, finance, and conversion calculators |
+| `steel` | `http://192.168.68.62:3100/ui` (API `:3100`, CDP `:9223`) | Cloud browser automation |
 | `plex` | `http://192.168.68.62:32400/web` (host network) | Media server |
-| `otel-collector` | `https://otel.glasswing.lan` (OTLP `:4318`) | Telemetry ingestion |
-| `vector` | `https://vector.glasswing.lan` | Docker log shipping |
-| `infisical` | `https://infisical.glasswing.lan` (bootstrap `:8095`) | Secrets management |
-| `steel` | `https://steel.glasswing.lan` (API `:3100`, CDP `:9223`) | Cloud browser automation |
-| `dagu` | `https://dagu.glasswing.lan` (host `:3014`) | Workflow orchestrator (scheduled DAGs for updates, health checks) |
+| `open-notebook` | `http://192.168.68.62:8502` (API `:5055`) | Research workflows |
+| `jupyterlab` | `http://192.168.68.62:8889/lab` | GPU notebooks |
+| `beszel` | `http://192.168.68.62:8090` | Host health |
+| `glances` | `http://192.168.68.62:61208` | Host system monitor (feeds Homepage widgets) |
+| `infisical` | `https://192.168.68.62:8095` | Secrets management |
+| `portainer` | `https://192.168.68.62:9443` | Container management |
+| `otel-collector` | health `http://192.168.68.62:13133` (OTLP `:4318`) | Telemetry ingestion |
+| `vector` | `http://192.168.68.62:8686` | Docker log shipping |
+| `proxy` | optional, see below | nginx reverse proxy and TLS termination |
 
-Web traffic uses one entry point: `https://<service>.glasswing.lan`. Ports that
-remain direct are protocols or fixed endpoints that cannot move cleanly (DNS,
-SSH, Plex, OTLP, PostgreSQL, the Ollama API used by host-side tooling, Steel
-API/CDP), plus the Infisical bootstrap gateway and Dagu's host-network
-coordinator. See [stacks/proxy/README.md](stacks/proxy/README.md) for the full
-routing and exception table.
+Web UIs are reached by **plain IP and port**; no client-side DNS is required.
+`make access` prints this map straight from the Compose files and
+`make access --probe` (or `./scripts/access-map.sh --probe`) curls every URL.
+
+The `proxy` stack is optional. It publishes `:80`/`:443` and serves the same
+services as `https://<service>.glasswing.lan`, but hostname routing requires
+DNS rewrites in AdGuard plus the Glasswing CA on every client, so it is not
+part of `make core` or `make restart-all`. Start it with `make proxy` when the
+clients on the network can resolve `glasswing.lan`. See
+[stacks/proxy/README.md](stacks/proxy/README.md).
+
+Application base URLs (`FORGEJO_SERVER_ROOT_URL`, `LANGFUSE_NEXTAUTH_URL`,
+`HOMEPAGE_ALLOWED_HOSTS`, …) live in Infisical. After changing a port, run
+`make ip-migrate` before `make restart-all`.
 
 `opencode` uses Open Notebook as a retrieval layer for context beyond the model window. See `stacks/opencode/README.md` for the required secrets, access details, and RAG workflow.
 

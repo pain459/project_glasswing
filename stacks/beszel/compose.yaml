@@ -25,6 +25,10 @@ services:
     labels:
       com.glasswing.service: beszel
 
+    ports:
+      # Direct IP access: every web UI stays reachable without DNS.
+      - "192.168.68.62:8090:8090"
+
     networks:
       - proxy
 
