@@ -910,4 +910,34 @@ R('weight', {
   }
 });
 
+// === VECTORS ===
+
+R('vector-magnitude', {
+  title: 'Vector Magnitude Calculator',
+  description: 'Length of a vector in 2D or 3D, and the dot product of two vectors.',
+  tags: ['vector', 'magnitude', 'dot product', 'physics', 'math', '3d'],
+  fields: [
+    { id: 'ax', label: 'A — X', type: 'number', step: 0.001, min: 0, half: true },
+    { id: 'ay', label: 'A — Y', type: 'number', step: 0.001, min: 0, half: true },
+    { id: 'az', label: 'A — Z', type: 'number', step: 0.001, min: 0, half: true },
+    { id: 'bx', label: 'B — X', type: 'number', step: 0.001, min: 0, half: true },
+    { id: 'by', label: 'B — Y', type: 'number', step: 0.001, min: 0, half: true },
+    { id: 'bz', label: 'B — Z', type: 'number', step: 0.001, min: 0, half: true },
+  ],
+  formula: '<p><code>|v| = √(x² + y² + z²)</code>. Dot product: <code>v · w = x₁x₂ + y₁y₂ + z₁z₂</code>.</p>',
+  background: '<p>A vector is an arrow from a common origin, so its magnitude is its length: the square root of the sum of the squares of its components, regardless of how many axes it spans. The dot product is the sum of the pairwise products and measures how aligned two vectors are; it is the engine behind projections, work, and inner-product spaces used in graphics, search and machine learning. Both operations assume plain Euclidean space, which is why they look simpler than the abstract definitions used in linear algebra.</p>',
+  calculate: function(v) {
+    const ax = Number(v.ax) || 0, ay = Number(v.ay) || 0, az = Number(v.az) || 0;
+    const bx = Number(v.bx) || 0, by = Number(v.by) || 0, bz = Number(v.bz) || 0;
+    const magA = Math.sqrt(ax * ax + ay * ay + az * az);
+    const magB = Math.sqrt(bx * bx + by * by + bz * bz);
+    const dot = ax * bx + ay * by + az * bz;
+    return {
+      'Magnitude A': core.formatNumber(magA, 4),
+      'Magnitude B': core.formatNumber(magB, 4),
+      'Dot Product': core.formatNumber(dot, 4),
+    };
+  }
+});
+
 })(calculatorRegistry);
