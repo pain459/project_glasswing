@@ -263,7 +263,9 @@ fi
 
 echo ""
 echo "[INFO] Restart the stacks that mount these files:"
-echo "         make up STACK=infisical"
-echo "         make up STACK=portainer"
+echo "         make restart STACK=infisical"
+echo "         make restart STACK=portainer"
+echo "[INFO] Use restart, not up: the certificate is a mounted file, so the"
+echo "       container's Compose config does not change and \`up\` leaves it running."
 echo "[INFO] Trust the CA on client machines with $CA_CRT (never copy $CA_KEY)."
 echo "[INFO] Infisical's certificate is self-signed; clients verify it with --cacert $INFISICAL_CRT."

@@ -34,9 +34,14 @@ Git.
 `--sslcert` / `--sslkey`; a fresh clone needs no edits.
 
 ```bash
-make up STACK=portainer
+make up STACK=portainer        # first start
+make restart STACK=portainer   # after reissuing a certificate
 make ps STACK=portainer
 ```
+
+The certificates are mounted files, so a reissue does not change the Compose
+configuration; `make up` therefore sees nothing to recreate and leaves the old
+certificate in memory. `make restart` is the correct command after renewal.
 
 The data volume `glasswing-portainer-data` is untouched, so the administrator
 account and settings survive a certificate change.
@@ -92,8 +97,8 @@ starts warning 21 days before expiry.
 
 ```bash
 ./scripts/04-certificates.sh --force   # reissue CA + leaves
-make up STACK=infisical                # the gateway also mounts a certificate
-make up STACK=portainer
+make restart STACK=infisical           # the gateway also mounts a certificate
+make restart STACK=portainer
 make certificates-check
 ```
 
