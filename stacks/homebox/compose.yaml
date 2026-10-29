@@ -1,0 +1,44 @@
+
+name: glasswing-homebox
+
+services:
+  homebox:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: ghcr.io/sysadminsmedia/homebox:latest
+    container_name: glasswing-homebox
+
+    environment:
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-homebox
+      # Homebox auth pepper (required for production)
+      HBOX_AUTH_API_KEY_PEPPER: "${HBOX_AUTH_API_KEY_PEPPER:?HBOX_AUTH_API_KEY_PEPPER is required}"
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3024:7745"
+
+    volumes:
+      - homebox_data:/data
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "-O", "-", "http://localhost:7745/api/v1/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+    labels:
+      com.glasswing.service: homebox
+
+    networks:
+      - glasswing
+
+volumes:
+  homebox_data:
+    name: glasswing-homebox_data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
