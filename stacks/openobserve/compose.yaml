@@ -3,7 +3,7 @@ name: glasswing-openobserve
 
 services:
   openobserve:
-    image: public.ecr.aws/zinclabs/openobserve:1.1.2
+    image: public.ecr.aws/zinclabs/openobserve:v1.1.2
     container_name: glasswing-openobserve
     restart: unless-stopped
 

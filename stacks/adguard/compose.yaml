@@ -3,7 +3,7 @@ name: glasswing-adguard
 
 services:
   adguard:
-    image: adguard/adguardhome:0.107.79
+    image: adguard/adguardhome:v0.107.79
     container_name: glasswing-adguard
     restart: unless-stopped
 

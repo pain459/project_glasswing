@@ -240,6 +240,7 @@ Everything else is behind `:443`.
 | `NXDOMAIN` | AdGuard rewrite missing | Add both `glasswing.lan` and `*.glasswing.lan` -> `192.168.68.62` |
 | `403` from Homepage | `HOMEPAGE_ALLOWED_HOSTS` does not include the new host | Run `make proxy-migrate` and restart Homepage |
 | App redirects to `192.168.68.62:30xx` | App base URL still points at the old port | Update its registry and run `make proxy-migrate` |
+| `make` stops with `curl: (22) ... 502` right after Infisical starts | The wrapper authenticated before the Infisical API was listening | It retries for ~30s (`INFISICAL_LOGIN_ATTEMPTS`, `INFISICAL_LOGIN_DELAY`); if it still fails, check `docker logs glasswing-infisical-infisical-1` and the container health |
 
 Useful commands:
 

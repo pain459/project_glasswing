@@ -49,7 +49,7 @@ services:
       OTEL_RESOURCE_ATTRIBUTES: deployment.environment=homelab,host.name=pathfinder
 
   infisical:
-    image: infisical/infisical:0.167.4
+    image: infisical/infisical:v0.167.4
     restart: unless-stopped
     depends_on:
       postgres:
@@ -71,6 +71,16 @@ services:
       OTEL_METRICS_EXPORTER: otlp
       OTEL_LOGS_EXPORTER: otlp
       OTEL_RESOURCE_ATTRIBUTES: deployment.environment=homelab,host.name=pathfinder
+    # The image has no curl or wget, so probe the API with the bundled Node.
+    # Without this, `docker compose up --wait` returns while Infisical is still
+    # booting and the gateway answers 502 to the first `make` call.
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8080/api/status',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
     networks: [internal]
     security_opt:
       - no-new-privileges:true
@@ -79,7 +89,8 @@ services:
     image: nginx:stable-alpine
     restart: unless-stopped
     depends_on:
-      - infisical
+      infisical:
+        condition: service_healthy
     ports:
       - "${HOST_IP:?required}:8095:443"
     volumes:
