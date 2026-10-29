@@ -34,6 +34,14 @@ services:
     labels:
       com.glasswing.service: anythingllm
 
+    networks:
+      - glasswing
+
 volumes:
   anythingllm_data:
     name: glasswing-anythingllm-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

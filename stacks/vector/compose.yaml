@@ -38,6 +38,14 @@ services:
     labels:
       com.glasswing.service: vector
 
+    networks:
+      - glasswing
+
 volumes:
   vector_data:
     name: glasswing-vector-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

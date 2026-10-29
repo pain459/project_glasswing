@@ -26,6 +26,14 @@ services:
     labels:
       com.glasswing.service: dbgate
 
+    networks:
+      - glasswing
+
 volumes:
   dbgate_data:
     name: glasswing-dbgate-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

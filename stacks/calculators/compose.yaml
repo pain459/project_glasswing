@@ -1,11 +1,6 @@
 
 name: glasswing-calculators
 
-networks:
-  default:
-    name: glasswing-it-tools_default
-    external: true
-
 services:
   calculators:
     build:
@@ -45,3 +40,11 @@ services:
       - /tmp
       - /var/cache/nginx
       - /var/run
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

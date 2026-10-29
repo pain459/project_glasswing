@@ -25,6 +25,9 @@ services:
     volumes:
       - surreal_data:/mydata
 
+    networks:
+      - internal
+
   open_notebook:
     image: lfnovo/open_notebook:v1-latest
     restart: unless-stopped
@@ -57,9 +60,20 @@ services:
     labels:
       com.glasswing.service: open-notebook
 
+    networks:
+      - internal
+      - glasswing
+
 volumes:
   surreal_data:
     name: glasswing-notebook-surreal-data
 
   notebook_data:
     name: glasswing-notebook-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
+  internal:
+    driver: bridge

@@ -65,6 +65,9 @@ services:
       timeout: 5s
       retries: 10
 
+    networks:
+      - internal
+
   redis:
     image: redis:7
     restart: unless-stopped
@@ -88,6 +91,9 @@ services:
       timeout: 5s
       retries: 10
 
+    networks:
+      - internal
+
   clickhouse:
     image: clickhouse/clickhouse-server:25.12
     restart: unless-stopped
@@ -109,6 +115,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
+    networks:
+      - internal
 
   minio:
     image: cgr.dev/chainguard/minio:latest
@@ -135,6 +144,9 @@ services:
       timeout: 5s
       retries: 10
 
+    networks:
+      - internal
+
   langfuse-worker:
     image: docker.langfuse.com/langfuse/langfuse-worker:4
     restart: unless-stopped
@@ -143,6 +155,9 @@ services:
 
     environment:
       <<: *langfuse-env
+
+    networks:
+      - internal
 
   langfuse-web:
     image: docker.langfuse.com/langfuse/langfuse:4
@@ -162,9 +177,20 @@ services:
     labels:
       com.glasswing.service: langfuse
 
+    networks:
+      - internal
+      - glasswing
+
 volumes:
   postgres_data:
   redis_data:
   clickhouse_data:
   clickhouse_logs:
   minio_data:
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
+  internal:
+    driver: bridge

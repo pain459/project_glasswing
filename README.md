@@ -123,6 +123,9 @@ make restart-all
 | `make list-stacks` | List discovered stacks |
 | `make ollama-model` | Rebuild the coding model from its checked-in Modelfile |
 | `make ai-preflight` | Validate GPU access, Ollama settings, model limits, and OpenCode connectivity |
+| `make doctor` | Preflight Docker pool headroom, port collisions, orphan networks, restart loops |
+| `make network` | Create the shared `glasswing` bridge (explicit subnet, no pool slot) |
+| `make docker-pool` | Widen Docker's address pool to 4096 networks (sudo; restarts Docker) |
 | `make restart-all` | Redeploy every stack in order |
 
 `make restart-all` uses `docker compose up`, not `docker restart`. Changed environment variables are applied, not ignored.

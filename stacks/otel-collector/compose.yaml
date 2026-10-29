@@ -35,3 +35,11 @@ services:
 
     labels:
       com.glasswing.service: otel-collector
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

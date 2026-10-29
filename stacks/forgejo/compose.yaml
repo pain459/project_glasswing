@@ -37,6 +37,14 @@ services:
     labels:
       com.glasswing.service: forgejo
 
+    networks:
+      - glasswing
+
 volumes:
   forgejo_data:
     name: glasswing-forgejo-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

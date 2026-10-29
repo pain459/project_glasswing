@@ -30,3 +30,11 @@ services:
 
     labels:
       com.glasswing.service: homepage
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

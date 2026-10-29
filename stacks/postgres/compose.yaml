@@ -66,6 +66,14 @@ services:
     labels:
       com.glasswing.service: postgres
 
+    networks:
+      - glasswing
+
 volumes:
   postgres_data:
     name: glasswing-postgres-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

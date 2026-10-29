@@ -29,6 +29,14 @@ services:
     labels:
       com.glasswing.service: jupyterlab
 
+    networks:
+      - glasswing
+
 volumes:
   jupyterlab_data:
     name: glasswing-jupyterlab-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
