@@ -14,7 +14,7 @@ services:
       - /certs/portainer.key
 
     ports:
-      - "192.168.68.62:9443:9443"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:9443:9443"
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

@@ -133,7 +133,7 @@ services:
       MINIO_ROOT_PASSWORD: ${LANGFUSE_MINIO_PASSWORD:?Required}
 
     ports:
-      - "192.168.68.62:9090:9000"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:9090:9000"
 
     volumes:
       - minio_data:/data
@@ -166,7 +166,7 @@ services:
     depends_on: *langfuse-depends
 
     ports:
-      - "192.168.68.62:3010:3000"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3010:3000"
 
     environment:
       <<: *langfuse-env

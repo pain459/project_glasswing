@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "192.168.68.62:3016:8080"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3016:8080"
 
     environment:
       TZ: ${GLASSWING_TZ:?Required from Infisical}

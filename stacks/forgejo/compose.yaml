@@ -24,8 +24,8 @@ services:
       OTEL_SERVICE_NAME: glasswing-forgejo
 
     ports:
-      - "192.168.68.62:3011:3000"
-      - "192.168.68.62:2222:22"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3011:3000"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:2222:22"
 
     volumes:
       - forgejo_data:/data

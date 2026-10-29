@@ -44,7 +44,7 @@ services:
     working_dir: /workspace
 
     ports:
-      - "192.168.68.62:3019:4096"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3019:4096"
 
     environment:
       HOME: ${HOME:?Required from Infisical}

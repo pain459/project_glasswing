@@ -18,7 +18,7 @@ services:
       OTEL_SERVICE_NAME: glasswing-glances
 
     ports:
-      - "61208:61208"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:61208:61208"
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
