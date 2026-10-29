@@ -43,10 +43,11 @@ const renderer = {
 
     const catInfo = calculatorRegistry.categoryInfo[category] || { icon: "📐", label: category };
     const fieldsHtml = (cfg.fields || []).map(f => this._fieldHtml(f)).join('');
-    const explanationHtml = cfg.formula ? `
+    const explanationHtml = (cfg.formula || cfg.background) ? `
       <div class="explanation">
         <h3>How it works</h3>
-        ${cfg.formula}
+        ${cfg.formula ? `<h4>Formula</h4>${cfg.formula}` : ''}
+        ${cfg.background ? `<h4>Background</h4>${cfg.background}` : ''}
       </div>` : '';
 
     this.app.innerHTML = `

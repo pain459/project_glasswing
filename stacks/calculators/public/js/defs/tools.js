@@ -11,6 +11,8 @@ R('character-counter', {
   fields: [
     { id: 'text', label: 'Enter or paste your text', type: 'textarea', placeholder: 'Type or paste text here...', hint: 'Text to analyze' },
   ],
+  formula: '<p>Counts characters, words, sentences, paragraphs and lines from the supplied text.</p>',
+  background: '<p>Text counting depends on conventions: characters may include or exclude spaces, words are usually runs of non-whitespace, and sentences are counted by terminal punctuation with a fallback for unpunctuated text. These rules match what word processors and social platforms report closely enough for planning, though edge cases like hyphenated words differ between tools. Reading and speaking times are estimates based on typical rates of about 200 and 130 words per minute.</p>',
   calculate: function(v) {
     const text = v.text || '';
     const chars = text.length;
@@ -51,6 +53,7 @@ R('random-number-generator', {
     ]},
   ],
   formula: '<p>Generates random integers between min and max (inclusive).</p>',
+  background: '<p>This utility draws uniformly from the integers between the minimum and maximum, inclusive, using the browser\'s pseudo-random generator. Allowing duplicates samples with replacement, while disallowing them samples without replacement and therefore cannot return more values than the range contains. The output is fine for games, raffles and test data but is not cryptographically secure, so it should not be used for passwords or keys.</p>',
   calculate: function(v) {
     const min = v.min, max = v.max, count = Math.min(v.count || 1, 100);
     const allowDup = v.allowDup !== '0';
@@ -97,6 +100,7 @@ R('gas-mileage-calculator', {
     { id: 'pricePerGallon', label: 'Price per Gallon ($)', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 3.50', half: true },
   ],
   formula: '<p><code>MPG = Miles Driven / Gallons Used</code></p>',
+  background: '<p>Fuel economy is computed from the distance between two odometer readings and the fuel added at the pump, which is why filling the tank the same way each time gives the most consistent figures. Miles per gallon is the US convention, while most other countries quote litres per 100 kilometres; the two are inversely related, so a higher MPG and a lower L/100km both mean better efficiency. Cost per mile follows directly from the price paid per gallon.</p>',
   calculate: function(v) {
     const miles = v.odometerEnd - v.odometerStart;
     if (miles <= 0) return { error: 'Ending odometer must be greater than starting odometer.' };
@@ -121,6 +125,8 @@ R('what-is-my-ip-address', {
   description: 'Display your public IP address and connection information.',
   tags: ['IP address', 'network', 'public IP', 'connection'],
   fields: [],
+  formula: '<p>Looks up your public IP address from an external service when a network connection is available.</p>',
+  background: '<p>There is no formula here: an IP address is assigned by your internet provider or local network, and a public address lookup simply asks an external service what address the request appeared to come from. Address translation means the address your device holds locally is usually different from the one the internet sees. The page falls back to a local indicator when the lookup cannot reach the network.</p>',
   calculate: function() {
     return {
       html: '<div style="text-align:center;padding:1rem">' +

@@ -17,6 +17,7 @@ R('distance-two-points', {
     { id: 'z2', label: 'Z₂', type: 'number', step: 0.01, placeholder: 'e.g. 2', half: true },
   ],
   formula: '<p><code>d = √((x₂−x₁)² + (y₂−y₁)² + (z₂−z₁)²)</code></p>',
+  background: '<p>This is the three-dimensional version of the Pythagorean relation, applied twice: once within the base plane and once through the vertical offset. It gives the true straight-line separation between two points in space regardless of axis order. CAD, robotics and 3D graphics use it constantly for reach checks, collision tests and camera framing.</p>',
   calculate: function(v) {
     const x1 = v.x1, y1 = v.y1, z1 = v.z1;
     const x2 = v.x2, y2 = v.y2, z2 = v.z2;
@@ -43,6 +44,7 @@ R('cylinder', {
     { id: 'height', label: 'Height (h)', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>V = πr²h</code>, <code>Lateral SA = 2πrh</code>, <code>Total SA = 2πr(r + h)</code></p>',
+  background: '<p>A cylinder is the surface swept by a circle moving along a straight axis, so its volume is the base area carried through a height. That is why a prism or cylinder volume is base times height: stacking identical cross-sections adds up linearly. Cans, tanks, pipes and columns are sized with these figures, and the curved surface unrolls into a rectangle whose width is the circumference.</p>',
   calculate: function(v) {
     const r = v.radius, h = v.height;
     if (!r || !h) return { error: 'Enter valid dimensions' };
@@ -66,6 +68,7 @@ R('cone', {
     { id: 'height', label: 'Height (h)', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>V = (1/3)πr²h</code>, <code>Lateral SA = πrs</code>, <code>Total SA = πr(r + s)</code> where <code>s = √(r² + h²)</code></p>',
+  background: '<p>A cone tapers from a circular base to a point, and the factor of one third comes from the fact that three congruent cones fill a cylinder of the same base and height. Its slant height, not its vertical height, is what the lateral surface uses, because that surface is a sector of a circle when unrolled. Funnels, ice-cream cones, roof spires and hopper bottoms are designed with these relations.</p>',
   calculate: function(v) {
     const r = v.radius, h = v.height;
     if (!r || !h) return { error: 'Enter valid dimensions' };
@@ -91,6 +94,7 @@ R('sphere', {
     { id: 'diameter', label: 'Diameter (d)', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>V = (4/3)πr³</code>, <code>SA = 4πr²</code></p>',
+  background: '<p>A sphere is the set of points at a fixed distance from a center in three dimensions, the most compact shape for a given volume. Its surface area is exactly four times the area of its great circle, a result Archimedes proved by relating the sphere to a circumscribed cylinder. Balls, pressure vessels and droplets are all approximated this way, though real objects rarely stay perfectly round.</p>',
   calculate: function(v) {
     let r;
     if (v.radius) r = v.radius;
@@ -116,6 +120,7 @@ R('cube', {
     { id: 'volume', label: 'Volume', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 125', half: true },
   ],
   formula: '<p><code>V = a³</code>, <code>SA = 6a²</code>, <code>Face Diagonal = a√2</code>, <code>Space Diagonal = a√3</code></p>',
+  background: '<p>A cube is the regular solid with six identical square faces, so every measure follows from a single edge length. Volume scales with the cube of that length while surface area scales with its square, which is why doubling a cube multiplies its volume eightfold but its surface only fourfold. Crates, dice and storage blocks are sized with these numbers, and the face and space diagonals come from applying Pythagoras in two and three dimensions.</p>',
   calculate: function(v) {
     let a;
     if (v.side) a = v.side;
@@ -143,6 +148,7 @@ R('rectangularprism', {
     { id: 'height', label: 'Height (h)', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 4', half: true },
   ],
   formula: '<p><code>V = lwh</code>, <code>SA = 2(lw + lh + wh)</code>, <code>Diagonal = √(l² + w² + h²)</code></p>',
+  background: '<p>A rectangular prism, or cuboid, is the box shape that dominates packaging, warehousing and construction. Its volume is the product of three perpendicular dimensions because the box can be filled with unit cubes arranged in a grid; its surface area counts six rectangular faces in three matching pairs. The space diagonal is the longest straight line inside the box, useful for checking whether an item will fit through an opening.</p>',
   calculate: function(v) {
     const l = v.length, w = v.width, h = v.height;
     if (!l || !w || !h) return { error: 'Enter valid dimensions' };
@@ -165,6 +171,7 @@ R('capsule', {
     { id: 'height', label: 'Capsule Height (h)', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>V = (4/3)πr³ + 2πr²(h − 2r)</code> when h ≥ 2r. <code>SA = 4πr² + 2πr(h − 2r)</code></p>',
+  background: '<p>A capsule is a cylinder capped by two hemispheres, a shape chosen when a container must have no sharp corners: pill coatings, pressure tanks and some vehicle bodies. Its volume is the cylindrical middle plus one whole sphere, because the two half-spheres combine. The straight section only exists when the total height exceeds the diameter, so shorter inputs collapse to a plain sphere.</p>',
   calculate: function(v) {
     const r = v.radius, h = v.height;
     if (!r || !h) return { error: 'Enter valid dimensions' };
@@ -195,6 +202,7 @@ R('conicalfrustum', {
     { id: 'height', label: 'Height (h)', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 7', half: true },
   ],
   formula: '<p><code>V = (1/3)πh(r₁² + r₁r₂ + r₂²)</code>, <code>Lateral SA = π(r₁ + r₂)s</code> where <code>s = √((r₂ − r₁)² + h²)</code></p>',
+  background: '<p>A conical frustum is what remains when the top of a cone is sliced off parallel to its base, as with a bucket, a lampshade or a tapered duct. Its volume is not the average of the two circular areas but a weighted blend that also counts their geometric mean, which is why the formula carries a cross term. The lateral surface uses the slant height, found from the radius difference and the vertical height.</p>',
   calculate: function(v) {
     const r1 = v.radiusTop, r2 = v.radiusBottom, h = v.height;
     if (!r1 || !r2 || !h) return { error: 'Enter valid dimensions' };
@@ -221,6 +229,7 @@ R('pyramid', {
     { id: 'height', label: 'Height (h)', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 8', half: true },
   ],
   formula: '<p><code>V = (1/3)a²h</code>, <code>Lateral SA = a√(a² + 4h²)</code>, <code>Total SA = a² + a√(a² + 4h²)</code></p>',
+  background: '<p>A pyramid tapers from a polygonal base to an apex, and its volume is one third of the prism that would enclose it, the same factor that appears for cones. The lateral faces are triangles whose height is the slant height, not the vertical height of the solid, a distinction that catches people out. Roofs, monument caps and architectural detailing use these figures, and the square pyramid is the most common case.</p>',
   calculate: function(v) {
     const a = v.base, h = v.height;
     if (!a || !h) return { error: 'Enter valid dimensions' };
@@ -247,6 +256,7 @@ R('hemisphere', {
     { id: 'diameter', label: 'Diameter (d)', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>V = (2/3)πr³</code>, <code>Curved SA = 2πr²</code>, <code>Total SA = 3πr²</code></p>',
+  background: '<p>A hemisphere is exactly half a sphere, cut through a great circle. Its curved surface is half the sphere surface, but the total surface also includes the flat circular base, which is why the two figures differ. Domes, bowls and the ends of capsules are designed with these relations, and the flat face is the detail most often forgotten in estimates.</p>',
   calculate: function(v) {
     let r;
     if (v.radius) r = v.radius;
@@ -275,6 +285,7 @@ R('triangular-prism', {
     { id: 'height', label: 'Prism Height (h)', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>V = (h/4)√((a+b+c)(b+c−a)(c+a−b)(a+b−c))</code>, <code>SA = 2 × Base Area + h(a+b+c)</code></p>',
+  background: '<p>A triangular prism extrudes a triangle along a straight length, so its volume is the triangle area times that length. The triangle area comes from Heron\'s relation, which needs only the three side lengths and therefore suits measurements taken in the field. Roof trusses, wedges, optical prisms and extruded trim are all examples, and the surface area adds two triangular ends to three rectangular sides.</p>',
   calculate: function(v) {
     const a = v.sideA, b = v.sideB, c = v.sideC, h = v.height;
     if (!a || !b || !c || !h) return { error: 'Enter all three sides and height' };
@@ -311,6 +322,7 @@ R('pyramid-frustum', {
     { id: 'height', label: 'Height (h)', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 7', half: true },
   ],
   formula: '<p><code>V = (1/3)h(a + b + √(ab))²</code> for square base. For triangular base, area scales by √3/4 factor.</p>',
+  background: '<p>A pyramid frustum is a pyramid with its top cut off parallel to the base, giving the shape of a truncated monument, a plant pot or a pyramidal roof section. Its volume follows from the two base areas plus their geometric mean, a blend that reduces correctly to a prism when the bases match and to a pyramid when the top shrinks to nothing. The calculation assumes the sides taper evenly, which is why the number of base sides changes only the area factor.</p>',
   calculate: function(v) {
     const a = v.sideTop, b = v.sideBottom, h = v.height;
     if (!a || !b || !h) return { error: 'Enter valid dimensions' };
@@ -341,6 +353,7 @@ R('tube', {
     { id: 'height', label: 'Height (h)', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>V = π(r₁² − r₂²)h</code>, <code>Wall Thickness = r₁ − r₂</code>, <code>End Area = π(r₁² − r₂²)</code></p>',
+  background: '<p>A tube is a hollow cylinder, so its material volume is the outer cylinder minus the inner one. That difference reduces to the annulus area times the height, which is why wall thickness drives weight and cost far more than the outside diameter alone. Pipes, bearings and structural sleeves are specified with these figures, and both the inner and outer surfaces contribute to the wetted area.</p>',
   calculate: function(v) {
     const r1 = v.outerRadius, r2 = v.innerRadius, h = v.height;
     if (!r1 || !r2 || !h) return { error: 'Enter valid dimensions' };
@@ -389,6 +402,8 @@ R('geometricshapes', {
       { value: 'triangular-prism', label: 'Triangular Prism' },
     ]},
   ],
+  formula: '<p>Reference table of volume and surface area formulas for common solid shapes.</p>',
+  background: '<p>This table gathers the volume and surface area relations for the solids that appear most often in engineering, packaging and school geometry. Volume scales with the cube of a linear dimension while surface area scales with its square, so larger containers hold disproportionately more per unit of material. Keeping the formulas together helps in choosing a shape before committing to detailed design.</p>',
   calculate: function(v) {
     const shapes = {
       sphere: { name: 'Sphere', volume: '(4/3)πr³', surface: '4πr²', notes: 'r = radius' },
@@ -439,6 +454,7 @@ R('surfacearea', {
     { id: 'dim3', label: 'Dimension 3', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 3', half: true },
   ],
   formula: '<p>Select a shape and enter the required dimensions. See the <a href="#calc-geometricshapes">Solid Geometry Reference</a> for formulas.</p>',
+  background: '<p>Surface area is the total area of a solid\'s boundary, the quantity that governs painting, plating, heat transfer and material usage. For each shape it is built from flat faces, curved surfaces, or a mix of both, and the formulas differ in whether the base or the two ends are included. In practice a decision is needed about whether only the exposed surface matters or the whole closed body, since the two answers can differ substantially.</p>',
   calculate: function(v) {
     const shape = v.shape || 'sphere';
     const d1 = v.dim1, d2 = v.dim2, d3 = v.dim3;
@@ -529,6 +545,7 @@ R('volume', {
     { id: 'dim3', label: 'Dimension 3', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 3', half: true },
   ],
   formula: '<p>Select a shape and enter the required dimensions. See the <a href="#calc-geometricshapes">Solid Geometry Reference</a> for formulas.</p>',
+  background: '<p>Volume measures the space enclosed by a solid, usually in cubic units, and it is what determines capacity, weight from density, and displacement. Each formula is derived by stacking identical cross-sections, which is why prisms and cylinders take base times height while cones and pyramids take one third of that. Units must be kept consistent throughout, since mixing centimeters and meters is the most common source of large errors.</p>',
   calculate: function(v) {
     const shape = v.shape || 'sphere';
     const d1 = v.dim1, d2 = v.dim2, d3 = v.dim3;

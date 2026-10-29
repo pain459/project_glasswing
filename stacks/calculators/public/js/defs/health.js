@@ -13,6 +13,7 @@ R('bmi-calculator', {
     { id: 'height', label: 'Height (cm)', type: 'number', step: 0.1, min: 1, placeholder: 'e.g. 175', half: true },
   ],
   formula: '<p><code>BMI = weight (kg) / height (m)²</code></p>',
+  background: '<p>Body mass index compares weight with the square of height, a quick population-level screen that was never intended as a diagnosis. Because muscle and bone are denser than fat, a muscular person can score in the overweight band while carrying little fat, and the measure says nothing about where fat sits. Thresholds also vary by population, so clinicians treat BMI as one input alongside waist measurement, body composition and history.</p>',
   calculate: function(v) {
     const h = v.height / 100;
     const bmi = v.weight / (h * h);
@@ -35,6 +36,7 @@ R('conception-calculator', {
     { id: 'dueDate', label: 'Estimated Due Date', type: 'date', placeholder: 'e.g. 2025-06-15' },
   ],
   formula: '<p>Conception typically occurs about 266 days (38 weeks) before the due date.</p>',
+  background: '<p>This estimate works backwards from a due date, assuming a pregnancy of about 266 days from conception, or 280 days from the last menstrual period. It is a statistical average: sperm can survive several days and ovulation timing varies, so the true date can differ by a week or more. The result is useful for dating a pregnancy, not for identifying a specific day.</p>',
   calculate: function(v) {
     const due = new Date(v.dueDate);
     if (isNaN(due.getTime())) return { error: 'Enter a valid due date.' };
@@ -61,6 +63,7 @@ R('pregnancy-calculator', {
     { id: 'cycle', label: 'Average Cycle Length (days)', type: 'number', step: 1, min: 20, max: 45, placeholder: 'e.g. 28', half: true },
   ],
   formula: '<p><code>EDD = LMP + 280 days</code> (Naegele\'s rule, adjusted for cycle length).</p>',
+  background: '<p>Naegele\'s rule adds 280 days to the first day of the last menstrual period, a convention that assumes a 28-day cycle with ovulation on day 14. Adjusting for a longer or shorter cycle shifts the estimate, but only a first-trimester ultrasound gives a reliably accurate date. Fewer than one in twenty babies arrives exactly on the estimated day, so the due date is best read as a window.</p>',
   calculate: function(v) {
     const lmp = new Date(v.lmp);
     if (isNaN(lmp.getTime())) return { error: 'Enter a valid date.' };
@@ -101,6 +104,7 @@ R('body-fat', {
     { id: 'hip', label: 'Hip (cm) — females only', type: 'number', step: 0.1, min: 40, placeholder: 'e.g. 95', half: true },
   ],
   formula: '<p>U.S. Navy method using waist, neck, height (and hip for females).</p>',
+  background: '<p>The U.S. Navy method estimates body fat from tape measurements of the waist, neck and, for women, the hips, using a correlation fitted to displacement weighing. It is convenient and needs no equipment beyond a tape, but it assumes a typical fat distribution and can be several percentage points off for very lean or very heavy people. It is a screening estimate, not a substitute for DEXA or hydrostatic measurement.</p>',
   calculate: function(v) {
     const waist = v.waist, neck = v.neck, height = v.height;
     if (!waist || !neck || !height) return { error: 'Enter all required measurements.' };
@@ -139,6 +143,7 @@ R('bmr', {
     { id: 'age', label: 'Age (years)', type: 'number', step: 1, min: 1, max: 120, placeholder: 'e.g. 30', half: true },
   ],
   formula: '<p><code>BMR = 10W + 6.25H − 5A ± s</code> where W=weight(kg), H=height(cm), A=age, s=+5 for men, −161 for women.</p>',
+  background: '<p>Basal metabolic rate is the energy the body spends at complete rest on essential functions such as breathing, circulation and cell repair, and it accounts for the majority of daily calorie use. The Mifflin-St Jeor equation is the current standard clinical estimate, derived from a large sample and more accurate than the older Harris-Benedict version. Actual values vary with lean mass, thyroid status and genetics, so treat the number as a starting point.</p>',
   calculate: function(v) {
     const s = v.gender === 'male' ? 5 : -161;
     const bmr = 10 * v.weight + 6.25 * v.height - 5 * v.age + s;
@@ -171,6 +176,7 @@ R('tdee', {
     ]},
   ],
   formula: '<p><code>TDEE = BMR × Activity Factor</code> where BMR uses the Mifflin-St Jeor equation.</p>',
+  background: '<p>Total daily energy expenditure multiplies resting metabolism by an activity factor that accounts for movement, exercise and the cost of digesting food. The activity multipliers are broad bands rather than measurements, and people routinely overestimate how active they are, so the result is a planning estimate. Sustained weight change still comes down to the balance between intake and this expenditure over time.</p>',
   calculate: function(v) {
     const s = v.gender === 'male' ? 5 : -161;
     const bmr = 10 * v.weight + 6.25 * v.height - 5 * v.age + s;
@@ -198,6 +204,7 @@ R('ideal-weight', {
     { id: 'heightIn', label: 'Height (inches)', type: 'number', step: 1, min: 0, max: 11, placeholder: 'e.g. 9', half: true },
   ],
   formula: '<p>Devine: Men 50+2.3(in>60), Women 45.5+2.3(in>60). Robinson and Miller use similar adjustments.</p>',
+  background: '<p>Ideal body weight formulas were originally devised for drug dosing, not for setting personal appearance goals, and they are based on height alone. The Devine, Robinson and Miller equations differ mainly in their intercepts and per-inch increments, which is why they disagree by several kilograms for the same person. They take no account of frame size, age or muscle mass, so they are a rough clinical reference rather than a target.</p>',
   calculate: function(v) {
     const totalIn = v.heightFt * 12 + v.heightIn;
     const over60 = Math.max(0, totalIn - 60);
@@ -231,6 +238,7 @@ R('one-rep-max', {
     { id: 'reps', label: 'Number of Reps', type: 'number', step: 1, min: 1, max: 30, placeholder: 'e.g. 8' },
   ],
   formula: '<p><code>1RM = Weight × (1 + Reps / 30)</code> (Epley formula).</p>',
+  background: '<p>One-rep max is the heaviest load that can be lifted once with good form, the standard benchmark for strength programming. Testing it directly is taxing and carries injury risk, so submaximal formulas such as Epley\'s estimate it from a set taken to near failure. Accuracy falls as rep count rises, and the estimate is most reliable in the three-to-ten rep range.</p>',
   calculate: function(v) {
     const o = v.weight * (1 + v.reps / 30);
     const pcts = [100, 95, 90, 85, 80, 75, 70, 65, 60];
@@ -256,6 +264,7 @@ R('target-heart-rate', {
     { id: 'restingHR', label: 'Resting Heart Rate (bpm)', type: 'number', step: 1, min: 30, max: 120, placeholder: 'e.g. 60', half: true },
   ],
   formula: '<p><code>Max HR = 220 − Age</code>. Zones use the Karvonen formula: <code>Target = (Max − Resting) × % + Resting</code>.</p>',
+  background: '<p>Target heart rate zones describe exercise intensity as a percentage of the difference between maximum and resting heart rate, the Karvonen approach. The 220-minus-age rule is a population average with substantial individual spread, so a measured maximum from a supervised test is far better. Zones are training guidance, and anyone with cardiac concerns should get medical advice before pushing into the upper bands.</p>',
   calculate: function(v) {
     const maxHR = 220 - v.age;
     const rhr = v.restingHR || 60;
@@ -291,6 +300,7 @@ R('bmi-calculator-women', {
     { id: 'height', label: 'Height (cm)', type: 'number', step: 0.1, min: 1, placeholder: 'e.g. 165', half: true },
   ],
   formula: '<p><code>BMI = weight (kg) / height (m)²</code></p>',
+  background: '<p>This uses the same weight-to-height-squared index as the general BMI calculator; the difference is presentation, since female body composition typically carries more essential fat. The standard cut-offs are applied to everyone regardless of sex, which is one reason BMI is a coarse screen rather than a diagnosis. Pregnancy, high muscle mass and older age all distort the reading.</p>',
   calculate: function(v) {
     const h = v.height / 100;
     const bmi = v.weight / (h * h);
@@ -322,6 +332,7 @@ R('gestation-calculator', {
     { id: 'breedingDate', label: 'Breeding Date', type: 'date', placeholder: 'e.g. 2025-03-01' },
   ],
   formula: '<p>Due date = Breeding date + gestation period for the species.</p>',
+  background: '<p>Gestation length varies by species and, within a species, by breed, litter size and individual. The dates here use typical averages, so the due window can span several days in dogs and cats and weeks in horses and cattle. Vets advise watching for signs of labor rather than relying on a single calculated date.</p>',
   calculate: function(v) {
     const days = { dog: 63, cat: 65, horse: 335, cow: 283, pig: 114, rabbit: 31, sheep: 150 };
     const breed = new Date(v.breedingDate);
@@ -354,6 +365,7 @@ R('pace-calculator', {
     { id: 'seconds', label: 'Seconds', type: 'number', step: 1, min: 0, max: 59, placeholder: 'e.g. 0', half: true },
   ],
   formula: '<p><code>Pace = Time / Distance</code> expressed as min/km.</p>',
+  background: '<p>Pace is time per unit distance, the inverse of speed, and runners tend to think in it because race goals are set as target times. It assumes even effort over the whole route, whereas hills, wind and fatigue change the real split. Converting between pace and speed is just a reciprocal, so the two figures always agree.</p>',
   calculate: function(v) {
     const totalSec = (v.hours || 0) * 3600 + (v.minutes || 0) * 60 + (v.seconds || 0);
     if (totalSec <= 0) return { error: 'Enter a time greater than zero.' };
@@ -381,6 +393,7 @@ R('period-calculator', {
     { id: 'periodLength', label: 'Period Duration (days)', type: 'number', step: 1, min: 1, max: 10, placeholder: 'e.g. 5', half: true },
   ],
   formula: '<p>Next period = Last period start + cycle length. Ovulation ≈ cycle day 14.</p>',
+  background: '<p>Cycle predictions add the average cycle length to the first day of the last period, then place ovulation roughly fourteen days before the next one. Real cycles vary from month to month, and stress, illness and travel can shift ovulation, so the fertile window is a probability band rather than a guarantee. This is not a reliable method of contraception.</p>',
   calculate: function(v) {
     const last = new Date(v.lastPeriod);
     if (isNaN(last.getTime())) return { error: 'Enter a valid date.' };
@@ -417,6 +430,7 @@ R('pregnancy-weight-gain-calculator', {
     { id: 'weeks', label: 'Weeks Pregnant', type: 'number', step: 1, min: 1, max: 42, placeholder: 'e.g. 20', half: true },
   ],
   formula: '<p>IOM guidelines: Underweight 12.5-18 kg, Normal 11.5-16 kg, Overweight 7-11.5 kg, Obese 5-9 kg total gain.</p>',
+  background: '<p>Recommended pregnancy weight gain is banded by pre-pregnancy BMI, following guidance from the Institute of Medicine. The expected gain assumes a roughly linear rise across forty weeks, but real gain is minimal in the first trimester and faster later, so early readings often look low. These are population guidelines; individual advice should come from the treating clinician.</p>',
   calculate: function(v) {
     const h = v.height / 100;
     const bmi = v.preWeight / (h * h);
@@ -450,6 +464,7 @@ R('target-heart-rate-zone-calculator', {
     { id: 'restingHR', label: 'Resting Heart Rate (bpm)', type: 'number', step: 1, min: 30, max: 120, placeholder: 'e.g. 60', half: true },
   ],
   formula: '<p><code>Max HR = 220 − Age</code>. Zones use the Karvonen formula: <code>Target = (Max − Resting) × % + Resting</code>.</p>',
+  background: '<p>The zone table applies the Karvonen method, which scales the heart-rate reserve between resting and maximum rather than taking a flat percentage of maximum alone. That makes the zones personal to the resting rate, though the 220-minus-age maximum remains an estimate. Use the bands as training guidance and stop if exercise produces chest pain, dizziness or unusual breathlessness.</p>',
   calculate: function(v) {
     const maxHR = 220 - v.age;
     const rhr = v.restingHR || 60;

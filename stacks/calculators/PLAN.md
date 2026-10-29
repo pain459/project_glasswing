@@ -2,9 +2,9 @@
 
 ## Overview
 
-Static calculator hub serving ~100 useful calculators (math, financial, conversions, statistics, geometry, etc.) inspired by CalculatorSoup.com. Pure HTML/CSS/JS served by nginx — no backend, no database.
+Static calculator hub serving 585 calculators (math, financial, conversions, statistics, geometry, physics, health, time, algebra, technology and more) inspired by CalculatorSoup.com. Pure HTML/CSS/JS served by nginx — no backend, no database.
 
-**URL:** `http://pathfinder:3020`
+**URL:** `http://pathfinder:3021`
 
 ## Architecture
 
@@ -52,7 +52,7 @@ calculators/
 
 ## What We're Skipping
 
-- All 700 calculators (80/20 rule, ~100 is enough)
+- All 585 calculators (80/20 rule, ~100 is enough)
 - Currency converter (needs live API)
 - US tax estimator (changes yearly)
 - Chemistry (needs compound DB)

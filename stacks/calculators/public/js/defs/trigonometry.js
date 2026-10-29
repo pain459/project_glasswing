@@ -16,6 +16,7 @@ R('sin-cos-tan', {
     ]},
   ],
   formula: '<p>sin(&theta;), cos(&theta;), tan(&theta;) for the given angle.</p>',
+  background: '<p>Sine, cosine and tangent are the three basic ratios of a right triangle: opposite over hypotenuse, adjacent over hypotenuse, and opposite over adjacent. On the unit circle they extend beyond 0 to 90 degrees to every angle, with cosine and sine acting as the horizontal and vertical coordinates of a rotating point. They are the working language of surveying, signal processing, animation and any field that describes repeating or rotational behaviour.</p>',
   calculate: function(v) {
     const rad = v.unit === 'deg' ? core.deg2rad(v.angle) : v.angle;
     const sin = Math.sin(rad);
@@ -43,6 +44,7 @@ R('asin-acos-atan', {
     ]},
   ],
   formula: '<p>arcsin(x) &#8712; [&#8722;&#960;/2, &#960;/2], arccos(x) &#8712; [0, &#960;], arctan(x) &#8712; (&#8722;&#960;/2, &#960;/2)</p>',
+  background: '<p>Inverse trigonometric functions answer the opposite question to the direct ones: given a ratio, what angle produced it? Because many angles share the same sine or cosine, each inverse is restricted to a principal range so the answer is unique, and inputs outside the valid ratio range have no real result. Surveying, navigation and computer graphics use them to recover headings and orientations from measured proportions.</p>',
   calculate: function(v) {
     const x = v.value;
     var asin, acos;
@@ -82,6 +84,7 @@ R('law-of-sines', {
     { id: 'B', label: 'Angle B (degrees)', type: 'number', step: 0.1, min: 0.1, max: 179.9, placeholder: 'e.g. 45', half: true },
   ],
   formula: '<p><code>a/sin(A) = b/sin(B) = c/sin(C)</code></p>',
+  background: '<p>The law of sines states that each side of a triangle is proportional to the sine of the angle opposite it, and the common ratio equals the diameter of the triangle\'s circumscribed circle. It follows from dropping an altitude and comparing the two right triangles formed, and it is most useful when an angle and its opposite side are known together. Surveyors use it for inaccessible distances, while astronomers once used the same geometry for parallax.</p>',
   calculate: function(v) {
     const A = core.deg2rad(v.A), B = core.deg2rad(v.B);
     var a = v.a, b = v.b, c, C, area;
@@ -119,6 +122,7 @@ R('law-of-cosines', {
     { id: 'C', label: 'Angle C (degrees)', type: 'number', step: 0.1, min: 0.1, max: 179.9, placeholder: 'e.g. 60', half: true },
   ],
   formula: '<p><code>c&#178; = a&#178; + b&#178; &#8722; 2ab&#8226;cos(C)</code> and <code>cos(C) = (a&#178; + b&#178; &#8722; c&#178;) / (2ab)</code></p>',
+  background: '<p>The law of cosines relates the three sides of any triangle to one angle, and it collapses to the Pythagorean theorem when that angle is a right angle. It is the tool of choice when three sides are known, or two sides and the angle between them, cases where the law of sines has too little information. Navigators and engineers use it to close survey traverses and compute resultant lengths from inclined components.</p>',
   calculate: function(v) {
     const a = v.a, b = v.b;
     var c, A, B, C, area;
@@ -157,6 +161,7 @@ R('right-triangle', {
     { id: 'A', label: 'Angle A (degrees)', type: 'number', step: 0.1, min: 0.1, max: 89.9, placeholder: 'e.g. 36.87', half: true },
   ],
   formula: '<p>Use Pythagorean theorem and trig ratios. Provide at least 2 values.</p>',
+  background: '<p>A right triangle has one angle fixed at 90 degrees, so specifying any two of its sides, or one side and an acute angle, determines all the rest. The relations combine the Pythagorean theorem with the basic trigonometric ratios, which is why the solver can work from partial information. These triangles underpin coordinate geometry, roof pitch calculations, ramp design and screen projection.</p>',
   calculate: function(v) {
     var a = v.a, b = v.b, c = v.c, A = v.A;
     // Solve missing values
@@ -193,6 +198,7 @@ R('unit-circle', {
     ]},
   ],
   formula: '<p>On the unit circle: x = cos(&theta;), y = sin(&theta;), r = 1</p>',
+  background: '<p>The unit circle is a circle of radius one centered on the origin, and a point moving around it traces out the sine and cosine of the angle it has swept. Because the radius is fixed, the coordinates stay within plus or minus one, giving the familiar bounds and periodic behavior of the trigonometric functions. It is the standard way to define angles beyond the first quadrant and to explain why signs change in each quadrant.</p>',
   calculate: function(v) {
     const rad = v.unit === 'deg' ? core.deg2rad(v.angle) : v.angle;
     const cos = Math.cos(rad), sin = Math.sin(rad);
@@ -225,6 +231,7 @@ R('hyperbolic', {
     { id: 'x', label: 'x', type: 'number', step: 0.01, placeholder: 'e.g. 1' },
   ],
   formula: '<p><code>sinh(x) = (e&#184; &#8722; e&#8722;&#184;)/2</code>, <code>cosh(x) = (e&#184; + e&#8722;&#184;)/2</code>, <code>tanh(x) = sinh(x)/cosh(x)</code></p>',
+  background: '<p>Hyperbolic functions are built from exponentials rather than circles, so they describe curves such as the catenary, the shape a hanging chain takes under its own weight. Their names echo the trigonometric ones because analogous identities hold, but they are not periodic and they grow without bound. They appear in suspension-bridge design, special relativity, heat conduction and the geometry of saddle-shaped surfaces.</p>',
   calculate: function(v) {
     const x = v.x;
     const sinh = Math.sinh(x);
@@ -258,6 +265,7 @@ R('trigonometricfunctions', {
     ]},
   ],
   formula: '<p>sin(&theta;), cos(&theta;), tan(&theta;) for the given angle.</p>',
+  background: '<p>This is the standard evaluation of sine, cosine and tangent for one angle, the operation performed constantly inside calculators, spreadsheets and graphics engines. The choice of degrees or radians matters: the underlying functions assume radians, and degree input is a conversion applied beforehand. Most practical errors with trigonometric functions come from feeding degrees into a routine that expects radians.</p>',
   calculate: function(v) {
     const rad = v.unit === 'deg' ? core.deg2rad(v.angle) : v.angle;
     const sin = Math.sin(rad);
@@ -282,6 +290,7 @@ R('trigonometricfunctions-pi', {
     { id: 'denominator', label: 'Denominator', type: 'number', step: 1, min: 1, placeholder: 'e.g. 4', half: true },
   ],
   formula: '<p>Angle = (numerator/denominator) &pi; radians.</p>',
+  background: '<p>Expressing an angle as a fraction of pi keeps exact values readable: a quarter turn is pi over two and a sixth of a turn is pi over three, so the common angles stay recognizable instead of becoming long decimals. This notation comes directly from radian measure, where one full turn is two pi. It is standard in mathematics, physics and any code library that works in radians.</p>',
   calculate: function(v) {
     const angle = (v.numerator / v.denominator) * Math.PI;
     const sin = Math.sin(angle);
@@ -310,6 +319,7 @@ R('inversetrigonometricfunctions', {
     ]},
   ],
   formula: '<p>arcsin(x) &#8712; [&#8722;&#960;/2, &#960;/2], arccos(x) &#8712; [0, &#960;], arctan(x) &#8712; (&#8722;&#960;/2, &#960;/2)</p>',
+  background: '<p>These functions invert sine, cosine and tangent, returning the angle that would produce a given ratio. Because the originals repeat every full turn, each inverse is confined to a principal branch to make it single-valued, and ratios outside the domain of sine or cosine have no real answer. They are used wherever an angle must be recovered from measured lengths, as in surveying, robotics and collision response.</p>',
   calculate: function(v) {
     const x = v.value;
     var asin, acos;
@@ -339,6 +349,7 @@ R('graphs-trigonometricfunctions', {
   tags: ['graphs', 'trigonometric', 'reference', 'table'],
   fields: [],
   formula: '<p>Values of sin, cos, tan for common angles in degrees.</p>',
+  background: '<p>These are the values that produce the familiar wave shapes, tabulated at the angles that occur most often in coursework and quick estimation. Sine starts at zero and rises, cosine starts at one and falls, and tangent repeats every half turn with vertical asymptotes where cosine reaches zero. Knowing the pattern at these landmark angles makes it easy to sanity-check any computed result.</p>',
   calculate: function() {
     var angles = [0, 30, 45, 60, 90, 120, 135, 150, 180, 270, 360];
     var html = '<table><tr><th>Angle (&#176;)</th><th>sin</th><th>cos</th><th>tan</th></tr>';
@@ -361,6 +372,7 @@ R('graphs-trigonometricfunctions-pi', {
   tags: ['graphs', 'trigonometric', 'pi', 'radians', 'reference'],
   fields: [],
   formula: '<p>Values of sin, cos, tan for common angles expressed as multiples of &pi;.</p>',
+  background: '<p>The same landmark angles are listed as multiples of pi, the natural unit when working in radians. Radian measure compares arc length to radius, which is why one full turn is two pi and why calculus with trigonometric functions is far cleaner in radians than in degrees. This table is the reference form most often used in mathematics and physics.</p>',
   calculate: function() {
     var entries = [
       { label: '0', val: 0 },
@@ -394,6 +406,7 @@ R('graphs-inversefunctions', {
   tags: ['graphs', 'inverse', 'arcsin', 'arccos', 'arctan', 'reference'],
   fields: [],
   formula: '<p>Reference values for inverse trigonometric functions.</p>',
+  background: '<p>Inverse trigonometric values are usually memorized at a handful of exact points, and this table collects them in degrees. The principal ranges mean arcsin returns values between minus 90 and 90 degrees, arccos between 0 and 180, and arctan between minus 90 and 90, so the same ratio can never produce two answers. These fixed points anchor any check of interpolated or computed results.</p>',
   calculate: function() {
     var entries = [
       { x: 0, asin: true, acos: true, atan: true },
@@ -426,6 +439,7 @@ R('trigonometricratios', {
     { id: 'hyp', label: 'Hypotenuse', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 5', half: true },
   ],
   formula: '<p>sin = opp/hyp, cos = adj/hyp, tan = opp/adj, cot = adj/opp, sec = hyp/adj, csc = hyp/opp. Provide any 2 sides.</p>',
+  background: '<p>The six trigonometric ratios are all built from the three sides of a right triangle: sine, cosine and tangent plus their reciprocals cosecant, secant and cotangent. Every one of them is scale-free, so a small model and a full-size structure with the same angles give identical ratios, which is what makes trigonometry useful for indirect measurement. Provide any two sides and the rest follow from the Pythagorean relation.</p>',
   calculate: function(v) {
     var opp = v.opp, adj = v.adj, hyp = v.hyp;
     if (!hyp && opp && adj) hyp = Math.sqrt(opp * opp + adj * adj);

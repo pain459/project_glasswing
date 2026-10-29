@@ -12,6 +12,7 @@ R('descriptivestatistics', {
     { id: 'data', label: 'Data Set', type: 'textarea', placeholder: 'e.g. 12, 15, 18, 22, 25, 28, 30, 35', hint: 'Enter numbers separated by commas' },
   ],
   formula: '<p>Computes the full set of descriptive statistics for your data including measures of central tendency, dispersion, and position.</p>',
+  background: '<p>Descriptive statistics condense a data set into a few numbers that describe its centre and spread, without claiming anything about a wider population. The mean is sensitive to outliers while the median is not, so reporting both is a quick check on skew. Quartiles and the interquartile range describe the spread of the middle half of the data and are the basis for the 1.5 × IQR rule used to flag outliers.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 1) return { error: 'Enter at least one number' };
@@ -60,6 +61,7 @@ R('mean-median-mode', {
     { id: 'data', label: 'Data Set', type: 'textarea', placeholder: 'e.g. 5, 10, 15, 10, 20, 25, 10', hint: 'Enter numbers separated by commas' },
   ],
   formula: '<p><code>Mean = Sum / n</code>. Median is the middle value. Mode is the most frequent value.</p>',
+  background: '<p>These three measures of central tendency answer different questions: the mean uses every value, the median looks only at position, and the mode is the most frequent value. When data are symmetric the three roughly agree, but income and house prices are typically right-skewed, where the median is more representative. A data set can have no mode or several modes, which is why a mode result may list multiple values.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 1) return { error: 'Enter at least one number' };
@@ -83,6 +85,7 @@ R('standard-deviation', {
     { id: 'data', label: 'Data Set', type: 'textarea', placeholder: 'e.g. 4, 8, 15, 16, 23, 42', hint: 'Enter numbers separated by commas' },
   ],
   formula: '<p><code>s = sqrt(Sum(x - mean)² / (n-1))</code> for sample. <code>σ = sqrt(Sum(x - mean)² / n)</code> for population.</p>',
+  background: '<p>Standard deviation is the typical distance of observations from the mean, expressed in the same units as the data, which makes it easier to interpret than variance. The sample version divides by n − 1 because the sample mean is itself estimated from the data, which slightly inflates each deviation and removes the downward bias. Deviations are squared before averaging, so a single extreme value can dominate the result; for skewed data the interquartile range is often more robust.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 2) return { error: 'Enter at least two numbers' };
@@ -114,6 +117,7 @@ R('variance', {
     { id: 'data', label: 'Data Set', type: 'textarea', placeholder: 'e.g. 10, 12, 14, 16, 18', hint: 'Enter numbers separated by commas' },
   ],
   formula: '<p><code>s² = Sum(x - mean)² / (n-1)</code> for sample. <code>σ² = Sum(x - mean)² / n</code> for population.</p>',
+  background: '<p>Variance is the average squared deviation from the mean, so its units are squared — dollars squared rather than dollars. Squaring gives large deviations disproportionate weight, which is why variance is sensitive to outliers and why its square root, the standard deviation, is usually reported instead. The sample form divides by n − 1 so that repeated sampling averages to the true population variance.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 2) return { error: 'Enter at least two numbers' };
@@ -143,6 +147,7 @@ R('z-score', {
     { id: 'stddev', label: 'Std Dev (σ)', type: 'number', step: 0.01, min: 0.001, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>z = (x − μ) / σ</code></p>',
+  background: '<p>A z-score puts a value on the standard normal scale, telling you how many standard deviations it sits above or below the mean. It assumes the reference distribution is roughly normal and that the mean and standard deviation are known rather than estimated from the same data. About 68% of normal observations fall within one standard deviation and 95% within two, so a score beyond about ±2 is often treated as unusual.</p>',
   calculate: function(v) {
     if (!v.value || v.mean === undefined || !v.stddev) return { error: 'Enter all values' };
     const z = (v.value - v.mean) / v.stddev;
@@ -173,6 +178,7 @@ R('t-score', {
     { id: 'sampleSize', label: 'Sample Size (n)', type: 'number', step: 1, min: 2, placeholder: 'e.g. 30', half: true },
   ],
   formula: '<p><code>t = (x̄ − μ) / (s / √n)</code></p>',
+  background: '<p>The t-score is the same standardisation as a z-score, but the population standard deviation is replaced by the sample value s, so the result follows a t distribution rather than a normal one. The t distribution has heavier tails, and how much heavier depends on the degrees of freedom, n − 1, which is why small samples need larger critical values. As the sample grows the t distribution converges to the normal.</p>',
   calculate: function(v) {
     if (!v.sampleMean || v.popMean === undefined || !v.stdDev || !v.sampleSize) return { error: 'Enter all values' };
     const se = v.stdDev / Math.sqrt(v.sampleSize);
@@ -200,6 +206,7 @@ R('confidence-interval', {
     ]},
   ],
   formula: '<p><code>CI = x̄ ± z × (σ/√n)</code> where z is the critical value for the confidence level.</p>',
+  background: '<p>A confidence interval gives a range of plausible values for a population mean, built from the sample mean plus and minus a multiple of its standard error. The 95% level means that if the whole study were repeated many times, about 95% of the intervals produced would contain the true mean; it is not a 95% probability that the parameter lies in this particular interval. Intervals are narrowest with large samples and low variability.</p>',
   calculate: function(v) {
     if (!v.sampleMean || !v.stdDev || !v.sampleSize) return { error: 'Enter all values' };
     const zTable = { '90': 1.645, '95': 1.96, '99': 2.576 };
@@ -230,6 +237,7 @@ R('margin-of-error', {
     ]},
   ],
   formula: '<p><code>ME = z × sqrt(p(1-p) / n)</code></p>',
+  background: '<p>The margin of error is the half-width of a confidence interval for a proportion, and it shrinks with the square root of sample size, so quartering the sample only halves the error. It is largest near p = 0.5, which is why polls that assume a 50/50 split give the most conservative figure. Published poll margins usually refer to a 95% confidence level and cover sampling error only, not non-response or question wording.</p>',
   calculate: function(v) {
     if (!v.sampleSize || v.proportion === undefined) return { error: 'Enter all values' };
     const zTable = { '90': 1.645, '95': 1.96, '99': 2.576 };
@@ -259,6 +267,7 @@ R('sample-size', {
     { id: 'population', label: 'Population Size (N, optional)', type: 'number', step: 1, min: 0, placeholder: 'Leave blank for infinite', half: true },
   ],
   formula: '<p><code>n = z² × p(1-p) / E²</code>. With finite population correction: <code>n = n₀ / (1 + (n₀-1)/N)</code></p>',
+  background: '<p>Required sample size follows from the margin of error you are willing to accept: precision improves with the square of the sample size, so halving the error needs roughly four times the respondents. The unknown proportion is usually set to 0.5 to be conservative. For small populations the finite population correction reduces the number needed, because sampling a large fraction of a small group carries relatively more information.</p>',
   calculate: function(v) {
     if (!v.marginError || v.proportion === undefined) return { error: 'Enter margin of error and proportion' };
     const zTable = { '90': 1.645, '95': 1.96, '99': 2.576 };
@@ -300,6 +309,7 @@ R('p-value', {
     ]},
   ],
   formula: '<p>Uses the standard normal CDF approximation. A p-value below α means the result is statistically significant.</p>',
+  background: '<p>A p-value is the probability of seeing a result at least as extreme as the observed one if the null hypothesis were true; it is not the probability that the null hypothesis is correct. It is compared with a significance level chosen in advance, such as 0.05, and small samples or many comparisons make small p-values less trustworthy. The conventional threshold is a convention, not a sharp boundary between real and illusory effects.</p>',
   calculate: function(v) {
     if (v.zscore === undefined) return { error: 'Enter a z-score' };
     const z = Math.abs(v.zscore);
@@ -343,6 +353,7 @@ R('correlation', {
     { id: 'yData', label: 'Y Values', type: 'textarea', placeholder: 'e.g. 2, 4, 5, 4, 5', hint: 'Enter Y values separated by commas' },
   ],
   formula: '<p><code>r = (n·Σxy − Σx·Σy) / sqrt([n·Σx² − (Σx)²] · [n·Σy² − (Σy)²])</code></p>',
+  background: '<p>Pearson correlation measures the strength of a straight-line relationship between two variables on a scale from −1 to 1, where 0 means no linear association. It is sensitive to outliers and says nothing about causation, and a strong coefficient can still hide a curved relationship. Squaring the coefficient gives the share of variance in one variable explained by a linear fit to the other.</p>',
   calculate: function(v) {
     const x = core.getDataSet('xData');
     const y = core.getDataSet('yData');
@@ -385,6 +396,7 @@ R('linear-regression', {
     { id: 'yData', label: 'Y Values', type: 'textarea', placeholder: 'e.g. 2.1, 3.9, 6.2, 7.8, 10.1', hint: 'Enter Y values separated by commas' },
   ],
   formula: '<p><code>y = mx + b</code> where <code>m = (n·Σxy − Σx·Σy) / (n·Σx² − (Σx)²)</code> and <code>b = (Σy − m·Σx) / n</code></p>',
+  background: '<p>Least-squares regression chooses the line that minimises the sum of squared vertical distances from the points, which is why outliers can pull the slope noticeably. The slope is the expected change in y per one-unit change in x, while the intercept is the prediction when x is zero, which is often outside the observed data and not meaningful on its own. A good fit describes association, not causation.</p>',
   calculate: function(v) {
     const x = core.getDataSet('xData');
     const y = core.getDataSet('yData');
@@ -425,6 +437,7 @@ R('chi-square', {
     { id: 'expected', label: 'Expected Frequencies', type: 'textarea', placeholder: 'e.g. 40, 30, 30', hint: 'Enter expected counts separated by commas' },
   ],
   formula: '<p><code>χ² = Σ (O − E)² / E</code>. Compare to chi-square critical value with df = k − 1.</p>',
+  background: '<p>The chi-square goodness-of-fit test compares observed counts with counts expected under a hypothesised distribution, so it works on frequencies rather than percentages. Large values of χ² mean the observed counts stray further from expectation than chance alone would suggest. Every expected count should be at least about 5, and the degrees of freedom are the number of categories minus one, minus any parameters estimated from the data.</p>',
   calculate: function(v) {
     const obs = core.getDataSet('observed');
     const exp = core.getDataSet('expected');
@@ -468,6 +481,7 @@ R('t-test', {
     { id: 'data2', label: 'Sample 2 Data (for two-sample)', type: 'textarea', placeholder: 'e.g. 11, 13, 15, 17, 19', hint: 'Leave blank for one-sample test' },
   ],
   formula: '<p>One-sample: <code>t = (x̄ − μ₀) / (s/√n)</code>. Two-sample: <code>t = (x̄₁ − x̄₂) / SE</code> with pooled variance.</p>',
+  background: '<p>A t-test asks whether an observed difference in means is larger than the noise expected from sampling variability. The one-sample form compares a sample mean with a hypothesised value, while the two-sample form compares two groups and pools their variances when equal spread is assumed. Results depend on roughly normal data or large samples, and on whether the test is one- or two-tailed.</p>',
   calculate: function(v) {
     const d1 = core.getDataSet('data1');
     if (d1.length < 2) return { error: 'Enter at least 2 values for Sample 1' };
@@ -521,6 +535,7 @@ R('anova', {
     { id: 'group3', label: 'Group 3 Data', type: 'textarea', placeholder: 'e.g. 14, 16, 18, 20', hint: 'Enter values separated by commas (optional for 2-group comparison)' },
   ],
   formula: '<p><code>F = MS_between / MS_within</code>. Compares variance between groups to variance within groups.</p>',
+  background: '<p>One-way ANOVA generalises the t-test to three or more groups by comparing the variability between group means with the variability inside the groups. If the between-group variance is large relative to the within-group variance, the F ratio is large and the hypothesis of equal means looks unlikely. A significant result says that at least one mean differs, not which one, so follow-up comparisons are needed.</p>',
   calculate: function(v) {
     const groups = [];
     for (let g = 1; g <= 3; g++) {
@@ -573,6 +588,7 @@ R('probability', {
     { id: 'total', label: 'Total Number of Possible Outcomes', type: 'number', step: 1, min: 1, placeholder: 'e.g. 6' },
   ],
   formula: '<p><code>P = Favorable / Total</code></p>',
+  background: '<p>Classical probability counts equally likely outcomes, so the favourable-over-total ratio applies only when every outcome really is equally likely, as with dice and cards. Overlapping events use the addition rule, and independent events multiply; drawing without replacement changes the denominator on each draw. Empirical probability, estimated from observed frequencies, converges toward the classical value as trials increase.</p>',
   calculate: function(v) {
     if (!v.favorable || !v.total) return { error: 'Enter valid values' };
     const p = v.favorable / v.total;
@@ -595,6 +611,7 @@ R('permutation', {
     { id: 'r', label: 'Items to Choose (r)', type: 'number', step: 1, min: 0, max: 170, placeholder: 'e.g. 3' },
   ],
   formula: '<p><code>P(n,r) = n! / (n − r)!</code></p>',
+  background: '<p>Permutations count arrangements in which order matters, so ABC and CBA are different. The falling factorial stops after r factors, which is why the count is smaller than n! but larger than the corresponding combination. Typical uses are finishing orders in a race, seating plans and character sequences in passwords.</p>',
   calculate: function(v) {
     if (v.n === undefined || v.r === undefined) return { error: 'Enter both values' };
     if (v.r > v.n) return { error: 'r cannot be greater than n' };
@@ -616,6 +633,7 @@ R('combination', {
     { id: 'r', label: 'Items to Choose (r)', type: 'number', step: 1, min: 0, max: 170, placeholder: 'e.g. 3' },
   ],
   formula: '<p><code>C(n,r) = n! / (r! × (n − r)!)</code></p>',
+  background: '<p>Combinations count selections in which order does not matter, so choosing Alice, Bob and Cara is one group however it is listed. Each combination corresponds to r! orderings, which is exactly why the permutation count is divided by r!. They appear in lottery odds, committee selection and the binomial coefficient at the heart of probability formulas.</p>',
   calculate: function(v) {
     if (v.n === undefined || v.r === undefined) return { error: 'Enter both values' };
     if (v.r > v.n) return { error: 'r cannot be greater than n' };
@@ -639,6 +657,7 @@ R('binomial-distribution', {
     { id: 'probability', label: 'Probability of Success (p)', type: 'number', step: 0.01, min: 0, max: 1, placeholder: 'e.g. 0.5' },
   ],
   formula: '<p><code>P(X=k) = C(n,k) × p^k × (1-p)^(n-k)</code></p>',
+  background: '<p>The binomial distribution counts successes in a fixed number of independent trials that each share the same success probability. It applies to yes/no outcomes such as coin flips, defectives in a batch or survey responses, provided the trials are independent and the number of trials is fixed in advance. For large n and a moderate p the normal distribution becomes a good approximation.</p>',
   calculate: function(v) {
     if (!v.trials || v.successes === undefined || v.probability === undefined) return { error: 'Enter all values' };
     const n = v.trials, k = v.successes, p = v.probability;
@@ -672,6 +691,7 @@ R('normal-distribution', {
     { id: 'x', label: 'Value (x)', type: 'number', step: 0.01, placeholder: 'e.g. 115' },
   ],
   formula: '<p>Uses the standard normal CDF. <code>z = (x − μ) / σ</code></p>',
+  background: '<p>The normal distribution is the familiar bell curve, defined by its mean and standard deviation; roughly 68% of values lie within one standard deviation of the mean, 95% within two and 99.7% within three. Probabilities come from the area under the curve, which has no closed form, so they are computed numerically or read from tables after standardising to a z-score. Many real quantities are only approximately normal, and heavily skewed data such as incomes are not.</p>',
   calculate: function(v) {
     if (v.mean === undefined || !v.stddev || v.x === undefined) return { error: 'Enter all values' };
     const z = (v.x - v.mean) / v.stddev;
@@ -712,6 +732,8 @@ R('random-number-generator', {
       { value: 'yes', label: 'Yes', default: true }, { value: 'no', label: 'No' }
     ]},
   ],
+  formula: '<p>Generates random integers between min and max (inclusive), with or without duplicates.</p>',
+  background: '<p>These values come from a pseudorandom generator seeded by the browser, so they are statistically uniform but fully determined by that seed. Each draw is independent of the last, so a number that has not appeared recently is not any more likely to appear next. For anything security-sensitive, use a cryptographic generator rather than a general-purpose one.</p>',
   calculate: function(v) {
     if (v.min === undefined || v.max === undefined) return { error: 'Enter min and max values' };
     if (v.min >= v.max) return { error: 'Min must be less than max' };
@@ -745,6 +767,8 @@ R('character-counter', {
   fields: [
     { id: 'text', label: 'Enter or paste your text', type: 'textarea', placeholder: 'Type or paste your text here...', hint: 'The counter updates as you type' },
   ],
+  formula: '<p>Counts characters, words, sentences, paragraphs and lines from the supplied text.</p>',
+  background: '<p>Character counts differ by convention: JavaScript string length counts UTF-16 code units, so some emoji and scripts register as two characters while the visible glyph is one. Words are usually split on whitespace, which overcounts hyphenated compounds and undercounts languages that do not separate words with spaces. Social platforms each apply their own weighting, so their limits may not match a raw count.</p>',
   calculate: function(v) {
     const text = v.text || '';
     const chars = text.length;
@@ -780,6 +804,8 @@ R('coin-flipper', {
     { id: 'numDice', label: 'Number of Dice', type: 'number', step: 1, min: 1, max: 10, placeholder: 'e.g. 2', half: true },
     { id: 'sides', label: 'Sides per Die', type: 'number', step: 1, min: 2, max: 100, placeholder: 'e.g. 6', half: true },
   ],
+  formula: '<p>Simulates <code>count</code> fair coin flips or rolls of <code>numDice</code> dice with <code>sides</code> faces, reporting frequencies and averages.</p>',
+  background: '<p>Each flip or roll is independent, so a run of heads does not make tails more likely; the long-run proportion converges to the true probability by the law of large numbers. For a fair coin the standard deviation of the number of heads grows with the square root of the number of flips, which is why short sessions look streaky. Simulated results are pseudorandom and fine for illustration but not for gambling or security.</p>',
   calculate: function(v) {
     const count = Math.min(v.numFlips || 100, 10000);
     if (v.mode === 'coin') {
@@ -835,6 +861,7 @@ R('frequency-distribution', {
     { id: 'numBins', label: 'Number of Bins', type: 'number', step: 1, min: 2, max: 50, placeholder: 'e.g. 5', half: true },
   ],
   formula: '<p>Groups data into bins and counts the frequency of values in each bin.</p>',
+  background: '<p>A frequency table groups values into bins and counts how many fall in each, trading detail for an overview of shape. Bin width matters: too few bins hide structure, too many produce a spiky and noisy table, and shifting the boundaries can change the picture. Cumulative counts and relative frequencies make it easier to compare data sets of different sizes.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 1) return { error: 'Enter at least one number' };
@@ -877,6 +904,7 @@ R('percentile-rank', {
     { id: 'value', label: 'Value to Find Percentile For', type: 'number', step: 0.01, placeholder: 'e.g. 85' },
   ],
   formula: '<p><code>Percentile Rank = (Number of values below x / Total values) × 100</code></p>',
+  background: '<p>Percentile rank tells you the share of observations at or below a given value, which is not the same as the value at a given percentile. Ranks depend on the sample, so a score at the 90th percentile of one group may sit at the 60th percentile of another. Ties and small samples make the figure coarse.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 1) return { error: 'Enter at least one number' };
@@ -911,6 +939,7 @@ R('five-number-summary', {
     { id: 'data', label: 'Data Set', type: 'textarea', placeholder: 'e.g. 3, 7, 8, 12, 15, 18, 22, 25, 30', hint: 'Enter numbers separated by commas' },
   ],
   formula: '<p>The five-number summary consists of: Minimum, Q1, Median, Q3, Maximum. Used for box plots and outlier detection.</p>',
+  background: '<p>The five-number summary describes a distribution with five positions rather than a mean and standard deviation, so it is resistant to outliers. The box in a box plot spans the interquartile range and the whiskers usually extend to 1.5 × IQR, with points beyond that flagged as potential outliers. It works well for skewed data where a mean and standard deviation would mislead.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 1) return { error: 'Enter at least one number' };
@@ -946,6 +975,8 @@ R('sum-calculator', {
   fields: [
     { id: 'data', label: 'Numbers', type: 'textarea', placeholder: 'e.g. 10, 20, 30, 40, 50', hint: 'Enter numbers separated by commas' },
   ],
+  formula: '<p><code>Sum = Σx</code>, <code>Average = Σx / n</code></p>',
+  background: '<p>A sum is the simplest aggregate; on its own it says nothing about how many values there are or how they are spread. The average divides by the count, so one very large value can move it a long way. Reporting count, sum and average together avoids the classic mistake of comparing totals from groups of different sizes.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 1) return { error: 'Enter at least one number' };
@@ -972,6 +1003,7 @@ R('quartile-calculator', {
     { id: 'data', label: 'Data Set', type: 'textarea', placeholder: 'e.g. 5, 10, 15, 20, 25, 30, 35, 40, 45, 50', hint: 'Enter numbers separated by commas' },
   ],
   formula: '<p>Q1 is the median of the lower half, Q2 is the median, Q3 is the median of the upper half. IQR = Q3 − Q1.</p>',
+  background: '<p>Quartiles split ordered data into four parts, so Q1 and Q3 bracket the middle half of the observations. There is no single universal definition: Tukey hinges, linear interpolation and other methods give slightly different results for small samples. The interquartile range between Q1 and Q3 is a robust measure of spread because it ignores the extreme quarters.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 1) return { error: 'Enter at least one number' };
@@ -1002,6 +1034,7 @@ R('percentile-calculator', {
     { id: 'percentile', label: 'Percentile to Find', type: 'number', step: 1, min: 1, max: 99, placeholder: 'e.g. 75', half: true },
   ],
   formula: '<p>Finds the value below which a given percentage of observations fall.</p>',
+  background: '<p>A percentile is the value below which a given percentage of observations fall, so the 90th percentile is the score that 90% of the group does not exceed. Different software uses different interpolation rules such as nearest rank, linear or exclusive, which is why the same data can give slightly different answers. Percentiles are useful for growth charts and test scores, where position in the group matters more than the raw value.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 1) return { error: 'Enter at least one number' };
@@ -1036,6 +1069,8 @@ R('stemleaf', {
   fields: [
     { id: 'data', label: 'Data Set', type: 'textarea', placeholder: 'e.g. 12, 15, 23, 28, 31, 35, 42, 47, 51', hint: 'Enter numbers separated by commas' },
   ],
+  formula: '<p>Splits each value into a stem (value ÷ stem unit, rounded down) and a leaf (remainder digit), then groups the leaves by stem.</p>',
+  background: '<p>A stem-and-leaf plot keeps the original values while showing the shape of the distribution, which distinguishes it from a histogram. The stem is the leading digit or digits and the leaf is the trailing digit, so the plot works best for small to moderate data sets. The stem unit controls the resolution and can spread or compress the display.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 1) return { error: 'Enter at least one number' };
@@ -1067,6 +1102,8 @@ R('vote-percentage', {
   fields: [
     { id: 'votes', label: 'Votes per Candidate/Option', type: 'textarea', placeholder: 'e.g. 1200, 800, 500', hint: 'Enter vote counts separated by commas' },
   ],
+  formula: '<p><code>Percentage = (Votes / Total Votes) × 100</code>, <code>Winning Margin = Top % − Runner-up %</code></p>',
+  background: '<p>Vote share is each candidate total divided by all votes counted, so the shares always sum to 100%. The leading margin is usually expressed in percentage points, which is not the same as a percentage lead, since a 55% to 45% result is a 10-point margin but a 22% lead. Turnout, spoiled ballots and the treatment of undecided voters all affect how much a poll or count tells you.</p>',
   calculate: function(v) {
     const votes = core.getDataSet('votes');
     if (votes.length < 1) return { error: 'Enter at least one vote count' };
@@ -1097,6 +1134,7 @@ R('average', {
     { id: 'data', label: 'Numbers', type: 'textarea', placeholder: 'e.g. 10, 20, 30, 40, 50', hint: 'Enter numbers separated by commas' },
   ],
   formula: '<p><code>Average = Sum / Count</code></p>',
+  background: '<p>The arithmetic mean adds every value and divides by the count, so it uses all the information but is pulled toward extremes. For skewed data such as incomes or waiting times the median is often a fairer summary, and the geometric mean is appropriate for growth rates. Reporting the count alongside the average shows how much weight the figure carries.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 1) return { error: 'Enter at least one number' };
@@ -1117,6 +1155,7 @@ R('five-number-summary-calculator', {
     { id: 'data', label: 'Data Set', type: 'textarea', placeholder: 'e.g. 3, 7, 8, 12, 15, 18, 22, 25, 30', hint: 'Enter numbers separated by commas' },
   ],
   formula: '<p>The five-number summary: Minimum, Q1, Median, Q3, Maximum.</p>',
+  background: '<p>This is a second, simpler version of the five-number summary, giving the minimum, Q1, median, Q3 and maximum. Because it relies on positions rather than squared deviations, a few extreme values do not distort it the way they distort a mean. It is the natural summary behind a box plot and pairs well with the interquartile range for outlier screening.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 1) return { error: 'Enter at least one number' };
@@ -1147,6 +1186,7 @@ R('gpa-calculator', {
     { id: 'courses', label: 'Courses (one per line: Grade Credits)', type: 'textarea', placeholder: 'e.g.\nA 3\nB+ 4\nA- 3\nC 2', hint: 'Use letter grades: A, A-, B+, B, B-, C+, C, C-, D+, D, F' },
   ],
   formula: '<p>Calculates weighted GPA using standard 4.0 scale grade points.</p>',
+  background: '<p>GPA is a credit-weighted average of grade points, so a three-credit course counts three times as much as a one-credit course. Scales differ by institution: a 4.0 scale typically maps A to 4.0 and F to 0, while some schools award A+ above 4.0 or use percentage bands. Pass/fail courses and transferred credits are usually excluded or handled by local rules.</p>',
   calculate: function(v) {
     if (!v.courses || !v.courses.trim()) return { error: 'Enter at least one course' };
     const gradePoints = { 'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7, 'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 'F': 0.0 };
@@ -1183,6 +1223,7 @@ R('grade-calculator', {
     { id: 'items', label: 'Graded Items (one per line: Score Weight%)', type: 'textarea', placeholder: 'e.g.\n90 20\n85 30\n95 25\n88 25', hint: 'Enter score and weight percentage for each item' },
   ],
   formula: '<p>Calculates the weighted average of your graded items.</p>',
+  background: '<p>A weighted grade treats each assessment in proportion to its share of the final mark, so a final exam worth 40% moves the result far more than a quiz worth 5%. Scores are converted to percentages first, then multiplied by their weights. Categories with dropped lowest scores or extra credit follow the rules your course uses, not a simple average.</p>',
   calculate: function(v) {
     if (!v.items || !v.items.trim()) return { error: 'Enter at least one graded item' };
     const lines = v.items.trim().split(/\n/).map(l => l.trim()).filter(l => l);
@@ -1225,6 +1266,8 @@ R('number-generator', {
       { value: 'yes', label: 'Yes' }, { value: 'no', label: 'Mixed Case', default: true }
     ]},
   ],
+  formula: '<p>Builds a random string of the requested length from the selected letter and digit sets.</p>',
+  background: '<p>This builds a random alphanumeric string from the character sets you choose, which is convenient for IDs, test data and placeholder codes. General-purpose pseudorandom output is predictable enough that it should not be used for passwords, tokens or anything that must resist guessing. Length matters more than complexity for resistance, but only a cryptographic source provides real security.</p>',
   calculate: function(v) {
     const len = Math.min(v.length || 10, 100);
     let charset = '';
@@ -1256,6 +1299,8 @@ R('pin-generator', {
     { id: 'length', label: 'PIN Length', type: 'number', step: 1, min: 1, max: 20, placeholder: 'e.g. 4', half: true },
     { id: 'count', label: 'How Many PINs', type: 'number', step: 1, min: 1, max: 20, placeholder: 'e.g. 5', half: true },
   ],
+  formula: '<p>Generates the requested number of random PINs, each made of random digits.</p>',
+  background: '<p>A four-digit PIN has only 10,000 possible values, so it can be exhausted by anyone allowed to try repeatedly; longer PINs add exponentially more combinations. Real systems rely on retry limits and lockouts rather than length alone. Generated PINs are pseudorandom and suit demos or temporary codes, not banking or device security.</p>',
   calculate: function(v) {
     const len = Math.min(v.length || 4, 20);
     const count = Math.min(v.count || 5, 20);
@@ -1284,6 +1329,8 @@ R('random-card-generator', {
     { id: 'count', label: 'Number of Cards', type: 'number', step: 1, min: 1, max: 52, placeholder: 'e.g. 5', half: true },
     { id: 'decks', label: 'Number of Decks', type: 'number', step: 1, min: 1, max: 10, placeholder: 'e.g. 1', half: true },
   ],
+  formula: '<p>Shuffles one or more full 52-card decks and draws the requested number of cards.</p>',
+  background: '<p>A standard deck has 52 distinct cards in four suits of thirteen ranks, and drawing without replacement means each card can appear only once. An ideal shuffle gives every ordering equal probability, but software draws depend on the quality of the random source. The probability of a particular hand follows the hypergeometric distribution rather than the binomial.</p>',
   calculate: function(v) {
     const suits = ['♠', '♥', '♦', '♣'];
     const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
@@ -1319,6 +1366,8 @@ R('random-name-picker', {
     { id: 'names', label: 'Names (one per line)', type: 'textarea', placeholder: 'e.g.\nAlice\nBob\nCharlie\nDiana', hint: 'Enter each name on a separate line' },
     { id: 'count', label: 'How Many to Pick', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 1', half: true },
   ],
+  formula: '<p>Randomly selects names from the list without replacement.</p>',
+  background: '<p>Picking without replacement guarantees no repeats, which is what you want for raffles and turn orders. Every remaining name has an equal chance at each draw, so earlier positions are not favoured; the order of the list matters only if the list itself is not random. For a truly fair public draw, use an auditable random source rather than a general-purpose generator.</p>',
   calculate: function(v) {
     if (!v.names || !v.names.trim()) return { error: 'Enter at least one name' };
     const nameList = v.names.trim().split(/\n/).map(n => n.trim()).filter(n => n);
@@ -1349,6 +1398,8 @@ R('random-number-generator-1-10', {
       { value: 'yes', label: 'Yes', default: true }, { value: 'no', label: 'No' }
     ]},
   ],
+  formula: '<p>Generates random integers from 1 to 10 (inclusive), with or without duplicates.</p>',
+  background: '<p>Each draw is an integer from 1 to 10 with equal probability, so any specific number appears about 10% of the time in the long run. Independence means short sequences can look patterned even though they are not, and a repeat is not a sign that the generator is broken. Simulated draws are pseudorandom and unsuitable for security or gambling.</p>',
   calculate: function(v) {
     const count = Math.min(v.count || 10, 100);
     const nums = [];
@@ -1381,6 +1432,8 @@ R('random-number-generator-1-100', {
       { value: 'yes', label: 'Yes', default: true }, { value: 'no', label: 'No' }
     ]},
   ],
+  formula: '<p>Generates random integers from 1 to 100 (inclusive), with or without duplicates.</p>',
+  background: '<p>Each draw is an integer from 1 to 100 with equal probability, so the chance of any exact value is 1%. Duplicates are common when many values are drawn: with 23 draws there is already a better than even chance of a repeat, the birthday effect. These are pseudorandom draws, fine for sampling and games but not for cryptography.</p>',
   calculate: function(v) {
     const count = Math.min(v.count || 10, 100);
     const nums = [];
@@ -1411,6 +1464,7 @@ R('standard-deviation-calculator', {
     { id: 'data', label: 'Data Set', type: 'textarea', placeholder: 'e.g. 4, 8, 15, 16, 23, 42', hint: 'Enter numbers separated by commas' },
   ],
   formula: '<p><code>s = sqrt(Sum(x - mean)² / (n-1))</code> for sample. <code>σ = sqrt(Sum(x - mean)² / n)</code> for population.</p>',
+  background: '<p>Standard deviation summarises how tightly values cluster around the mean, in the same units as the data. The sample form divides by n − 1 to correct the downward bias caused by measuring deviations from the sample mean rather than the true one. Squaring the deviations makes the measure sensitive to outliers, so look at the raw data or a robust spread measure for skewed distributions.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 2) return { error: 'Enter at least two numbers' };
@@ -1434,6 +1488,7 @@ R('statistics', {
     { id: 'data', label: 'Data Set', type: 'textarea', placeholder: 'e.g. 12, 15, 18, 22, 25, 28, 30, 35', hint: 'Enter numbers separated by commas' },
   ],
   formula: '<p>Computes a full set of descriptive statistics for your data.</p>',
+  background: '<p>This view pulls the main descriptive measures into one place: centre, spread, position and extremes. The mean and standard deviation describe roughly symmetric data well, while the median, quartiles and interquartile range are safer when the data are skewed or contain outliers. Comparing both sets of numbers is the quickest way to judge which summary is appropriate.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 1) return { error: 'Enter at least one number' };
@@ -1468,6 +1523,7 @@ R('variance-calculator', {
     { id: 'data', label: 'Data Set', type: 'textarea', placeholder: 'e.g. 10, 12, 14, 16, 18', hint: 'Enter numbers separated by commas' },
   ],
   formula: '<p><code>s² = Sum(x - mean)² / (n-1)</code> for sample. <code>σ² = Sum(x - mean)² / n)</code> for population.</p>',
+  background: '<p>Variance is the mean squared deviation from the centre, so its units are squared and it is harder to interpret than standard deviation. A single outlier can inflate it dramatically because deviations are squared before averaging. The sample form divides by n − 1 so that repeated sampling averages to the true population variance.</p>',
   calculate: function(v) {
     const data = core.getDataSet('data');
     if (data.length < 2) return { error: 'Enter at least two numbers' };
@@ -1490,6 +1546,8 @@ R('vote-percentage-calculator', {
   fields: [
     { id: 'votes', label: 'Votes per Candidate/Option', type: 'textarea', placeholder: 'e.g. 1200, 800, 500', hint: 'Enter vote counts separated by commas' },
   ],
+  formula: '<p><code>Percentage = (Votes / Total Votes) × 100</code>, <code>Winning Margin = Top % − Runner-up %</code></p>',
+  background: '<p>This duplicate of the vote percentage tool converts raw tallies into shares of the total and shows the gap between the top two. Shares are of votes cast, so abstentions and invalid ballots change every percentage without changing the tallies. Margin in points and lead in percent are different statements and are often confused in reporting.</p>',
   calculate: function(v) {
     const votes = core.getDataSet('votes');
     if (votes.length < 1) return { error: 'Enter at least one vote count' };
@@ -1517,6 +1575,8 @@ R('word-counter', {
   fields: [
     { id: 'text', label: 'Enter or paste your text', type: 'textarea', placeholder: 'Type or paste your text here...', hint: 'The counter updates as you type' },
   ],
+  formula: '<p>Counts words, characters, sentences, paragraphs and lines from the supplied text.</p>',
+  background: '<p>Word counts depend on the splitting rule: most tools treat runs of non-space characters as words, which splits hyphenated and apostrophised forms but merges some languages that do not use spaces. Sentences are usually detected by terminal punctuation, so abbreviations and decimals can inflate the count. Editors and exam boards often specify their own counting convention.</p>',
   calculate: function(v) {
     const text = v.text || '';
     const chars = text.length;
@@ -1548,6 +1608,7 @@ R('z-score-calculator', {
     { id: 'stddev', label: 'Std Dev (σ)', type: 'number', step: 0.01, min: 0.001, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>z = (x − μ) / σ</code></p>',
+  background: '<p>The z-score expresses a value relative to the mean in standard deviation units, making results from different scales comparable. It assumes a normal reference distribution; for skewed data the score is still arithmetic but percentile interpretations no longer hold. Values beyond about ±3 are rare under normality and are worth investigating as possible outliers or data errors.</p>',
   calculate: function(v) {
     if (!v.value || v.mean === undefined || !v.stddev) return { error: 'Enter all values' };
     const z = (v.value - v.mean) / v.stddev;

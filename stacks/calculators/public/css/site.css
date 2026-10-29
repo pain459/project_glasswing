@@ -243,6 +243,14 @@ button[type="submit"]:hover { background: var(--primary-hover); }
   color: var(--text-muted);
 }
 .explanation h3 { color: var(--text); margin-bottom: .5rem; font-size: 1rem; }
+.explanation h4 {
+  margin: .9rem 0 .35rem;
+  font-size: .8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+}
 .explanation p { margin-bottom: .5rem; }
 .explanation code {
   background: var(--bg);

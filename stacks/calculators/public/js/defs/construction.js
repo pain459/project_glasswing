@@ -19,6 +19,7 @@ R('concrete-calculator', {
     ]},
   ],
   formula: '<p><code>Volume = L × W × D</code> for rectangular slabs. 1 cubic yard = 27 cubic feet.</p>',
+  background: '<p>Ready-mix concrete is ordered by the cubic yard, and a yard is 27 cubic feet, so slab dimensions given in feet and inches are converted before ordering. Bagged mixes are sold by weight and yield roughly 0.6 cubic feet per 80-lb bag, which is why bag counts are rounded up. A little overage is normal because subgrade is never perfectly level and some material is lost in mixing, pumping and finishing.</p>',
   calculate: function(v) {
     let cuFt;
     if (v.shape === 'circle') {
@@ -54,6 +55,7 @@ R('cubic-yards', {
     { id: 'depth', label: 'Depth (inches)', type: 'number', step: 0.5, min: 0.25, placeholder: 'e.g. 6', half: true },
   ],
   formula: '<p><code>Cubic Yards = (L × W × D) / 324</code> where D is in inches.</p>',
+  background: '<p>Cubic yards are the ordering unit for bulk materials such as gravel, sand, mulch, topsoil and fill, because a cubic yard is about what a small dump truck or loader bucket carries. Suppliers quote by the yard while plans usually give depth in inches, so the depth has to be converted before the volume means anything. Rounding up matters here: loads are sold in whole or half yards, and a short delivery means a second trip.</p>',
   calculate: function(v) {
     const cuFt = v.length * v.width * (v.depth / 12);
     const cuYd = cuFt / 27;
@@ -78,6 +80,7 @@ R('cubic-feet', {
     { id: 'height', label: 'Height (ft)', type: 'number', step: 0.25, min: 0.01, placeholder: 'e.g. 3', half: true },
   ],
   formula: '<p><code>Volume = L × W × H</code></p>',
+  background: '<p>The cubic foot is the customary unit for the internal volume of boxes, appliances, refrigerators, freezers and shipping containers, and it also appears on natural gas bills. Manufacturers quote capacity in cubic feet because it compares directly against the exterior dimensions shown on a specification sheet. Liquid equivalents are listed because tank and container sizes are often given in gallons rather than cubic measure.</p>',
   calculate: function(v) {
     const cuFt = v.length * v.width * v.height;
     const cuYd = cuFt / 27;
@@ -108,6 +111,7 @@ R('paint-calculator', {
     { id: 'windows', label: 'Number of Windows', type: 'number', step: 1, min: 0, max: 20, placeholder: 'e.g. 2', half: true },
   ],
   formula: '<p><code>Wall Area = 2 × H × (L + W) − openings</code>. Gallons = total area / coverage per gallon.</p>',
+  background: '<p>Paint is sold by the gallon or quart, and a gallon typically covers 350 to 400 square feet on a smooth, primed interior wall. Two coats are the usual minimum for a colour change, so the paintable wall area is counted twice before dividing by coverage. Doors and windows are deducted because painting them is a separate task, and a small allowance is prudent for touch-ups and for porous or textured surfaces.</p>',
   calculate: function(v) {
     const wallArea = 2 * v.wallHeight * (v.wallLength + v.wallWidth);
     const doorArea = (v.doors || 0) * 21;
@@ -136,6 +140,7 @@ R('mulch-calculator', {
     { id: 'depth', label: 'Depth (inches)', type: 'number', step: 0.5, min: 0.5, max: 12, placeholder: 'e.g. 3', half: true },
   ],
   formula: '<p><code>Cubic Yards = Area × Depth / 324</code></p>',
+  background: '<p>Mulch is sold by the cubic yard in bulk or in 2-cubic-foot bags at garden centres, and it is spread two to four inches deep to smother weeds and hold soil moisture. Because bags come in whole units and mulch settles as it decomposes, ordering slightly more than the calculated volume avoids running short halfway through a bed. Depth is the variable that matters most, since an extra inch over a large area multiplies quickly.</p>',
   calculate: function(v) {
     const cuYd = v.area * v.depth / 324;
     const cuFt = v.area * v.depth / 12;
@@ -162,6 +167,7 @@ R('tile-calculator', {
     { id: 'waste', label: 'Waste Factor (%)', type: 'number', step: 1, min: 0, max: 30, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>Tiles = Floor Area / Tile Area × (1 + Waste%)</code></p>',
+  background: '<p>Tile is sold by the piece, by the square foot or by the case, and the number of pieces per case varies with tile size. A waste allowance covers cuts at walls and corners, breakage in transit and the offcuts left when a pattern has to be aligned, with 10 percent a common figure and more for diagonal or herringbone layouts. Keeping a few spare tiles is also standard practice for later repairs, because dye lots change between production runs.</p>',
   calculate: function(v) {
     const floorArea = v.floorLength * v.floorWidth;
     const tileArea = (v.tileLength * v.tileWidth) / 144;
@@ -189,6 +195,7 @@ R('flooring-calculator', {
     { id: 'waste', label: 'Waste Factor (%)', type: 'number', step: 1, min: 0, max: 30, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>Total Area = L × W × (1 + Waste%)</code></p>',
+  background: '<p>Hardwood, laminate, vinyl plank and similar flooring is sold in cases priced by the square foot, and the coverage per case depends on the plank dimensions. A waste factor accounts for end cuts, boards with defects and pattern matching across seams; a straight lay usually needs about 10 percent, while diagonal or herringbone work needs more. Buying all material in one order also keeps colour and batch consistent across the room.</p>',
   calculate: function(v) {
     const area = v.length * v.width;
     const waste = v.waste || 10;
@@ -215,6 +222,7 @@ R('drywall-calculator', {
     { id: 'sheetL', label: 'Sheet Length (ft)', type: 'number', step: 0.5, min: 1, placeholder: 'e.g. 8', half: true },
   ],
   formula: '<p><code>Sheets = Wall Area / Sheet Area</code></p>',
+  background: '<p>Drywall, also called gypsum board or sheetrock, is sold in standard sheets such as 4 by 8 feet, so a job is planned around whole sheets rather than raw area. Sheets must be cut around doors, windows and outlets, and those offcuts are usually unusable, which is why the count is rounded up. Larger sheets mean fewer joints to finish but are harder to handle, so sheet size is a practical trade-off as well as a cost one.</p>',
   calculate: function(v) {
     const wallArea = v.wallLength * v.wallHeight;
     const sheetArea = v.sheetW * v.sheetL;
@@ -239,6 +247,7 @@ R('roofing-calculator', {
     { id: 'pitch', label: 'Roof Pitch (rise per 12")', type: 'number', step: 0.5, min: 0.5, max: 12, placeholder: 'e.g. 6', half: true },
   ],
   formula: '<p><code>Pitch Factor = √(pitch² + 144) / 12. Roof Area = 2 × L × W × Pitch Factor</code></p>',
+  background: '<p>Roofing material is ordered in squares, where one square covers 100 square feet of roof surface, and asphalt shingles come roughly three bundles to the square. A pitched roof has more surface area than the building footprint, so plan dimensions are adjusted by a pitch factor before the area is converted. Ridge caps, starter strips and valley flashing are usually counted separately, and most crews add a bundle or two for cuts and damage.</p>',
   calculate: function(v) {
     const pitchFactor = Math.sqrt(v.pitch * v.pitch + 144) / 12;
     const roofArea = 2 * v.length * v.width * pitchFactor;
@@ -269,6 +278,7 @@ R('brick-calculator', {
     ]},
   ],
   formula: '<p>Standard brick with mortar: ~7 bricks per sq ft for single wythe wall.</p>',
+  background: '<p>Brick counts depend on the brick\'s nominal size plus the mortar joint, so a wall is estimated in bricks per square foot rather than by dividing bare face areas. A single wythe wall in standard brick works out to roughly seven bricks per square foot once joints are included. About five percent extra is normal for breakage, cutting at corners and openings, and for the occasional brick that is laid out of tolerance.</p>',
   calculate: function(v) {
     const area = v.wallLength * v.wallHeight;
     let bricksPerSqFt;
@@ -298,6 +308,7 @@ R('lumber-calculator', {
     { id: 'quantity', label: 'Quantity', type: 'number', step: 1, min: 1, max: 10000, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>Board Feet = (L × W × T) / 12</code> per piece.</p>',
+  background: '<p>Board feet are the trade unit for hardwood and for lumber sold by volume: one board foot is 144 cubic inches, traditionally a piece one inch thick, twelve inches wide and twelve inches long. The convention survives because it lets boards of different cross-sections be compared and priced on a single scale. Dressed lumber is smaller than its nominal size, so a 2x4 measures about 1.5 by 3.5 inches, while board-foot pricing normally uses the nominal dimensions.</p>',
   calculate: function(v) {
     const bfPerPiece = (v.length * v.width * v.thickness) / 12;
     const totalBF = bfPerPiece * v.quantity;
@@ -323,6 +334,7 @@ R('cubic-feet-calculator', {
     { id: 'height', label: 'Height (ft)', type: 'number', step: 0.25, min: 0.01, placeholder: 'e.g. 3', half: true },
   ],
   formula: '<p><code>Volume = L × W × H</code></p>',
+  background: '<p>This is the same cubic-foot volume measure used for box, appliance and container capacity, which is why the answer is also given in yards, cubic metres and gallons. Shipping and storage businesses quote cubic feet because carriers charge by volume as well as by weight, and the two rarely agree. The conversions matter in practice because tank sizes are usually printed in gallons and architectural plans in cubic yards.</p>',
   calculate: function(v) {
     const cuFt = v.length * v.width * v.height;
     const cuYd = cuFt / 27;
@@ -349,6 +361,7 @@ R('cubic-yards-calculator', {
     { id: 'depth', label: 'Depth (inches)', type: 'number', step: 0.5, min: 0.25, placeholder: 'e.g. 6', half: true },
   ],
   formula: '<p><code>Cubic Yards = (L × W × D) / 324</code> where D is in inches.</p>',
+  background: '<p>Cubic yards remain the standard unit for ordering bulk aggregates and soil in the United States and Canada, where a delivery is described as so many yards of material. Because plans specify depth in inches and suppliers sell by the yard, the conversion is the step that most often goes wrong on a takeoff. Estimated tonnage is included because weighbridge tickets, not volume, are how many plants actually bill.</p>',
   calculate: function(v) {
     const cuFt = v.length * v.width * (v.depth / 12);
     const cuYd = cuFt / 27;
@@ -377,6 +390,7 @@ R('feetandinches', {
     { id: 'in2', label: 'Second value — Inches', type: 'number', step: 0.25, min: 0, placeholder: 'e.g. 8', half: true },
   ],
   formula: '<p>Converts both values to total inches, performs the operation, and converts back to feet and inches.</p>',
+  background: '<p>Feet and inches are still the working units for construction, carpentry and plumbing in the United States, and measurements are commonly written with fractional inches down to a sixteenth. Arithmetic is awkward because the units are not decimal, so values are carried in inches and regrouped in twelves. A negative result simply means the second measurement is larger, which is useful when checking a cut against a plan dimension.</p>',
   calculate: function(v) {
     const total1 = v.ft1 * 12 + v.in1;
     const total2 = v.ft2 * 12 + v.in2;
@@ -403,6 +417,7 @@ R('gravel-calculator', {
     { id: 'depth', label: 'Depth (inches)', type: 'number', step: 0.5, min: 0.25, placeholder: 'e.g. 3', half: true },
   ],
   formula: '<p><code>Cubic Yards = (L × W × D) / 324</code>. Gravel weighs ~1.35 tons per cubic yard.</p>',
+  background: '<p>Gravel, crushed stone and driveway aggregate are sold by the cubic yard or by weight, and a cubic yard of typical gravel weighs around 1.35 tons depending on the stone and its moisture content. Coverage depends on compacted depth: a driveway base is usually four to six inches, while a decorative layer can be thinner. Bagged gravel is convenient for small patches but is priced far higher per yard than a bulk delivery.</p>',
   calculate: function(v) {
     const cuFt = v.length * v.width * (v.depth / 12);
     const cuYd = cuFt / 27;
@@ -431,6 +446,7 @@ R('roadway', {
     { id: 'depth', label: 'Depth (inches)', type: 'number', step: 0.5, min: 0.25, placeholder: 'e.g. 6', half: true },
   ],
   formula: '<p><code>Volume = L × W × D</code>. Results in cubic feet, cubic yards, and tons.</p>',
+  background: '<p>Road base and structural fill are placed in lifts and compacted, so the loose volume delivered is always greater than the finished volume in place. That shrinkage is why an estimate for a roadway section should be treated as a minimum and rounded up to whole truckloads. The material itself is a graded aggregate mix chosen so it locks together under compaction and drains predictably.</p>',
   calculate: function(v) {
     const cuFt = v.length * v.width * (v.depth / 12);
     const cuYd = cuFt / 27;
@@ -454,6 +470,7 @@ R('square-footage-calculator', {
     { id: 'width', label: 'Width (ft)', type: 'number', step: 0.25, min: 0.01, placeholder: 'e.g. 15', half: true },
   ],
   formula: '<p><code>Area = L × W</code></p>',
+  background: '<p>Square footage is the standard measure for floor area in real estate listings, flooring and paint estimates, and property tax assessments in the United States. It is computed from exterior or interior plan dimensions depending on the standard being applied, which is why two figures for the same building can legitimately differ. Converting to square yards helps with carpet and landscaping, while square metres are used in most of the world.</p>',
   calculate: function(v) {
     const sqFt = v.length * v.width;
     const sqYd = sqFt / 9;
@@ -483,6 +500,7 @@ R('tank', {
     { id: 'height', label: 'Height (ft)', type: 'number', step: 0.25, min: 0.01, placeholder: 'e.g. 4', half: true },
   ],
   formula: '<p>Rectangular: V = L×W×H. Cylinder: V = π×r²×L. Sphere: V = (4/3)×π×r³.</p>',
+  background: '<p>Tank capacity is quoted in gallons or litres even when the tank is described by its dimensions, because those are the units on pumps, meters and shipping documents. Rectangular, cylindrical and spherical shapes need different geometry, and a horizontal cylinder holds less at a given depth than its nominal capacity suggests. One cubic foot holds about 7.48 US gallons, which is the bridge between the volume calculation and the capacity figure.</p>',
   calculate: function(v) {
     let cuFt;
     if (v.shape === 'cylinder') {
@@ -516,6 +534,7 @@ R('topsoil-calculator', {
     { id: 'depth', label: 'Depth (inches)', type: 'number', step: 0.5, min: 0.25, placeholder: 'e.g. 4', half: true },
   ],
   formula: '<p><code>Cubic Yards = (L × W × D) / 324</code> where D is in inches.</p>',
+  background: '<p>Topsoil is sold by the cubic yard in bulk or in 40-pound bags, and a lawn or garden bed is normally dressed four to six inches deep. Soil compacts and settles after watering, so the finished grade ends up lower than the loose depth that was spread. Bulk delivery is far cheaper per yard for anything beyond a small bed, but it arrives in whole yards and must be placed reasonably close to where it is needed.</p>',
   calculate: function(v) {
     const cuFt = v.length * v.width * (v.depth / 12);
     const cuYd = cuFt / 27;
