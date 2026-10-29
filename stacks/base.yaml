@@ -1,0 +1,29 @@
+# House defaults shared by every Glasswing service.
+#
+# Compose cannot share YAML anchors between files, so each service inherits these
+# settings with:
+#
+#   extends:
+#     file: ../base.yaml
+#     service: base        # or `hardened` where the stack already disabled setuid
+#
+# `extends` merges only the service block. Stack-specific `networks:` and any
+# top-level `networks:` declaration still live in stacks/<stack>/compose.yaml, as
+# does every image, port, volume and environment value.
+services:
+  base:
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # `no-new-privileges` moves setuid/setgid capabilities out of reach, which is
+  # right for a service that never calls `sudo`, `su` or `ping` internally. It is
+  # opt-in per stack so this refactor does not change a container's privileges.
+  hardened:
+    extends:
+      service: base
+    security_opt:
+      - no-new-privileges:true

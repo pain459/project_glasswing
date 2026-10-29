@@ -3,9 +3,11 @@ name: glasswing-openobserve
 
 services:
   openobserve:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: public.ecr.aws/zinclabs/openobserve:v1.1.2
     container_name: glasswing-openobserve
-    restart: unless-stopped
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3018:5080"
@@ -26,9 +28,6 @@ services:
 
     volumes:
       - openobserve_data:/data
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: openobserve

@@ -3,9 +3,11 @@ name: glasswing-anythingllm
 
 services:
   anythingllm:
+    extends:
+      file: ../base.yaml
+      service: base
     image: mintplexlabs/anythingllm:1.19
     container_name: glasswing-anythingllm
-    restart: unless-stopped
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3012:3001"

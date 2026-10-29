@@ -3,12 +3,14 @@ name: glasswing-calculators
 
 services:
   calculators:
+    extends:
+      file: ../base.yaml
+      service: hardened
     build:
       context: .
       dockerfile: Dockerfile
     image: glasswing/calculators:latest
     container_name: glasswing-calculators
-    restart: unless-stopped
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3021:80"
@@ -25,9 +27,6 @@ services:
     environment:
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-calculators
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: calculators

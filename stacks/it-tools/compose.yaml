@@ -3,15 +3,14 @@ name: glasswing-it-tools
 
 services:
   it-tools:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: ghcr.io/corentinth/it-tools:2024.10.22-7ca5933
     container_name: glasswing-it-tools
-    restart: unless-stopped
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3015:80"
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: it-tools

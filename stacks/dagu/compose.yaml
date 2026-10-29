@@ -3,12 +3,14 @@ name: glasswing-dagu
 
 services:
   dagu:
+    extends:
+      file: ../base.yaml
+      service: base
     # Dagu is a self-hosted workflow orchestrator: schedule cron jobs, run
     # scripts, trigger APIs, and review outputs via a built-in Web UI.
     # Single binary, file-backed state, no external database required.
     image: ghcr.io/dagucloud/dagu:2.24.0
     container_name: glasswing-dagu
-    restart: unless-stopped
     init: true
 
     # Host networking so DAGs can reach other services on localhost
@@ -57,12 +59,6 @@ services:
 
     pids_limit: 256
     mem_limit: 512m
-
-    logging:
-      driver: json-file
-      options:
-        max-size: "5m"
-        max-file: "2"
 
     labels:
       com.glasswing.service: dagu

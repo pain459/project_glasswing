@@ -11,9 +11,11 @@ name: glasswing-postgres
 
 services:
   postgres:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: postgres:17-alpine
     container_name: glasswing-postgres
-    restart: unless-stopped
 
     environment:
       TZ: ${GLASSWING_TZ:?Required from Infisical}
@@ -51,17 +53,8 @@ services:
       retries: 10
       start_period: 30s
 
-    security_opt:
-      - no-new-privileges:true
-
     pids_limit: 256
     mem_limit: 1g
-
-    logging:
-      driver: json-file
-      options:
-        max-size: "5m"
-        max-file: "2"
 
     labels:
       com.glasswing.service: postgres

@@ -3,10 +3,12 @@ name: glasswing-plex
 
 services:
   plex:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: plexinc/pms-docker:public
     container_name: glasswing-plex
     hostname: pathfinder
-    restart: unless-stopped
 
     network_mode: host
 
@@ -29,9 +31,6 @@ services:
 
     tmpfs:
       - /transcode:size=8g,mode=1777
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: plex

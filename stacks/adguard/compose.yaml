@@ -3,9 +3,11 @@ name: glasswing-adguard
 
 services:
   adguard:
+    extends:
+      file: ../base.yaml
+      service: hardened
     image: adguard/adguardhome:v0.107.79
     container_name: glasswing-adguard
-    restart: unless-stopped
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:53:53/tcp"
@@ -21,9 +23,6 @@ services:
       TZ: ${GLASSWING_TZ:?Required from Infisical}
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-adguard
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: adguard

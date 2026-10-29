@@ -3,9 +3,11 @@ name: glasswing-beszel
 
 services:
   beszel:
+    extends:
+      file: ../base.yaml
+      service: base
     image: henrygd/beszel:0.21.1
     container_name: glasswing-beszel
-    restart: unless-stopped
 
     environment:
       APP_URL: ${BESZEL_APP_URL:?Required from Infisical}

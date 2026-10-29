@@ -3,10 +3,12 @@ name: glasswing-excalidraw
 
 services:
   excalidraw:
+    extends:
+      file: ../base.yaml
+      service: hardened
     # Excalidraw publishes no version tags, only `latest` and `sha-<commit>`.
     image: excalidraw/excalidraw:latest
     container_name: glasswing-excalidraw
-    restart: unless-stopped
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3009:80"
@@ -23,9 +25,6 @@ services:
     environment:
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-excalidraw
-
-    security_opt:
-      - no-new-privileges:true
 
     labels:
       com.glasswing.service: excalidraw

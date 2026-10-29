@@ -3,8 +3,10 @@ name: glasswing-open-notebook
 
 services:
   surrealdb:
+    extends:
+      file: ../base.yaml
+      service: base
     image: surrealdb/surrealdb:v2
-    restart: unless-stopped
     user: root
 
     command:
@@ -29,8 +31,10 @@ services:
       - internal
 
   open_notebook:
+    extends:
+      file: ../base.yaml
+      service: base
     image: lfnovo/open_notebook:v1-latest
-    restart: unless-stopped
 
     depends_on:
       - surrealdb
