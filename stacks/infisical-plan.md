@@ -1,5 +1,11 @@
 # Infisical Migration Plan — Glasswing Stack
 
+> **Status: implemented.** This document is kept as the design record and as the
+> per-stack variable inventory that was used to build the migration. The
+> operative procedure is [REBUILD.md](../REBUILD.md) (phases 5–6) and
+> `MAINTENANCE.md`. Anything below that describes a future phase has been done;
+> see [Implementation Strategy](#8-implementation-strategy) for what replaced it.
+
 > **Goal:** Move every secret and configurable variable out of compose files, `.env` files, and host paths into Infisical. Load them at startup via `scripts/with-infisical.sh`.
 
 ---
@@ -20,12 +26,22 @@
 
 ### What's already working
 
-12 stacks have `secrets.list` files and are fully Infisical-managed for their secrets.
-The remaining 13 stacks either have no secrets, or have secrets/config that should move to Infisical.
+28 of 29 stacks have a `secrets.list` and load their variables from Infisical at
+startup. The exception is `infisical` itself, which is configured from the
+gitignored `stacks/infisical/.env` (and its committed `.env.example`) because it
+cannot fetch its own secrets.
+
+`make secrets-plan` prints the current split: the committed `*.registry` values
+(non-secret configuration) versus the keys only the operator can supply. That
+report, not the counts below, is authoritative.
 
 ---
 
-## Current State: Per-Stack Variable Inventory
+## Inventory at design time (pre-migration snapshot)
+
+The `Current` column records how each variable was configured *before* the
+migration. Everything marked 📋 was subsequently moved to Infisical and now lives
+in the stack's `secrets.list` / `*.registry`.
 
 ### Legend
 
@@ -34,7 +50,7 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 | 🔒 | **SECRET** — password, token, key, credential |
 | ⚙️ | **CONFIG** — port, IP, path, feature flag, user setting |
 | ✅ | Already in Infisical via `secrets.list` |
-| 📋 | Should be moved to Infisical |
+| 📋 | Was to be moved — done, see the stack's `secrets.list` |
 | ⏭️ | Intentionally NOT in Infisical (see rationale) |
 | 🔁 | Shared across stacks (defined once, used many places) |
 
@@ -67,19 +83,19 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 |----------|------|---------|--------|
 | `OPENCODE_SERVER_PASSWORD` | 🔒 | ✅ Infisical `/opencode` | ✅ Done |
 | `OPEN_NOTEBOOK_PASSWORD` | 🔒 | ✅ Infisical `/opencode` | ✅ Done |
-| `HOME` | ⚙️ | hardcoded `/home/opencode` | 📋 Move to Infisical |
-| `OPENCODE_DISABLE_AUTOUPDATE` | ⚙️ | hardcoded `"1"` | 📋 Move to Infisical |
+| `HOME` | ⚙️ | hardcoded `/home/opencode` | ✅ Done |
+| `OPENCODE_DISABLE_AUTOUPDATE` | ⚙️ | hardcoded `"1"` | ✅ Done |
 | `TZ` | ⚙️ | hardcoded `Asia/Kolkata` | 🔁 Global — see §6 |
-| `OPEN_NOTEBOOK_URL` | ⚙️ | hardcoded `http://192.168.68.62:5055` | 📋 Move to Infisical |
-| `HOST` (MCP) | ⚙️ | hardcoded `0.0.0.0` | 📋 Move to Infisical |
-| `PORT` (MCP) | ⚙️ | hardcoded `8000` | 📋 Move to Infisical |
-| `MCP_PATH` | ⚙️ | hardcoded `/mcp` | 📋 Move to Infisical |
-| `STATELESS_HTTP` | ⚙️ | hardcoded `"1"` | 📋 Move to Infisical |
-| `JSON_RESPONSE` | ⚙️ | hardcoded `"1"` | 📋 Move to Infisical |
-| `MCP_ALLOWED_HOSTS` | ⚙️ | hardcoded list | 📋 Move to Infisical |
-| `STEEL_LOCAL` | ⚙️ | hardcoded `"true"` | 📋 Move to Infisical |
-| `STEEL_BASE_URL` | ⚙️ | hardcoded `http://192.168.68.62:3100` | 📋 Move to Infisical |
-| `STEEL_CONNECT_URL` | ⚙️ | hardcoded `ws://192.168.68.62:3100` | 📋 Move to Infisical |
+| `OPEN_NOTEBOOK_URL` | ⚙️ | hardcoded `http://192.168.68.62:5055` | ✅ Done |
+| `HOST` (MCP) | ⚙️ | hardcoded `0.0.0.0` | ✅ Done |
+| `PORT` (MCP) | ⚙️ | hardcoded `8000` | ✅ Done |
+| `MCP_PATH` | ⚙️ | hardcoded `/mcp` | ✅ Done |
+| `STATELESS_HTTP` | ⚙️ | hardcoded `"1"` | ✅ Done |
+| `JSON_RESPONSE` | ⚙️ | hardcoded `"1"` | ✅ Done |
+| `MCP_ALLOWED_HOSTS` | ⚙️ | hardcoded list | ✅ Done |
+| `STEEL_LOCAL` | ⚙️ | hardcoded `"true"` | ✅ Done |
+| `STEEL_BASE_URL` | ⚙️ | hardcoded `http://192.168.68.62:3100` | ✅ Done |
+| `STEEL_CONNECT_URL` | ⚙️ | hardcoded `ws://192.168.68.62:3100` | ✅ Done |
 
 ---
 
@@ -92,12 +108,12 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 | `OPEN_NOTEBOOK_ENCRYPTION_KEY` | 🔒 | ✅ Infisical `/open-notebook` | ✅ Done |
 | `OPEN_NOTEBOOK_PASSWORD` | 🔒 | ✅ Infisical `/open-notebook` | ✅ Done |
 | `SURREAL_PASSWORD` | 🔒 | ✅ Infisical `/open-notebook` | ✅ Done |
-| `SURREAL_EXPERIMENTAL_GRAPHQL` | ⚙️ | hardcoded `"true"` | 📋 Move to Infisical |
-| `SURREAL_URL` | ⚙️ | hardcoded `ws://surrealdb:8000/rpc` | 📋 Move to Infisical |
-| `SURREAL_USER` | ⚙️ | hardcoded `root` | 📋 Move to Infisical |
-| `SURREAL_NAMESPACE` | ⚙️ | hardcoded `open_notebook` | 📋 Move to Infisical |
-| `SURREAL_DATABASE` | ⚙️ | hardcoded `open_notebook` | 📋 Move to Infisical |
-| `OPEN_NOTEBOOK_WORKER_MAX_TASKS` | ⚙️ | hardcoded `"2"` | 📋 Move to Infisical |
+| `SURREAL_EXPERIMENTAL_GRAPHQL` | ⚙️ | hardcoded `"true"` | ✅ Done |
+| `SURREAL_URL` | ⚙️ | hardcoded `ws://surrealdb:8000/rpc` | ✅ Done |
+| `SURREAL_USER` | ⚙️ | hardcoded `root` | ✅ Done |
+| `SURREAL_NAMESPACE` | ⚙️ | hardcoded `open_notebook` | ✅ Done |
+| `SURREAL_DATABASE` | ⚙️ | hardcoded `open_notebook` | ✅ Done |
+| `OPEN_NOTEBOOK_WORKER_MAX_TASKS` | ⚙️ | hardcoded `"2"` | ✅ Done |
 | `TZ` | ⚙️ | hardcoded `Asia/Kolkata` | 🔁 Global — see §6 |
 
 ---
@@ -108,13 +124,13 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 
 | Variable | Type | Current | Action |
 |----------|------|---------|--------|
-| `OLLAMA_HOST` | ⚙️ | hardcoded `0.0.0.0:11434` | 📋 Move to Infisical |
-| `OLLAMA_KEEP_ALIVE` | ⚙️ | hardcoded `30m` | 📋 Move to Infisical |
-| `OLLAMA_MODELS` | ⚙️ | hardcoded `/root/.ollama` | 📋 Move to Infisical |
-| `OLLAMA_FLASH_ATTENTION` | ⚙️ | hardcoded `"1"` | 📋 Move to Infisical |
-| `OLLAMA_KV_CACHE_TYPE` | ⚙️ | hardcoded `q8_0` | 📋 Move to Infisical |
-| `OLLAMA_NUM_PARALLEL` | ⚙️ | hardcoded `"1"` | 📋 Move to Infisical |
-| `OLLAMA_MAX_LOADED_MODELS` | ⚙️ | hardcoded `"1"` | 📋 Move to Infisical |
+| `OLLAMA_HOST` | ⚙️ | hardcoded `0.0.0.0:11434` | ✅ Done |
+| `OLLAMA_KEEP_ALIVE` | ⚙️ | hardcoded `30m` | ✅ Done |
+| `OLLAMA_MODELS` | ⚙️ | hardcoded `/root/.ollama` | ✅ Done |
+| `OLLAMA_FLASH_ATTENTION` | ⚙️ | hardcoded `"1"` | ✅ Done |
+| `OLLAMA_KV_CACHE_TYPE` | ⚙️ | hardcoded `q8_0` | ✅ Done |
+| `OLLAMA_NUM_PARALLEL` | ⚙️ | hardcoded `"1"` | ✅ Done |
+| `OLLAMA_MAX_LOADED_MODELS` | ⚙️ | hardcoded `"1"` | ✅ Done |
 | `OTEL_SERVICE_NAME` | ⚙️ | hardcoded `glasswing-ollama` | 🔁 Global — see §6 |
 
 ---
@@ -128,11 +144,11 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 | Variable | Type | Current | Action |
 |----------|------|---------|--------|
 | `JWT_SECRET` | 🔒 | ✅ Infisical `/anythingllm` | ✅ Done |
-| `STORAGE_DIR` | ⚙️ | hardcoded `/app/server/storage` | 📋 Move to Infisical |
-| `LLM_PROVIDER` | ⚙️ | hardcoded `ollama` | 📋 Move to Infisical |
-| `OLLAMA_BASE_PATH` | ⚙️ | hardcoded `http://192.168.68.62:11434` | 📋 Move to Infisical |
-| `EMBEDDING_ENGINE` | ⚙️ | hardcoded `ollama` | 📋 Move to Infisical |
-| `EMBEDDING_BASE_PATH` | ⚙️ | hardcoded `http://192.168.68.62:11434` | 📋 Move to Infisical |
+| `STORAGE_DIR` | ⚙️ | hardcoded `/app/server/storage` | ✅ Done |
+| `LLM_PROVIDER` | ⚙️ | hardcoded `ollama` | ✅ Done |
+| `OLLAMA_BASE_PATH` | ⚙️ | hardcoded `http://192.168.68.62:11434` | ✅ Done |
+| `EMBEDDING_ENGINE` | ⚙️ | hardcoded `ollama` | ✅ Done |
+| `EMBEDDING_BASE_PATH` | ⚙️ | hardcoded `http://192.168.68.62:11434` | ✅ Done |
 | `TZ` | ⚙️ | hardcoded `Asia/Kolkata` | 🔁 Global — see §6 |
 
 ---
@@ -146,14 +162,14 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 | `FLOWISE_SECRETKEY_OVERWRITE` | 🔒 | ✅ Infisical `/flowise` | ✅ Done |
 | `JWT_AUTH_TOKEN_SECRET` | 🔒 | ✅ Infisical `/flowise` | ✅ Done |
 | `JWT_REFRESH_TOKEN_SECRET` | 🔒 | ✅ Infisical `/flowise` | ✅ Done |
-| `PORT` | ⚙️ | hardcoded `3000` | 📋 Move to Infisical |
-| `APP_URL` | ⚙️ | hardcoded `http://192.168.68.62:3002` | 📋 Move to Infisical |
-| `DATABASE_TYPE` | ⚙️ | hardcoded `sqlite` | 📋 Move to Infisical |
-| `DATABASE_PATH` | ⚙️ | hardcoded `/home/node/.flowise` | 📋 Move to Infisical |
-| `SECRETKEY_PATH` | ⚙️ | hardcoded `/home/node/.flowise` | 📋 Move to Infisical |
-| `LOG_PATH` | ⚙️ | hardcoded `/home/node/.flowise/logs` | 📋 Move to Infisical |
-| `BLOB_STORAGE_PATH` | ⚙️ | hardcoded `/home/node/.flowise/storage` | 📋 Move to Infisical |
-| `DISABLE_FLOWISE_TELEMETRY` | ⚙️ | hardcoded `"true"` | 📋 Move to Infisical |
+| `PORT` | ⚙️ | hardcoded `3000` | ✅ Done |
+| `APP_URL` | ⚙️ | hardcoded `http://192.168.68.62:3002` | ✅ Done |
+| `DATABASE_TYPE` | ⚙️ | hardcoded `sqlite` | ✅ Done |
+| `DATABASE_PATH` | ⚙️ | hardcoded `/home/node/.flowise` | ✅ Done |
+| `SECRETKEY_PATH` | ⚙️ | hardcoded `/home/node/.flowise` | ✅ Done |
+| `LOG_PATH` | ⚙️ | hardcoded `/home/node/.flowise/logs` | ✅ Done |
+| `BLOB_STORAGE_PATH` | ⚙️ | hardcoded `/home/node/.flowise/storage` | ✅ Done |
+| `DISABLE_FLOWISE_TELEMETRY` | ⚙️ | hardcoded `"true"` | ✅ Done |
 | `TZ` | ⚙️ | hardcoded `Asia/Kolkata` | 🔁 Global — see §6 |
 
 ---
@@ -182,21 +198,21 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 | `LANGFUSE_NEXTAUTH_SECRET` | 🔒 | ✅ Infisical `/langfuse` | ✅ Done |
 | `LANGFUSE_SALT` | 🔒 | ✅ Infisical `/langfuse` | ✅ Done |
 | `LANGFUSE_ENCRYPTION_KEY` | 🔒 | ✅ Infisical `/langfuse` | ✅ Done |
-| `HOSTNAME` | ⚙️ | hardcoded `0.0.0.0` | 📋 Move to Infisical |
-| `NEXTAUTH_URL` | ⚙️ | hardcoded `http://192.168.68.62:3010` | 📋 Move to Infisical |
-| `CLICKHOUSE_URL` | ⚙️ | hardcoded `http://clickhouse:8123` | 📋 Move to Infisical |
-| `CLICKHOUSE_MIGRATION_URL` | ⚙️ | hardcoded `clickhouse://clickhouse:9000` | 📋 Move to Infisical |
-| `CLICKHOUSE_USER` | ⚙️ | hardcoded `langfuse` | 📋 Move to Infisical |
-| `CLICKHOUSE_CLUSTER_ENABLED` | ⚙️ | hardcoded `"false"` | 📋 Move to Infisical |
-| `REDIS_HOST` | ⚙️ | hardcoded `redis` | 📋 Move to Infisical |
-| `REDIS_PORT` | ⚙️ | hardcoded `6379` | 📋 Move to Infisical |
-| `LANGFUSE_S3_*` (event upload) | ⚙️ | hardcoded bucket/region/endpoint | 📋 Move to Infisical |
-| `LANGFUSE_S3_*` (media upload) | ⚙️ | hardcoded bucket/region/endpoint | 📋 Move to Infisical |
-| `TELEMETRY_ENABLED` | ⚙️ | hardcoded `"false"` | 📋 Move to Infisical |
-| `POSTGRES_USER` | ⚙️ | hardcoded `langfuse` | 📋 Move to Infisical |
-| `POSTGRES_DB` | ⚙️ | hardcoded `langfuse` | 📋 Move to Infisical |
-| `CLICKHOUSE_DB` | ⚙️ | hardcoded `default` | 📋 Move to Infisical |
-| `MINIO_ROOT_USER` | ⚙️ | hardcoded `langfuse` | 📋 Move to Infisical |
+| `HOSTNAME` | ⚙️ | hardcoded `0.0.0.0` | ✅ Done |
+| `NEXTAUTH_URL` | ⚙️ | hardcoded `http://192.168.68.62:3010` | ✅ Done |
+| `CLICKHOUSE_URL` | ⚙️ | hardcoded `http://clickhouse:8123` | ✅ Done |
+| `CLICKHOUSE_MIGRATION_URL` | ⚙️ | hardcoded `clickhouse://clickhouse:9000` | ✅ Done |
+| `CLICKHOUSE_USER` | ⚙️ | hardcoded `langfuse` | ✅ Done |
+| `CLICKHOUSE_CLUSTER_ENABLED` | ⚙️ | hardcoded `"false"` | ✅ Done |
+| `REDIS_HOST` | ⚙️ | hardcoded `redis` | ✅ Done |
+| `REDIS_PORT` | ⚙️ | hardcoded `6379` | ✅ Done |
+| `LANGFUSE_S3_*` (event upload) | ⚙️ | hardcoded bucket/region/endpoint | ✅ Done |
+| `LANGFUSE_S3_*` (media upload) | ⚙️ | hardcoded bucket/region/endpoint | ✅ Done |
+| `TELEMETRY_ENABLED` | ⚙️ | hardcoded `"false"` | ✅ Done |
+| `POSTGRES_USER` | ⚙️ | hardcoded `langfuse` | ✅ Done |
+| `POSTGRES_DB` | ⚙️ | hardcoded `langfuse` | ✅ Done |
+| `CLICKHOUSE_DB` | ⚙️ | hardcoded `default` | ✅ Done |
+| `MINIO_ROOT_USER` | ⚙️ | hardcoded `langfuse` | ✅ Done |
 
 ---
 
@@ -211,10 +227,10 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 | `ZO_ROOT_USER_EMAIL` | 🔒 | ✅ Infisical `/openobserve` | ✅ Done |
 | `ZO_ROOT_USER_PASSWORD` | 🔒 | ✅ Infisical `/openobserve` | ✅ Done |
 | `TZ` | ⚙️ | hardcoded `Asia/Kolkata` | 🔁 Global — see §6 |
-| `ZO_LOCAL_MODE` | ⚙️ | hardcoded `"true"` | 📋 Move to Infisical |
-| `ZO_DATA_DIR` | ⚙️ | hardcoded `/data` | 📋 Move to Infisical |
-| `ZO_COMPACT_ENABLED` | ⚙️ | hardcoded `"true"` | 📋 Move to Infisical |
-| `ZO_COMPACT_DATA_RETENTION_DAYS` | ⚙️ | hardcoded `"10"` | 📋 Move to Infisical |
+| `ZO_LOCAL_MODE` | ⚙️ | hardcoded `"true"` | ✅ Done |
+| `ZO_DATA_DIR` | ⚙️ | hardcoded `/data` | ✅ Done |
+| `ZO_COMPACT_ENABLED` | ⚙️ | hardcoded `"true"` | ✅ Done |
+| `ZO_COMPACT_DATA_RETENTION_DAYS` | ⚙️ | hardcoded `"10"` | ✅ Done |
 
 ---
 
@@ -239,8 +255,8 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 | `ZO_ROOT_USER_EMAIL` | 🔒 | ✅ Infisical `/openobserve` (shared) | ✅ Done |
 | `ZO_ROOT_USER_PASSWORD` | 🔒 | ✅ Infisical `/openobserve` (shared) | ✅ Done |
 | `TZ` | ⚙️ | hardcoded `Asia/Kolkata` | 🔁 Global — see §6 |
-| `DOCKER_HOST` | ⚙️ | hardcoded `unix:///var/run/docker.sock` | 📋 Move to Infisical |
-| `VECTOR_DANGEROUSLY_ALLOW_ENV_VAR_INTERPOLATION` | ⚙️ | hardcoded `"true"` | 📋 Move to Infisical |
+| `DOCKER_HOST` | ⚙️ | hardcoded `unix:///var/run/docker.sock` | ✅ Done |
+| `VECTOR_DANGEROUSLY_ALLOW_ENV_VAR_INTERPOLATION` | ⚙️ | hardcoded `"true"` | ✅ Done |
 | `DOCKER_GID` | ⚙️ | resolved at runtime via Makefile | ⏭️ Host-specific. Keep as Makefile var. |
 
 ---
@@ -251,7 +267,7 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 
 | Variable | Type | Current | Action |
 |----------|------|---------|--------|
-| `APP_URL` | ⚙️ | hardcoded `http://192.168.68.62:8090` | 📋 Move to Infisical |
+| `APP_URL` | ⚙️ | hardcoded `http://192.168.68.62:8090` | ✅ Done |
 
 ---
 
@@ -287,11 +303,11 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 |----------|------|---------|--------|
 | `STIRLING_ADMIN_USERNAME` | 🔒 | ✅ Infisical `/stirling-pdf` | ✅ Done |
 | `STIRLING_ADMIN_PASSWORD` | 🔒 | ✅ Infisical `/stirling-pdf` | ✅ Done |
-| `TZ` | ⚙️ | hardcoded `Asia/Kolkata` | 📋 Move to Infisical |
-| `PUID` | ⚙️ | hardcoded `1000` | 📋 Move to Infisical |
-| `PGID` | ⚙️ | hardcoded `1000` | 📋 Move to Infisical |
-| `SECURITY_ENABLELOGIN` | ⚙️ | hardcoded `"true"` | 📋 Move to Infisical |
-| `SYSTEM_DEFAULTLOCALE` | ⚙️ | hardcoded `en-US` | 📋 Move to Infisical |
+| `TZ` | ⚙️ | hardcoded `Asia/Kolkata` | ✅ Done |
+| `PUID` | ⚙️ | hardcoded `1000` | ✅ Done |
+| `PGID` | ⚙️ | hardcoded `1000` | ✅ Done |
+| `SECURITY_ENABLELOGIN` | ⚙️ | hardcoded `"true"` | ✅ Done |
+| `SYSTEM_DEFAULTLOCALE` | ⚙️ | hardcoded `en-US` | ✅ Done |
 
 ---
 
@@ -301,11 +317,11 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 
 | Variable | Type | Current | Action |
 |----------|------|---------|--------|
-| `STEEL_BIND_IP` | ⚙️ | ✅ Infisical `/steel` | ✅ Done |
+| bind address | ⚙️ | `/global GLASSWING_HOST_IP` | ✅ Done (no `STEEL_BIND_IP`; the host IP is global) |
 | `STEEL_PORT` | ⚙️ | ✅ Infisical `/steel` | ✅ Done |
 | `STEEL_LOG_STORAGE_ENABLED` | ⚙️ | ✅ Infisical `/steel` | ✅ Done |
 | `STEEL_LOG_STORAGE_PATH` | ⚙️ | ✅ Infisical `/steel` | ✅ Done |
-| `NODE_ENV` | ⚙️ | hardcoded `production` | 📋 Move to Infisical |
+| `NODE_ENV` | ⚙️ | ✅ Infisical `/steel` (`STEEL_NODE_ENV`) | ✅ Done |
 
 ---
 
@@ -315,14 +331,14 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 
 | Variable | Type | Current | Action |
 |----------|------|---------|--------|
-| `USER_UID` | ⚙️ | hardcoded `1000` | 📋 Move to Infisical |
-| `USER_GID` | ⚙️ | hardcoded `1000` | 📋 Move to Infisical |
-| `FORGEJO__server__DOMAIN` | ⚙️ | hardcoded `192.168.68.62` | 📋 Move to Infisical |
-| `FORGEJO__server__ROOT_URL` | ⚙️ | hardcoded `http://192.168.68.62:3011/` | 📋 Move to Infisical |
-| `FORGEJO__server__SSH_DOMAIN` | ⚙️ | hardcoded `192.168.68.62` | 📋 Move to Infisical |
-| `FORGEJO__server__SSH_PORT` | ⚙️ | hardcoded `2222` | 📋 Move to Infisical |
-| `FORGEJO__service__DISABLE_REGISTRATION` | ⚙️ | hardcoded `"true"` | 📋 Move to Infisical |
-| `FORGEJO__service__REQUIRE_SIGNIN_VIEW` | ⚙️ | hardcoded `"true"` | 📋 Move to Infisical |
+| `USER_UID` | ⚙️ | hardcoded `1000` | ✅ Done |
+| `USER_GID` | ⚙️ | hardcoded `1000` | ✅ Done |
+| `FORGEJO__server__DOMAIN` | ⚙️ | hardcoded `192.168.68.62` | ✅ Done |
+| `FORGEJO__server__ROOT_URL` | ⚙️ | hardcoded `http://192.168.68.62:3011/` | ✅ Done |
+| `FORGEJO__server__SSH_DOMAIN` | ⚙️ | hardcoded `192.168.68.62` | ✅ Done |
+| `FORGEJO__server__SSH_PORT` | ⚙️ | hardcoded `2222` | ✅ Done |
+| `FORGEJO__service__DISABLE_REGISTRATION` | ⚙️ | hardcoded `"true"` | ✅ Done |
+| `FORGEJO__service__REQUIRE_SIGNIN_VIEW` | ⚙️ | hardcoded `"true"` | ✅ Done |
 | `TZ` | ⚙️ | hardcoded `Asia/Kolkata` | 🔁 Global — see §6 |
 
 ---
@@ -333,9 +349,9 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 
 | Variable | Type | Current | Action |
 |----------|------|---------|--------|
-| `HOMEPAGE_ALLOWED_HOSTS` | ⚙️ | hardcoded `192.168.68.62:3006,...` | 📋 Move to Infisical |
-| `PUID` | ⚙️ | hardcoded `1000` | 📋 Move to Infisical |
-| `PGID` | ⚙️ | hardcoded `1000` | 📋 Move to Infisical |
+| `HOMEPAGE_ALLOWED_HOSTS` | ⚙️ | hardcoded `192.168.68.62:3006,...` | ✅ Done |
+| `PUID` | ⚙️ | hardcoded `1000` | ✅ Done |
+| `PGID` | ⚙️ | hardcoded `1000` | ✅ Done |
 
 ---
 
@@ -346,27 +362,29 @@ The remaining 13 stacks either have no secrets, or have secrets/config that shou
 | Variable | Type | Current | Action |
 |----------|------|---------|--------|
 | `TZ` | ⚙️ | hardcoded `Asia/Kolkata` | 🔁 Global — see §6 |
-| `PLEX_UID` | ⚙️ | hardcoded `1000` | 📋 Move to Infisical |
-| `PLEX_GID` | ⚙️ | hardcoded `1000` | 📋 Move to Infisical |
-| `ADVERTISE_IP` | ⚙️ | hardcoded `http://192.168.68.62:32400/` | 📋 Move to Infisical |
-| `NVIDIA_VISIBLE_DEVICES` | ⚙️ | hardcoded `all` | 📋 Move to Infisical |
-| `NVIDIA_DRIVER_CAPABILITIES` | ⚙️ | hardcoded `compute,video,utility` | 📋 Move to Infisical |
+| `PLEX_UID` | ⚙️ | hardcoded `1000` | ✅ Done |
+| `PLEX_GID` | ⚙️ | hardcoded `1000` | ✅ Done |
+| `ADVERTISE_IP` | ⚙️ | hardcoded `http://192.168.68.62:32400/` | ✅ Done |
+| `NVIDIA_VISIBLE_DEVICES` | ⚙️ | hardcoded `all` | ✅ Done |
+| `NVIDIA_DRIVER_CAPABILITIES` | ⚙️ | hardcoded `compute,video,utility` | ✅ Done |
 
 ---
 
 ### `portainer` — Container Manager
 
-**Status:** No secrets.list. Admin credentials not in compose (set via web UI). TLS certs file-based.
+**Status:** `secrets.list` contains only the global keys. Admin credentials are set through the web UI on first login; TLS files are generated by `scripts/04-certificates.sh`.
 
 | Variable | Type | Current | Action |
 |----------|------|---------|--------|
-| `PORTAINER_URL` | ⚙️ | documented in instructions.md | 📋 Register in Infisical `/portainer` |
-| `PORTAINER_TLS_EXPIRY` | ⚙️ | documented in instructions.md | 📋 Register in Infisical `/portainer` |
-| `PORTAINER_ADMIN_USERNAME` | 🔒 | documented in instructions.md | 📋 Register in Infisical `/portainer` |
-| `PORTAINER_ADMIN_PASSWORD` | 🔒 | documented in instructions.md | 📋 Register in Infisical `/portainer` |
-| TLS `portainer.crt` / `portainer.key` | 🔒 | `stacks/portainer/certs/` | ⏭️ File-based. Mounted directly. |
+| `PORTAINER_URL` | ⚙️ | generated in `ACCESS.md` | ⏭️ Reference only — not injected |
+| `PORTAINER_TLS_EXPIRY` | ⚙️ | `make certificates-check` | ⏭️ Reference only — not injected |
+| `PORTAINER_ADMIN_USERNAME` | 🔒 | set in the web UI | ⏭️ Stored in your password manager |
+| `PORTAINER_ADMIN_PASSWORD` | 🔒 | set in the web UI | ⏭️ Stored in your password manager |
+| TLS `portainer.crt` / `portainer.key` | 🔒 | `stacks/portainer/certs/` | ⏭️ File-based, mounted directly |
 
-**Note:** Portainer admin credentials are set through the web UI on first login, not via env vars. Registering them in Infisical is for reference/documentation, not injection.
+**Note:** Portainer credentials are never passed as environment variables, so
+there is nothing for Infisical to inject. They live in the web UI and in your
+offline record.
 
 ---
 
@@ -408,13 +426,13 @@ Present in **every** compose file (~24 stacks). Identical values everywhere:
 
 | Variable | Value | Action |
 |----------|-------|--------|
-| `OTEL_SERVICE_NAME` | `glasswing-homepage` (or `glasswing-ollama`) | 📋 Move to Infisical `/global` |
-| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | 📋 Move to Infisical `/global` |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://192.168.68.62:4318` | 📋 Move to Infisical `/global` |
-| `OTEL_TRACES_EXPORTER` | `otlp` | 📋 Move to Infisical `/global` |
-| `OTEL_METRICS_EXPORTER` | `otlp` | 📋 Move to Infisical `/global` |
-| `OTEL_LOGS_EXPORTER` | `otlp` | 📋 Move to Infisical `/global` |
-| `OTEL_RESOURCE_ATTRIBUTES` | `deployment.environment=homelab,host.name=pathfinder` | 📋 Move to Infisical `/global` |
+| `OTEL_SERVICE_NAME` | `glasswing-homepage` (or `glasswing-ollama`) | ✅ Done `/global` |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `http/protobuf` | ✅ Done `/global` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://192.168.68.62:4318` | ✅ Done `/global` |
+| `OTEL_TRACES_EXPORTER` | `otlp` | ✅ Done `/global` |
+| `OTEL_METRICS_EXPORTER` | `otlp` | ✅ Done `/global` |
+| `OTEL_LOGS_EXPORTER` | `otlp` | ✅ Done `/global` |
+| `OTEL_RESOURCE_ATTRIBUTES` | `deployment.environment=homelab,host.name=pathfinder` | ✅ Done `/global` |
 
 **Approach:** Add a `secrets.list` with these names to every stack, or create a shared include mechanism. The simplest path: add them to each stack's `secrets.list` under `/global` path.
 
@@ -514,47 +532,56 @@ Stored at Infisical path `/global`.
 
 ## 8. Implementation Strategy
 
-### Phase 1: Create `/global` secrets in Infisical
+All six planned phases were implemented. What exists now:
 
-Register these platform-wide values:
-- `GLASSWING_TZ` = `Asia/Kolkata`
-- All 7 `OTEL_*` variables
-- Common values like `GLASSWING_HOST_IP` = `192.168.68.62`
-- Common values like `GLASSWING_PUID` = `1000`, `GLASSWING_PGID` = `1000`
+### Global values
 
-### Phase 2: Extend existing `secrets.list` files
+`stacks/global-secrets.list` names the keys every stack needs, and
+`stacks/global-secrets.registry` holds their committed values
+(`GLASSWING_TZ`, the `OTEL_*` set, `GLASSWING_HOST_IP`, `GLASSWING_PUID`,
+`GLASSWING_PGID`). They are stored at the Infisical path `/global`; the Makefile
+sets `INFISICAL_PATH=/global` for it and the collector stacks share
+`/openobserve`.
 
-Add config variables to stacks that already have secrets. Update compose files to reference them via `${VAR:?Required}`.
+### Per-stack keys
 
-### Phase 3: Create new `secrets.list` files
+Every stack's `secrets.list` names the keys it needs; compose files reference
+them as `${VAR:?Required from Infisical}`. `scripts/with-infisical.sh` fetches
+only those keys for a single `docker compose` invocation.
 
-For stacks without any `secrets.list`, create one with their config variables.
+### Shared secrets
 
-### Phase 4: Update compose files
+`OPEN_NOTEBOOK_PASSWORD` is intentionally listed under both `/open-notebook` and
+`/opencode` and must hold the same value in both. Everything else is scoped to
+one stack path.
 
-Replace every hardcoded `environment:` value with `${VAR:?Required}` references.
+### Registration
 
-### Phase 5: Handle shared secrets
+Committed configuration is upserted from `*.registry` files:
 
-Resolve the `OPEN_NOTEBOOK_PASSWORD` duplication. Consider a `/shared` Infisical path for cross-stack secrets.
+```bash
+./scripts/infisical-register.sh /global stacks/global-secrets.registry
+./scripts/infisical-register.sh /opencode stacks/opencode/opencode-config.registry
+```
 
-### Phase 6: Makefile enhancements
-
-Consider adding a `INFISICAL_GLOBAL_PATH` that is always loaded in addition to the stack-specific path, so OTEL and TZ variables don't need to be listed in every `secrets.list`.
+Operator-supplied secrets are not in Git. `./scripts/secrets-plan.sh --template`
+writes blank registries for them under `.local/secrets-templates/`; fill them in
+from your offline record and register each one. See
+[REBUILD.md](../REBUILD.md#phase-6--load-the-secrets).
 
 ---
 
 ## 9. Summary Counts
 
+Measured with `make secrets-plan` (the live numbers; re-run it after adding a
+stack):
+
 | Category | Count |
 |----------|-------|
-| Total stacks | 25 |
-| Stacks with secrets.list already | 12 |
-| Stacks needing new secrets.list | 8 |
-| Stacks needing extended secrets.list | 11 |
-| Stacks with no changes needed (no custom env) | 4 |
-| Stacks intentionally excluded (bootstrap) | 1 |
-| 🔒 Secrets already in Infisical | ~28 |
-| ⚙️ Config variables to move to Infisical | ~80+ |
-| 🔁 Global/shared variables | ~10 |
-| Total variables to register in Infisical | ~120 |
+| Total stacks | 29 |
+| Stacks with a `secrets.list` | 28 |
+| Stacks configured from `.env` (bootstrap) | 1 (`infisical`) |
+| Infisical paths | 16 |
+| Distinct keys | 114 |
+| Values committed in `*.registry` | 89 |
+| Values only the operator can supply | 25 |

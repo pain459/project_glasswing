@@ -3,3 +3,4 @@ stacks/infisical/tls/
 stacks/homepage/config/logs/
 .local/
 stacks/portainer/certs/
+.opencode/task-progress.md

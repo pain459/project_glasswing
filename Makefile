@@ -35,7 +35,8 @@ export GLASSWING_HOST_IP
 export DOCKER_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null)
 
 .PHONY: help up down restart rebuild logs ps check infisical homepage core status \
-        secrets-check secrets-injection-check network docker-pool doctor access access-check
+        secrets-check secrets-injection-check secrets-plan network docker-pool doctor access access-check \
+        certificates certificates-check
 
 help:
 	@echo "Glasswing Stack Manager"
@@ -55,12 +56,15 @@ help:
 	@echo "make ollama-model                 Rebuild the coding model from its Modelfile"
 	@echo "make ai-preflight                 Validate the Ollama/OpenCode inference baseline"
 	@echo "make secrets-check                Verify Infisical integration"
+	@echo "make secrets-plan                 List keys still to supply / emit templates"
 	@echo "make secrets-injection-check      Verify test-secret injection"
 	@echo "make doctor                       Preflight Docker pool, ports, orphans, restart loops"
 	@echo "make network                      Create the shared 'glasswing' bridge network"
 	@echo "make docker-pool                  Widen the Docker address pool (sudo, restarts Docker)"
 	@echo "make access                       Regenerate ACCESS.md from compose port bindings"
 	@echo "make access-check                 Fail if ACCESS.md is out of date"
+	@echo "make certificates                 Create the local CA, Infisical and Portainer certs"
+	@echo "make certificates-check           Verify the TLS material covers the host IP and is current"
 	@echo ""
 	@echo "Optional: INFISICAL_PATH=/custom/path (default /<stack>)"
 	@echo "Optional: stacks/<name>/pre-up.sh and post-up.sh run automatically with make up"
@@ -154,6 +158,15 @@ access:
 
 access-check:
 	@./scripts/access-map.sh --check
+
+secrets-plan:
+	@./scripts/secrets-plan.sh
+
+certificates:
+	@./scripts/04-certificates.sh
+
+certificates-check:
+	@./scripts/04-certificates.sh --check
 
 status:
 	@docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'

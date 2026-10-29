@@ -12,6 +12,7 @@ The design goal is not maximum service count. It is a platform that stays unders
 - [Hardware](#hardware)
 - [Repository layout](#repository-layout)
 - [Getting started](#getting-started)
+  - [Rebuild from scratch](#rebuild-from-scratch)
 - [Everyday commands](#everyday-commands)
 - [Stacks](#stacks)
 - [Image management](#image-management)
@@ -69,10 +70,20 @@ Makefile           Stack lifecycle, secrets checks, backup targets
 The scripts under `scripts/` are ordered and idempotent where possible. `02-bootstrap.sh` installs Docker from the official repository and does not touch disks.
 
 ```bash
-./scripts/01-mount-drives.sh     # mount and verify storage
-./scripts/02-bootstrap.sh        # Docker Engine and Compose plugin
-./scripts/03-gpu-setup.sh        # NVIDIA container runtime
+./scripts/02-bootstrap.sh        # packages, Docker Engine, Compose plugin, docker group
+./scripts/03-gpu-setup.sh        # NVIDIA driver, Container Toolkit, docker runtime
+./scripts/01-mount-drives.sh     # mount and verify /mnt/storage and /mnt/cold (sudo)
 ```
+
+Run `02` first (it installs the tools the others use), reconnect after the
+`docker` group change, and mount storage before any stack starts.
+
+### Rebuild from scratch
+
+[REBUILD.md](REBUILD.md) is the complete procedure: host preparation, storage,
+the gitignored bootstrap file and TLS material, the first Infisical start, the
+25 secret values you must supply, the parallel rollout, and a verification
+checklist. Everything below assumes those phases are done.
 
 ### Machine identity
 
@@ -92,7 +103,15 @@ INFISICAL_CLIENT_ID=
 INFISICAL_CLIENT_SECRET=
 ```
 
-The wrapper also expects the Infisical CA certificate at `stacks/infisical/tls/cert.pem`. It authenticates with universal auth, fetches only the keys listed in each stack's `secrets.list`, exports them for a single `docker compose` command, and exits.
+The wrapper also expects the Infisical certificate at
+`stacks/infisical/tls/cert.pem` and verifies it with `--cacert`. It authenticates
+with universal auth, fetches only the keys listed in each stack's `secrets.list`,
+exports them for a single `docker compose` command, and exits.
+
+Two more artefacts are host-local and gitignored: `stacks/infisical/.env` (the
+bootstrap values Infisical cannot read from itself — copy
+`stacks/infisical/.env.example`) and the TLS material created by
+`make certificates`. See [REBUILD.md](REBUILD.md) for the exact commands.
 
 ### Host address
 
@@ -110,12 +129,18 @@ fails loudly instead of silently binding the wrong interface. `/global` in
 Infisical holds the same value for runtime use. `make access` writes
 [ACCESS.md](ACCESS.md) with the resulting IP:port URL for every service.
 
+The certificates cover that address too: after changing it, run
+`./scripts/04-certificates.sh --force` and redeploy Infisical and Portainer.
+
 ### Start the core
 
 ```bash
 make core                        # Infisical, then Homepage
 make secrets-check               # verify authentication and secret injection
 ```
+
+On a fresh host, register the secrets first ([REBUILD.md](REBUILD.md) phases 5–6):
+`make core` fails fast when Infisical has no values to inject.
 
 Then bring up individual stacks, or reconcile everything:
 
@@ -139,10 +164,13 @@ make restart-all
 | `make list-stacks` | List discovered stacks |
 | `make ollama-model` | Rebuild the coding model from its checked-in Modelfile |
 | `make ai-preflight` | Validate GPU access, Ollama settings, model limits, and OpenCode connectivity |
-| `make doctor` | Preflight Docker pool headroom, port collisions, orphan networks, restart loops |
+| `make doctor` | Preflight host IP, Docker pool headroom, port collisions, hardcoded IPs, orphan networks, restart loops, Infisical |
 | `make network` | Create the shared `glasswing` bridge (explicit subnet, no pool slot) |
 | `make docker-pool` | Widen Docker's address pool to 4096 networks (sudo; restarts Docker) |
 | `make access` | Regenerate `ACCESS.md` from the compose port bindings |
+| `make secrets-plan` | List the keys still to supply, or emit blank registries (`--template`) |
+| `make certificates` | Create the local CA, Infisical and Portainer certificates |
+| `make certificates-check` | Verify the certificates cover the host IP and are current |
 | `make access-check` | Fail if `ACCESS.md` is out of date |
 | `make restart-all [JOBS=n]` | Redeploy every stack; Infisical and Ollama first, then n at a time |
 
@@ -188,14 +216,15 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 | `open-notebook` | 8502, 5055 | Research workflows |
 | `opencode` | 3019 | Web coding agent with Ollama and Open Notebook RAG |
 | `beszel` | 8090 | Host health |
-| `glances` | 61208 (localhost) | Host system monitor (feeds Homepage widgets) |
+| `glances` | 61208 | Host system monitor (feeds Homepage widgets) |
 | `portainer` | 9443 | Container management |
 | `plex` | 32400 (host network) | Media server |
 | `otel-collector` | 4318, 13133 | Telemetry ingestion |
 | `vector` | 8686 | Docker log shipping |
 | `infisical` | 8095 | Secrets management |
-| `steel` | 3020 | Cloud browser automation |
+| `steel` | 3100, 9223 | Cloud browser automation (UI and CDP) |
 | `dagu` | 3014 | Workflow orchestrator (scheduled DAGs for updates, health checks) |
+| `postgres` | 5432 | Shared PostgreSQL used by DBGate and ad-hoc tooling |
 
 Every port above binds to `GLASSWING_HOST_IP`, not to `0.0.0.0`, so the platform is
 reachable on the LAN and nowhere else. [ACCESS.md](ACCESS.md) is the generated,
@@ -293,7 +322,7 @@ Portainer at `:9443` serves as a read-only dashboard. It monitors containers and
 
 ## Secrets and Configuration
 
-All 25 stacks load their secrets and configuration from Infisical at startup. No hardcoded passwords, API keys, or configuration values remain in compose files.
+Every stack except Infisical (28 of 29) loads its secrets and configuration from Infisical at startup. No hardcoded passwords, API keys, or configuration values remain in compose files.
 
 ### How secret injection works
 
@@ -412,7 +441,7 @@ curl -s -k -X DELETE "$INFISICAL_URL/api/v4/secrets/my-secret-key" \
 For convenience, `scripts/infisical-register.sh` reads a `.registry` file and upserts all entries:
 
 ```bash
-./scripts/infisical-register.sh stacks/opencode/opencode.registry
+./scripts/infisical-register.sh /opencode stacks/opencode/opencode-config.registry
 ```
 
 The script uses POST to create new secrets and PATCH to update existing ones, so it is safe to re-run.
@@ -467,13 +496,15 @@ A green container is not proof a service works. Check the destination too: telem
 - Backup scheduling is manual; systemd timers are planned.
 - A full application-state restore has not been attempted end to end. An isolated configuration restore has.
 - Remote access is LAN-only. A VPN or tunnel is not configured.
-- Infisical serves a self-signed certificate, so clients need the CA explicitly.
+- Infisical serves a self-signed certificate, so clients need the CA explicitly (`make certificates` writes it to `.local/ca/`).
+- The hand-entered secret values (25 keys, listed by `make secrets-plan`) exist only in Infisical and your offline record. A rebuild without that record means new passwords.
 - `steel-browser` has no versioned image tags; it remains on `:latest`. The Dagu update DAG handles rollback for mutable-tag stacks automatically.
 - Some mutable-tag stacks (langfuse, steel) have slow startup times that exceed the 120s healthcheck timeout, causing unnecessary rollbacks. The timeout may need adjustment per-stack.
 
 ## Related documents
 
 - [ACCESS.md](ACCESS.md) — generated IP:port map for every stack (`make access`)
+- **[REBUILD.md](REBUILD.md)** — clean rebuild from a fresh Ubuntu install, phase by phase, with the secrets you must supply.
 
 - **[MAINTENANCE.md](MAINTENANCE.md)** — Daily, weekly, and monthly maintenance tasks. Image updates, secret management, backup operations, troubleshooting, and adding new stacks.
 - **[DR_RUNBOOK.md](DR_RUNBOOK.md)** — Disaster recovery procedures for hardware failure, OS reinstall, or complete data loss. Step-by-step recovery from a fresh Ubuntu install.
