@@ -611,7 +611,7 @@ make restart-all
 | Stop a stack | `make down STACK=name` |
 | Follow logs | `make logs STACK=name` |
 | Validate config | `make check STACK=name` |
-| Restart all stacks | `make restart-all` |
+| Restart all stacks | `make restart-all` (`JOBS=n` for parallelism, default 4) |
 | Check secret injection | `make secrets-check` |
 | Run backup | `make backup` |
 | List snapshots | `make backup-list` |

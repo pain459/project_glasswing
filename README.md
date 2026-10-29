@@ -144,9 +144,14 @@ make restart-all
 | `make docker-pool` | Widen Docker's address pool to 4096 networks (sudo; restarts Docker) |
 | `make access` | Regenerate `ACCESS.md` from the compose port bindings |
 | `make access-check` | Fail if `ACCESS.md` is out of date |
-| `make restart-all` | Redeploy every stack in order |
+| `make restart-all [JOBS=n]` | Redeploy every stack; Infisical and Ollama first, then n at a time |
 
 `make restart-all` uses `docker compose up`, not `docker restart`. Changed environment variables are applied, not ignored.
+
+It starts Infisical first (every other stack needs its secrets), then Ollama
+(the inference backend, which `opencode` reconciles), then deploys the rest
+`JOBS` at a time (default 4) with per-stack logs. A failing stack prints its log
+and makes the target exit non-zero without stopping the other deploys.
 
 Every lifecycle target calls the same `run_compose` macro. It validates the stack name, decides whether the stack declares secrets, injects them through `scripts/with-infisical.sh`, and runs one Compose command. Secret injection is therefore not something a target can forget.
 
