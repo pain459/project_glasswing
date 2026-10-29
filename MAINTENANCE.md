@@ -424,6 +424,11 @@ the same host port, when a container is in a restart loop, and when Infisical is
 not healthy enough for secret injection. It warns about services bound to
 `0.0.0.0` and about networks no container is using.
 
+Run it as your normal user. On Debian and Ubuntu `/etc/docker/daemon.json` is
+root-only, so when the file cannot be read the script creates a throwaway
+network and inspects the subnet the daemon hands out, which reports the pool
+that is actually in effect instead of failing.
+
 ### Reclaim after a migration
 
 Old per-stack networks are not deleted by `docker compose up`; they linger until

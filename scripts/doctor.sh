@@ -34,22 +34,63 @@ else
 fi
 
 # --- 2. Address pool headroom ------------------------------------------------
-POOL_JSON="$(python3 - <<'PY'
-import json
+# /etc/docker/daemon.json is root-only on Debian/Ubuntu, so fall back to asking
+# the daemon what a brand new network actually gets.
+DAEMON_JSON="${DAEMON_JSON:-/etc/docker/daemon.json}"
+
+POOL_JSON="$(python3 - "$DAEMON_JSON" <<'PY'
+import json, sys
 try:
-    data = json.load(open("/etc/docker/daemon.json"))
+    with open(sys.argv[1]) as fh:
+        data = json.load(fh)
+except PermissionError:
+    print("UNREADABLE")
+    raise SystemExit(0)
 except FileNotFoundError:
     data = {}
+except json.JSONDecodeError:
+    print("INVALID")
+    raise SystemExit(0)
 print(json.dumps(data.get("default-address-pools", [])))
 PY
 )"
 
-if [ "$POOL_JSON" = "[]" ]; then
-  warn "No default-address-pools in /etc/docker/daemon.json; Docker allows ~16 networks"
-  warn "  fix: sudo ./scripts/docker-daemon-config.sh --apply"
-  CAPACITY=16
-else
-  CAPACITY="$(python3 - "$POOL_JSON" <<'PY'
+CAPACITY=""
+case "$POOL_JSON" in
+  "[]")
+    warn "No default-address-pools in ${DAEMON_JSON}; Docker allows ~16 networks"
+    warn "  fix: sudo ./scripts/docker-daemon-config.sh --apply"
+    CAPACITY=16
+    ;;
+  UNREADABLE|INVALID)
+    PROBE="glasswing-doctor-probe-$$"
+    if PROBE_ERR="$(docker network create "$PROBE" 2>&1)"; then
+      PROBE_SUBNET="$(docker network inspect "$PROBE" --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}' 2>/dev/null)"
+      docker network rm "$PROBE" >/dev/null 2>&1 || true
+      if python3 -c 'import ipaddress,sys; sys.exit(0 if ipaddress.ip_network(sys.argv[2]).subnet_of(ipaddress.ip_network(sys.argv[1])) else 1)' \
+           172.16.0.0/12 "$PROBE_SUBNET" 2>/dev/null; then
+        pass "Widened address pool in effect (a new network gets ${PROBE_SUBNET})"
+        CAPACITY=4096
+      else
+        warn "New networks get ${PROBE_SUBNET:-an unknown subnet}; the 172.16.0.0/12 pool is not in effect"
+        warn "  fix: sudo ./scripts/docker-daemon-config.sh --apply"
+        CAPACITY=16
+      fi
+    else
+      case "$PROBE_ERR" in
+        *"fully subnetted"*)
+          fail "Docker cannot allocate a network: all predefined address pools are fully subnetted"
+          fail "  fix: sudo ./scripts/docker-daemon-config.sh --apply, then prune unused networks"
+          ;;
+        *)
+          warn "Could not probe the address pool: ${PROBE_ERR%%$'\n'*}"
+          warn "  ${DAEMON_JSON} is not readable as $(id -un); run: sudo make doctor"
+          ;;
+      esac
+    fi
+    ;;
+  *)
+    CAPACITY="$(python3 - "$POOL_JSON" <<'PY'
 import ipaddress, json, sys
 pools = json.loads(sys.argv[1])
 total = 0
@@ -59,19 +100,22 @@ for pool in pools:
 print(total)
 PY
 )"
-  pass "Address pools allow ${CAPACITY} networks ($POOL_JSON)"
-fi
+    pass "Address pools allow ${CAPACITY} networks ($POOL_JSON)"
+    ;;
+esac
 
 NET_COUNT="$(docker network ls --format '{{.Name}}' | wc -l | tr -d ' ')"
-REMAINING=$((CAPACITY - NET_COUNT))
-if [ "$REMAINING" -ge 10 ]; then
-  pass "${NET_COUNT} networks exist; ${REMAINING} left in the pool"
-elif [ "$REMAINING" -ge 1 ]; then
-  warn "${NET_COUNT} networks exist; only ${REMAINING} left in the pool"
-  warn "  fix: consolidate stacks onto the shared 'glasswing' network"
-else
-  fail "${NET_COUNT} networks exist; the pool is exhausted"
-  fail "  fix: sudo ./scripts/docker-daemon-config.sh --apply, then prune orphans"
+if [ -n "$CAPACITY" ]; then
+  REMAINING=$((CAPACITY - NET_COUNT))
+  if [ "$REMAINING" -ge 10 ]; then
+    pass "${NET_COUNT} networks exist; ${REMAINING} left in the pool"
+  elif [ "$REMAINING" -ge 1 ]; then
+    warn "${NET_COUNT} networks exist; only ${REMAINING} left in the pool"
+    warn "  fix: consolidate stacks onto the shared 'glasswing' network"
+  else
+    fail "${NET_COUNT} networks exist; the pool is exhausted"
+    fail "  fix: sudo ./scripts/docker-daemon-config.sh --apply, then prune unused networks"
+  fi
 fi
 
 # --- 3. Shared network -------------------------------------------------------
