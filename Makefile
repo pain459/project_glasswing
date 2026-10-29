@@ -14,7 +14,7 @@ INFISICAL_PATH ?= $(if $(filter otel-collector vector,$(STACK)),/openobserve,/$(
 # Needed by the OTEL collector to access /var/run/docker.sock as non-root.
 export DOCKER_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null)
 
-.PHONY: help up down restart logs ps check infisical homepage core status \
+.PHONY: help up down restart rebuild logs ps check infisical homepage core status \
         secrets-check secrets-injection-check
 
 help:
@@ -25,6 +25,7 @@ help:
 	@echo "make homepage                     Start Homepage"
 	@echo "make up STACK=name                Start a stack, run its hooks, wait for health"
 	@echo "make down STACK=name              Stop/remove stack containers"
+	@echo "make rebuild STACK=name           Rebuild image and redeploy stack"
 	@echo "make restart STACK=name           Restart stack containers"
 	@echo "make logs STACK=name              Follow stack logs"
 	@echo "make ps STACK=name                Show stack status"
@@ -68,7 +69,13 @@ up:
 	@echo "[PASS] Stack $(STACK) started"
 
 down:
-	@$(call run_compose,down)
+	@$(call run_compose,down --rmi local)
+
+rebuild:
+	@$(call run_compose,down --rmi local)
+	@$(call run_compose,build --no-cache)
+	@$(call run_compose,up -d --wait --wait-timeout 180)
+	@echo "[PASS] Stack $(STACK) rebuilt"
 
 restart:
 	@$(call run_compose,restart)
