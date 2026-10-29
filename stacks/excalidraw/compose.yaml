@@ -3,7 +3,8 @@ name: glasswing-excalidraw
 
 services:
   excalidraw:
-    image: excalidraw/excalidraw:0.18.1
+    # Excalidraw publishes no version tags, only `latest` and `sha-<commit>`.
+    image: excalidraw/excalidraw:latest
     container_name: glasswing-excalidraw
     restart: unless-stopped
 

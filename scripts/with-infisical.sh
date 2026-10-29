@@ -51,18 +51,36 @@ done
 
 echo "[INFO] Authenticating with Infisical"
 
-TOKEN="$(
-  curl --fail --silent --show-error \
-    --cacert "$CERT" \
-    -X POST \
-    "$INFISICAL_URL/api/v1/auth/universal-auth/login" \
-    -H "Content-Type: application/json" \
-    --data "$(jq -n \
-      --arg id "$INFISICAL_CLIENT_ID" \
-      --arg secret "$INFISICAL_CLIENT_SECRET" \
-      '{clientId:$id,clientSecret:$secret}')" |
-  jq -er '.accessToken'
-)" || fail "Authentication failed"
+# The Infisical API can still be booting, or its gateway can briefly answer
+# 502, right after `make up STACK=infisical` or a restart. Retry the login
+# instead of failing the whole deploy on a transient error.
+LOGIN_ATTEMPTS="${INFISICAL_LOGIN_ATTEMPTS:-15}"
+LOGIN_DELAY="${INFISICAL_LOGIN_DELAY:-2}"
+login_attempt=1
+
+while :; do
+  if TOKEN="$(
+    curl --fail --silent --show-error \
+      --cacert "$CERT" \
+      -X POST \
+      "$INFISICAL_URL/api/v1/auth/universal-auth/login" \
+      -H "Content-Type: application/json" \
+      --data "$(jq -n \
+        --arg id "$INFISICAL_CLIENT_ID" \
+        --arg secret "$INFISICAL_CLIENT_SECRET" \
+        '{clientId:$id,clientSecret:$secret}')" |
+    jq -er '.accessToken'
+  )"; then
+    break
+  fi
+
+  (( login_attempt < LOGIN_ATTEMPTS )) ||
+    fail "Authentication failed after $LOGIN_ATTEMPTS attempts"
+
+  echo "[INFO] Infisical API not ready (attempt $login_attempt/$LOGIN_ATTEMPTS); retrying in ${LOGIN_DELAY}s"
+  sleep "$LOGIN_DELAY"
+  login_attempt=$((login_attempt + 1))
+done
 
 # Prevent accidental inheritance of bootstrap credentials.
 unset INFISICAL_CLIENT_ID INFISICAL_CLIENT_SECRET
