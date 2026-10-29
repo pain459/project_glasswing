@@ -36,6 +36,10 @@ services:
       com.glasswing.category: utilities
       com.glasswing.monitoring: "true"
 
+    ports:
+      # Direct IP access: reachable without DNS.
+      - "192.168.68.62:3021:80"
+
     networks:
       - proxy
 

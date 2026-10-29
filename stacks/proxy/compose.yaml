@@ -2,13 +2,16 @@ name: glasswing-proxy
 
 services:
   proxy:
-    # Single entry point for every Glasswing web UI.
+    # Optional second entry point for every Glasswing web UI.
     #
-    # The proxy joins the shared `glasswing-proxy` network. Every stack that
-    # publishes a web UI joins the same network and removes its host port.
+    # Plain IP:port access is the default: each stack publishes its own host
+    # port, and the platform works without DNS or this proxy. The proxy adds a
+    # hostname route (https://<service>.glasswing.lan) for clients that can
+    # resolve *.glasswing.lan and trust the Glasswing CA.
+    #
     # Non-HTTP protocols and fixed client endpoints (DNS, SSH, Plex,
     # PostgreSQL, OTLP, the Ollama API used by host tooling, Steel API/CDP)
-    # keep their direct ports because they cannot move cleanly behind nginx.
+    # are only reachable by IP:port by design.
     image: nginx:1.29.8-alpine
     container_name: glasswing-proxy
     restart: unless-stopped

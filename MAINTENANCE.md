@@ -4,11 +4,11 @@ Day-to-day operations for keeping the platform healthy, current, and backed up.
 
 **Host:** `pathfinder` (Ubuntu Server)  
 **Repository:** `/home/ravik/src_git/project_glasswing`  
-**Homepage:** `https://glasswing.lan`  
-**Infisical:** `https://infisical.glasswing.lan` (bootstrap `https://192.168.68.62:8095`)  
-**Portainer:** `https://portainer.glasswing.lan`  
-**Dagu:** `https://dagu.glasswing.lan`  
-**Reverse proxy:** `https://glasswing.lan` (nginx, `:80`/`:443`)
+**Homepage:** `http://192.168.68.62:3006`  
+**Infisical:** `https://192.168.68.62:8095` (self-signed certificate; the UI is the API gateway)  
+**Portainer:** `https://192.168.68.62:9443`  
+**Dagu:** `http://192.168.68.62:3014`  
+**Reverse proxy (optional):** `https://glasswing.lan` via `:443`; plain-IP access is the default (`make access`)
 
 ---
 
@@ -44,30 +44,35 @@ df -hT / /mnt/storage /mnt/cold
 
 ### Homepage dashboard
 
-Open `https://glasswing.lan` and check:
+Open `http://192.168.68.62:3006` and check:
 - **Top widgets** — Glances shows real host CPU, memory, disk I/O, network, temperature
 - **Service cards** — green status dots mean services are reachable
 - **Disk widgets** — `/`, `/mnt/storage`, `/mnt/cold` all have headroom
 
 ### Portainer dashboard
 
-Open `https://portainer.glasswing.lan` and check:
+Open `https://192.168.68.62:9443` and check:
 - **Containers** tab — all `glasswing-*` containers should be `Up`
 - **Images** tab — orange badges indicate newer images available
 - **Volumes** tab — no unexpectedly large volumes
 
 ### Observability sanity
 
-- **OpenObserve** (`https://openobserve.glasswing.lan`) — confirm logs and metrics are arriving for the last hour
-- **Beszel** (`https://beszel.glasswing.lan`) — CPU, memory, disk within normal ranges
-- **Uptime Kuma** (`https://uptime.glasswing.lan`) — no monitors in `Down` state
+- **OpenObserve** (`http://192.168.68.62:3018`) — confirm logs and metrics are arriving for the last hour
+- **Beszel** (`http://192.168.68.62:8090`) — CPU, memory, disk within normal ranges
+- **Uptime Kuma** (`http://192.168.68.62:3003`) — no monitors in `Down` state
 
-### Reverse proxy
+### Reverse proxy (optional)
+
+Only relevant if you started it with `make proxy`. Plain-IP access does not use it.
 
 - `make ps STACK=proxy` — the nginx container should be `Up`
 - `docker exec glasswing-proxy nginx -t` — configuration should be valid
 - Open `https://glasswing.lan` — a `502` means the upstream container is not on the `glasswing-proxy` network
 - `make logs STACK=proxy` — inspect upstream errors and request routing
+
+If clients cannot resolve `*.glasswing.lan`, ignore the proxy entirely:
+`make access` lists every service on its own IP and port.
 
 ---
 
@@ -104,7 +109,7 @@ The Dagu DAG `staged-image-update` runs every Sunday at 05:00 and handles update
 - **Pinned tags**: Checks registry for newer versions and reports availability
 - **Critical infrastructure** (Infisical, OTel, Vector, Postgres, Dagu): Excluded — update manually
 
-Review results in the Dagu Web UI at `https://dagu.glasswing.lan` or trigger a manual run. The DAG always succeeds; per-stack failures are logged.
+Review results in the Dagu Web UI at `http://192.168.68.62:3014` or trigger a manual run. The DAG always succeeds; per-stack failures are logged.
 
 #### Manual updates (pinned-tag stacks)
 
@@ -114,7 +119,7 @@ For stacks with pinned tags that Dagu reports as having updates available:
 # Terminal: compare running images against registry
 ./scripts/check-updates.sh
 
-# Or: browse Portainer at https://portainer.glasswing.lan, check for orange update badges
+# Or: browse Portainer at https://192.168.68.62:9443, check for orange update badges
 ```
 
 If updates are available:
@@ -245,7 +250,7 @@ For each eligible stack:
 ```
 
 To trigger manually:
-- Open Dagu Web UI at `https://dagu.glasswing.lan`
+- Open Dagu Web UI at `http://192.168.68.62:3014`
 - Click the `staged-image-update` DAG → Run
 - Or run the script directly: `./scripts/update-stacks.sh`
 
@@ -254,8 +259,8 @@ To trigger manually:
 ```
 1. Discover updates
    ./scripts/check-updates.sh          # terminal
-   or Portainer https://portainer.glasswing.lan → Images tab     # UI
-   or Dagu https://dagu.glasswing.lan → DAG run logs             # automated check results
+   or Portainer https://192.168.68.62:9443 → Images tab     # UI
+   or Dagu http://192.168.68.62:3014 → DAG run logs             # automated check results
 
 2. Review release notes
    Check GitHub releases or project changelog
@@ -475,6 +480,6 @@ make restart-all
 | Inspect running images | `./scripts/inspect-images.sh` |
 | Verify all stacks | `./scripts/verify-stacks.sh` |
 | GPU preflight | `make ai-preflight` |
-| Dagu Web UI | `https://dagu.glasswing.lan` |
+| Dagu Web UI | `http://192.168.68.62:3014` |
 | Start the reverse proxy | `make proxy` |
 | Push proxy-era URLs to Infisical | `make proxy-migrate` |

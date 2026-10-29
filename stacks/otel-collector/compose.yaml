@@ -27,6 +27,7 @@ services:
     ports:
       # OTLP HTTP ingestion stays direct; every stack sends here.
       - "192.168.68.62:4318:4318"
+      - "192.168.68.62:13133:13133"
 
     mem_limit: 768m
 

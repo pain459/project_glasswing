@@ -1,6 +1,6 @@
 # Glasswing OpenObserve Dashboards
 
-Dashboard JSON files for importing into OpenObserve at `https://openobserve.glasswing.lan`.
+Dashboard JSON files for importing into OpenObserve at `http://192.168.68.62:3018`.
 
 ## Available Dashboards
 
@@ -13,7 +13,7 @@ Dashboard JSON files for importing into OpenObserve at `https://openobserve.glas
 
 ## How to Import
 
-1. Open OpenObserve at `https://openobserve.glasswing.lan`
+1. Open OpenObserve at `http://192.168.68.62:3018`
 2. Navigate to **Dashboards** in the left sidebar
 3. Click the **Import** button
 4. Select the JSON file you want to import

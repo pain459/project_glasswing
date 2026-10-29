@@ -24,8 +24,9 @@ services:
       OTEL_SERVICE_NAME: glasswing-forgejo
 
     ports:
-      # SSH stays direct; Git over HTTPS goes through the proxy.
+      # SSH and the web UI stay direct; the optional proxy also routes HTTPS.
       - "192.168.68.62:2222:22"
+      - "192.168.68.62:3011:3000"
 
     volumes:
       - forgejo_data:/data

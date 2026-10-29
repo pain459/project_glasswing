@@ -374,7 +374,7 @@ docker ps --filter "label=com.docker.compose.project=glasswing-infisical"
 
 If Infisical secrets were lost and need to be re-entered:
 
-1. Log into Infisical at `https://infisical.glasswing.lan` (bootstrap: `https://192.168.68.62:8095`)
+1. Log into Infisical at `https://192.168.68.62:8095` (self-signed certificate)
 2. Navigate to Project → Environment → Secrets
 3. Enter secrets for each stack (refer to each stack's `secrets.list` for required keys)
 4. Or use the registry files: `./scripts/infisical-register.sh stacks/<stack>/<stack>.registry`
@@ -402,7 +402,7 @@ make secrets-check
 
 ```bash
 # Check OpenObserve has recent data
-# Visit https://openobserve.glasswing.lan
+# Visit http://192.168.68.62:3018
 ```
 
 ### 7.4 Run a backup
@@ -466,8 +466,8 @@ If the Infisical PostgreSQL volume is corrupted:
 4. **Infisical credentials loss** — Without `credentials.env`, secret injection fails. **Mitigation:** keep an offline copy or re-register via Infisical admin UI.
 5. **Image tag drift** — if a pinned image version is deprecated or removed from the registry, `make up` will fail. **Mitigation:** pin to versions that are still available, or use image digests for critical services.
 6. **Dagu update DAG failures** — the automated image update DAG rolls back broken updates automatically, but if a new image is fundamentally broken, the stack reverts to the previously cached image. **Mitigation:** review Dagu run logs after each scheduled run, especially after long gaps.
-7. **Proxy certificate or DNS loss** — web UIs are reachable only through `*.glasswing.lan`. Without the wildcard certificate or the AdGuard rewrite, browsers fail before reaching a service. **Mitigation:** the CA key is backed up with the rest of the recovery material; run `./scripts/gen-proxy-cert.sh --force` after restoring it, and recreate both AdGuard rewrites.
-8. **Shared proxy network missing** — stacks that join `glasswing-proxy` fail to start if the external network does not exist. **Mitigation:** `make up STACK=proxy` creates it; `docker network create glasswing-proxy` is the manual equivalent.
+7. **Proxy certificate or DNS loss** — only affects the optional proxy; direct IP:port access is unaffected. Without the wildcard certificate or the AdGuard rewrite, browsers fail before reaching a service. **Mitigation:** the CA key is backed up with the rest of the recovery material; run `./scripts/gen-proxy-cert.sh --force` after restoring it, and recreate both AdGuard rewrites.
+8. **Shared proxy network missing** — stacks that join `glasswing-proxy` fail to start if the external network does not exist. **Mitigation:** any `make up STACK=<name>` creates it; `docker network create glasswing-proxy` is the manual equivalent.
 
 ---
 
@@ -490,7 +490,7 @@ Print this and keep it near the machine:
 - [ ] AdGuard rewrites `glasswing.lan` and `*.glasswing.lan` -> `192.168.68.62` recreated
 - [ ] Client devices trust `.local/ca/glasswing-ca.crt`
 - [ ] All stacks started in order
-- [ ] `https://glasswing.lan` loads
+- [ ] `http://192.168.68.62:3006` loads
 - [ ] `make secrets-check` passes
 - [ ] Backup runs successfully
 - [ ] Restic password stored offline

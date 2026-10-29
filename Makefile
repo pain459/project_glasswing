@@ -15,14 +15,14 @@ INFISICAL_PATH ?= $(if $(filter otel-collector vector,$(STACK)),/openobserve,/$(
 export DOCKER_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null)
 
 .PHONY: help up down restart rebuild logs ps check infisical homepage proxy core status \
-        secrets-check secrets-injection-check proxy-migrate
+        secrets-check secrets-injection-check proxy-migrate ip-migrate access
 
 help:
 	@echo "Glasswing Stack Manager"
 	@echo ""
-	@echo "make core                         Start base stacks (Infisical, proxy, Homepage)"
+	@echo "make core                         Start base stacks (Infisical, Homepage)"
 	@echo "make infisical                    Start Infisical"
-	@echo "make proxy                        Start the nginx reverse proxy"
+	@echo "make proxy                        Optional: start the nginx reverse proxy (needs DNS)"
 	@echo "make homepage                     Start Homepage"
 	@echo "make up STACK=name                Start a stack, run its hooks, wait for health"
 	@echo "make down STACK=name              Stop/remove stack containers"
@@ -36,7 +36,8 @@ help:
 	@echo "make ai-preflight                 Validate the Ollama/OpenCode inference baseline"
 	@echo "make secrets-check                Verify Infisical integration"
 	@echo "make secrets-injection-check      Verify test-secret injection"
-	@echo "make proxy-migrate                Push proxy-era URLs to Infisical"
+	@echo "make ip-migrate                   Push IP-based app URLs to Infisical"
+	@echo "make access                       Print the IP:port access map"
 	@echo ""
 	@echo "Optional: INFISICAL_PATH=/custom/path (default /<stack>)"
 	@echo "Optional: stacks/<name>/pre-up.sh and post-up.sh run automatically with make up"
@@ -107,7 +108,6 @@ homepage:
 
 core:
 	@$(MAKE) --no-print-directory infisical
-	@$(MAKE) --no-print-directory proxy
 	@$(MAKE) --no-print-directory homepage
 	@echo "[PASS] Glasswing core stacks started"
 
@@ -139,18 +139,24 @@ secrets-injection-check:
 	@echo "[PASS] Infisical secret injection operational"
 
 
-# Push the URL/config values that changed when services moved behind the proxy.
-# Run this after `make up STACK=proxy` and before `make restart-all`.
-PROXY_MIGRATE_STACKS := anythingllm beszel flowise forgejo homepage langfuse opencode
+# App URLs that must match how a browser reaches the service. They live in
+# Infisical, so changing compose files alone is not enough.
+URL_CONFIG_STACKS := anythingllm beszel flowise forgejo homepage langfuse opencode
 
-proxy-migrate:
+ip-migrate:
 	@set -eu; \
-	for stack in $(PROXY_MIGRATE_STACKS); do \
+	for stack in $(URL_CONFIG_STACKS); do \
 	  registry="stacks/$$stack/$$stack-config.registry"; \
 	  echo "[INFO] Registering $$stack config from $$registry"; \
 	  ./scripts/infisical-register.sh "/$$stack" "$$registry"; \
 	done; \
-	echo "[PASS] Proxy-era URLs registered in Infisical"
+	echo "[PASS] IP-based URLs registered in Infisical"
+
+# Kept as an alias: the same registries carried the proxy-era URLs.
+proxy-migrate: ip-migrate
+
+access:
+	@./scripts/access-map.sh
 
 
 # --------------------------------------------------
@@ -178,8 +184,6 @@ restart-all:
 	  echo "[INFO] Starting Infisical"; \
 	  $(MAKE) --no-print-directory up STACK=infisical; \
 	fi; \
-	echo "[INFO] Starting the reverse proxy"; \
-	$(MAKE) --no-print-directory up STACK=proxy; \
 	for stack in $(sort $(filter-out infisical proxy,$(STACKS))); do \
 	  echo ""; \
 	  echo "========================================"; \

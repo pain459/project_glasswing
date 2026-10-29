@@ -24,6 +24,10 @@ services:
     labels:
       com.glasswing.service: portainer
 
+    ports:
+      # Direct IP access: reachable without DNS.
+      - "192.168.68.62:9443:9443"
+
     networks:
       - proxy
 

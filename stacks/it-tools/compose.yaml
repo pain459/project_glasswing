@@ -24,6 +24,10 @@ services:
       - /var/cache/nginx
       - /var/run
 
+    ports:
+      # Direct IP access: reachable without DNS.
+      - "192.168.68.62:3015:80"
+
     networks:
       - proxy
 
