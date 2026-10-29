@@ -1,6 +1,5 @@
 # steel stack config variables
 STEEL_NODE_ENV=production
-STEEL_BIND_IP=192.168.68.62
 STEEL_PORT=3100
 STEEL_LOG_STORAGE_ENABLED=true
 STEEL_LOG_STORAGE_PATH=/data/logs

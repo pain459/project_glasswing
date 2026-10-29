@@ -66,6 +66,26 @@ def service_blocks(lines):
     return out
 
 
+# Port numbers are sometimes configuration (`${STEEL_PORT}`). The committed
+# registries carry those non-secret values, so resolve them here instead of
+# silently dropping the binding.
+registry_values = {}
+for registry in pathlib.Path("stacks").glob("**/*.registry"):
+    for line in registry.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            key, value = line.split("=", 1)
+            registry_values.setdefault(key.strip(), value.strip())
+
+
+def resolve_vars(spec):
+    def repl(match):
+        name = match.group(1).split(":")[0].split("-")[0]
+        return registry_values.get(name, match.group(0))
+
+    return re.sub(r"\$\{([^}]+)\}", repl, spec)
+
+
 rows = []
 host_net_stacks = set()
 
@@ -117,6 +137,7 @@ for compose in sorted(pathlib.Path("stacks").glob("*/compose.yaml")):
             proto = proto or "tcp"
             # "${GLASSWING_HOST_IP:?...}:3006:3000" -> ":3006:3000"
             base = re.sub(r"^\$\{[^}]+\}", "", base)
+            base = resolve_vars(base)
             parts = base.split(":")
             if len(parts) == 3:
                 host_ip, host_port, container_port = parts

@@ -13,35 +13,28 @@ done
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-# Order matters: infrastructure first, then dependencies, then services.
-STACKS=(
-  otel-collector
-  vector
-  openobserve
-  ollama
-  open-notebook
-  steel
-  opencode
-  anythingllm
-  flowise
-  langfuse
-  homepage
-  stirling-pdf
-  forgejo
-  plex
-  beszel
-  glances
-  adguard
-  kavita
-  uptime-kuma
-  cyberchef
-  excalidraw
-  it-tools
-  calculators
-  portainer
-  jupyterlab
-  dbgate
-)
+# Stack list comes from the Makefile, so a newly added stack is never missed.
+# Infisical must be healthy first (every other stack fetches secrets from it),
+# then Ollama (the inference backend), then the rest in a stable order.
+DISCOVERED=$(make --no-print-directory list-stacks)
+[[ -n "$DISCOVERED" ]] || {
+  echo "No stacks found under stacks/*/compose.yaml" >&2
+  exit 1
+}
+
+STACKS=()
+for stack in infisical ollama; do
+  printf '%s\n' "$DISCOVERED" | grep -qx "$stack" && STACKS+=("$stack")
+done
+while IFS= read -r stack; do
+  [[ "$stack" == infisical || "$stack" == ollama ]] && continue
+  STACKS+=("$stack")
+done <<< "$DISCOVERED"
+
+[[ ${#STACKS[@]} -gt 0 ]] || {
+  echo "No stacks found under stacks/*/compose.yaml" >&2
+  exit 1
+}
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'

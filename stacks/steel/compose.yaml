@@ -12,9 +12,9 @@ services:
     init: true
 
     ports:
-      - "${STEEL_BIND_IP:?Missing STEEL_BIND_IP}:${STEEL_PORT:?Missing STEEL_PORT}:3000"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:${STEEL_PORT:?Missing STEEL_PORT}:3000"
       # CDP debugger port – needed for Chrome DevTools Protocol debugging
-      - "${STEEL_BIND_IP:?Missing STEEL_BIND_IP}:9223:9223"
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:9223:9223"
 
     environment:
       NODE_ENV: ${STEEL_NODE_ENV:?Required from Infisical}

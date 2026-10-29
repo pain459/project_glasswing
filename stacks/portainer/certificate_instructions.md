@@ -1,193 +1,123 @@
-## Step 1 — Generate a local trusted certificate
+# Portainer TLS — Glasswing
 
-Because Portainer is accessed through a private IP address, a public certificate authority generally won't issue a certificate for that address. We'll create a private CA and use it to sign Portainer's certificate.
+Portainer is reached at `https://<host-ip>:9443` with a certificate signed by the
+Glasswing private CA. Nothing is issued by a public authority, because a public
+CA will not sign a private IPv4 address.
 
-Run these commands on Pathfinder:
+All of this is automated. The manual OpenSSL recipe that used to live here is
+kept only as background in [How it works](#how-it-works).
 
-```
-cd ~/src_git/project_glasswing
+## Step 1 — Create the TLS material
 
-mkdir -p .local/ca stacks/portainer/certs
-chmod 700 .local/ca
+Run on Pathfinder, from the repository root:
 
-# Create Glasswing's private CA (only once).
-if [ ! -f .local/ca/glasswing-ca.key ]; then
-  openssl req -x509 -newkey rsa:4096 -sha256 \
-    -noenc -days 3650 \
-    -keyout .local/ca/glasswing-ca.key \
-    -out .local/ca/glasswing-ca.crt \
-    -subj "/CN=Glasswing Home CA" \
-    -addext "basicConstraints=critical,CA:TRUE" \
-    -addext "keyUsage=critical,keyCertSign,cRLSign"
-fi
-
-chmod 600 .local/ca/glasswing-ca.key
-
-# Generate Portainer's private key and certificate request.
-openssl req -new -newkey rsa:3072 -nodes \
-  -keyout stacks/portainer/certs/portainer.key \
-  -out /tmp/glasswing-portainer.csr \
-  -subj "/CN=pathfinder"
-
-# Specify the names/IP that the certificate should cover.
-cat > /tmp/glasswing-portainer.ext <<'EOF'
-subjectAltName=IP:192.168.68.62,DNS:pathfinder
-basicConstraints=critical,CA:FALSE
-keyUsage=critical,digitalSignature,keyEncipherment
-extendedKeyUsage=serverAuth
-EOF
-
-# Sign the Portainer certificate using Glasswing's CA.
-openssl x509 -req \
-  -in /tmp/glasswing-portainer.csr \
-  -CA .local/ca/glasswing-ca.crt \
-  -CAkey .local/ca/glasswing-ca.key \
-  -CAcreateserial \
-  -out stacks/portainer/certs/portainer.crt \
-  -days 365 -sha256 \
-  -extfile /tmp/glasswing-portainer.ext
-
-chmod 600 stacks/portainer/certs/portainer.key
-rm -f /tmp/glasswing-portainer.csr /tmp/glasswing-portainer.ext
+```bash
+make certificates          # creates whatever is missing
+make certificates-check    # covers the host IP, not expiring
 ```
 
-Make sure `.gitignore` contains:
+`scripts/04-certificates.sh` writes three things:
 
-```
-.local/
-stacks/portainer/certs/
-```
+| File | Issuer | Purpose |
+| --- | --- | --- |
+| `.local/ca/glasswing-ca.{crt,key}` | self | Glasswing private CA (10 years) |
+| `stacks/portainer/certs/portainer.{crt,key}` | Glasswing CA | Portainer on `:9443` |
+| `stacks/infisical/tls/{cert.pem,key.pem}` | self-signed | Infisical gateway on `:8095` |
 
-The CA private key is highly sensitive. Keep it off Git, protect it with filesystem permissions, and maintain a separate secure backup.
+The certificate SAN covers `IP:<GLASSWING_HOST_IP>` and `DNS:pathfinder`. The CA
+private key stays on the host (mode `600`) and in your offline backup — never in
+Git.
 
-## Step 2 — Update Portainer Compose
+## Step 2 — Start or restart Portainer
 
-Replace `stacks/portainer/compose.yaml` with:
+`stacks/portainer/compose.yaml` already mounts `./certs` read-only and passes
+`--sslcert` / `--sslkey`; a fresh clone needs no edits.
 
-```
-
-name: glasswing-portainer
-
-services:
-  portainer:
-    image: portainer/portainer-ce:lts
-    container_name: glasswing-portainer
-    restart: unless-stopped
-
-    command:
-      - --sslcert
-      - /certs/portainer.crt
-      - --sslkey
-      - /certs/portainer.key
-
-    ports:
-      - "192.168.68.62:9443:9443"
-
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
-      - ./certs:/certs:ro
-
-    security_opt:
-      - no-new-privileges:true
-
-volumes:
-  portainer_data:
-    name: glasswing-portainer-data
-
-```
-
-Portainer officially supports the `--sslcert` and `--sslkey` options for custom PEM certificates.&#x20;
-
-[image](https://www.google.com/s2/favicons?domain=https://docs.portainer.io\&sz=32)
-
-Portainer Documentation
-
-
-
-## Step 3 — Restart Portainer
-
-```
+```bash
 make up STACK=portainer
 make ps STACK=portainer
 ```
 
-The existing Portainer data volume remains intact, so your administrator account and configuration should be preserved.
+The data volume `glasswing-portainer-data` is untouched, so the administrator
+account and settings survive a certificate change.
 
-Verify the certificate:
+## Step 3 — Verify
 
-```
-openssl x509 \
-  -in stacks/portainer/certs/portainer.crt \
-  -noout -subject -dates -ext subjectAltName
-```
+```bash
+openssl x509 -in stacks/portainer/certs/portainer.crt \
+  -noout -subject -issuer -dates
+openssl x509 -in stacks/portainer/certs/portainer.crt \
+  -noout -text | sed -n '/Subject Alternative Name/,+1p'
 
-Then verify HTTPS without `-k`:
-
-```
 curl --fail --silent --show-error \
   --cacert .local/ca/glasswing-ca.crt \
-  https://192.168.68.62:9443/ \
-  -o /dev/null
-
-echo "[PASS] Portainer trusted TLS"
+  https://<host-ip>:9443/ -o /dev/null && echo "[PASS] Portainer trusted TLS"
 ```
 
-This validates the Portainer certificate against your new CA.
+`make certificates-check` performs the same checks (presence, SAN, 21-day
+expiry warning) for the CA, Portainer and Infisical in one command.
 
-## Step 4 — Trust Glasswing CA on your Mac
+## Step 4 — Trust the Glasswing CA on your workstation
 
-On Pathfinder, copy the public CA certificate only to an accessible location:
+Copy the **public** certificate only; the private key never leaves the host.
 
-```
-cp .local/ca/glasswing-ca.crt /tmp/glasswing-ca.crt
-chmod 644 /tmp/glasswing-ca.crt
-```
-
-On your Mac:
-
-```
-scp ravik@192.168.68.62:/tmp/glasswing-ca.crt \
-  ~/Downloads/glasswing-ca.crt
+```bash
+# on Pathfinder
+scp .local/ca/glasswing-ca.crt you@workstation:~/Downloads/glasswing-ca.crt
 ```
 
-Verify the certificate fingerprint against Pathfinder before installing it. Then, on the Mac, run:
+Compare the fingerprint first, then install it:
 
-```
-sudo security add-trusted-cert \
-  -d -r trustRoot \
-  -k /Library/Keychains/System.keychain \
-  ~/Downloads/glasswing-ca.crt
-```
-
-This grants the Glasswing CA trust on the Mac, including for any future certificates that CA signs. Only install this CA on devices you control and trust.
-
-Now open:
-
-[Portainer — Trusted HTTPS](https://192.168.68.62:9443?utm_source=chatgpt.com)
-
-Safari should display the page without certificate warnings. Restart the browser if it continues using a previously cached TLS connection.
-
-## Step 5 — Register the certificate in Infisical
-
-In `glasswing-infrastructure` → `prod` → `/portainer`, add these records:
-
-| Key                        | Purpose                      |
-| -------------------------- | ---------------------------- |
-| `PORTAINER_URL`            | `https://192.168.68.62:9443` |
-| `PORTAINER_TLS_EXPIRY`     | Certificate expiration date  |
-| `PORTAINER_ADMIN_USERNAME` | Administrator username       |
-| `PORTAINER_ADMIN_PASSWORD` | Administrator password       |
-
-Keep the CA private key in protected offline backup storage; we don't need to give routine application deployments access to certificate-signing authority.
-
-## Final verification
-
-```
-make ps STACK=portainer
-make status
+```bash
+# macOS
+shasum -a 256 ~/Downloads/glasswing-ca.crt   # compare with: openssl x509 -in .local/ca/glasswing-ca.crt -noout -fingerprint -sha256
+sudo security add-trusted-cert -d -r trustRoot \
+  -k /Library/Keychains/System.keychain ~/Downloads/glasswing-ca.crt
 ```
 
-Portainer is complete when its existing administrator login works, Docker management is available, and HTTPS validates without certificate warnings or insecure TLS bypasses.
+Ubuntu/Debian clients:
 
-One additional benefit: We can reuse Glasswing's CA to issue trusted certificates for Infisical and any future LAN services, without creating a new certificate authority for every application.
+```bash
+sudo cp glasswing-ca.crt /usr/local/share/ca-certificates/glasswing-ca.crt
+sudo update-ca-certificates
+```
+
+Only install this CA on devices you control. Trusting it means any certificate it
+signs is accepted by that device.
+
+## Renewal and host-address changes
+
+Certificates are valid for 825 days (CA: 10 years). `make certificates-check`
+starts warning 21 days before expiry.
+
+```bash
+./scripts/04-certificates.sh --force   # reissue CA + leaves
+make up STACK=infisical                # the gateway also mounts a certificate
+make up STACK=portainer
+make certificates-check
+```
+
+Changing `GLASSWING_HOST_IP` requires the same `--force` run, because the SAN is
+baked into the leaf certificates. Clients must then trust the newly issued CA
+again (or you can keep the old CA by restoring `.local/ca/` first, in which case
+only the leaves need reissuing).
+
+Do **not** sign the Infisical certificate with the Glasswing CA: the scripts and
+every documented `curl` verify that endpoint with
+`--cacert stacks/infisical/tls/cert.pem`, which only works while it is
+self-signed.
+
+## How it works
+
+The generation script does what this recipe did by hand:
+
+1. `openssl req -x509` creates the CA with `basicConstraints=critical,CA:TRUE`.
+2. A leaf key + CSR is created with `CN=pathfinder`.
+3. `openssl x509 -req` signs the CSR with the CA, applying
+   `subjectAltName=IP:<host-ip>,DNS:pathfinder`,
+   `basicConstraints=critical,CA:FALSE`, `keyUsage=critical,digitalSignature,keyEncipherment`
+   and `extendedKeyUsage=serverAuth`.
+4. Files are installed with mode `644` (certificates) and `600` (keys).
+
+Portainer documents the `--sslcert` / `--sslkey` options at
+<https://docs.portainer.io/advanced/ssl>.

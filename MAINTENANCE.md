@@ -22,8 +22,10 @@ Day-to-day operations for keeping the platform healthy, current, and backed up.
 - [Docker network capacity](#docker-network-capacity)
 - [Host address and access map](#host-address-and-access-map)
 - [Compose conventions](#compose-conventions)
+- [TLS material](#tls-material)
 - [Health troubleshooting](#health-troubleshooting)
 - [Adding a new stack](#adding-a-new-stack)
+- [Rebuilding or restoring](#rebuilding-or-restoring)
 
 ---
 
@@ -185,7 +187,16 @@ openssl x509 -in stacks/portainer/certs/portainer.crt -noout -dates
 openssl x509 -in stacks/infisical/tls/cert.pem -noout -dates
 ```
 
-Renew before expiry using the procedures in `stacks/portainer/certificate_instructions.md`.
+Renew with the script rather than by hand; it recreates the CA only if it is
+missing and keeps the Infisical certificate self-signed so `--cacert` keeps
+working:
+
+```bash
+./scripts/04-certificates.sh --force
+make up STACK=infisical
+make up STACK=portainer
+make certificates-check
+```
 
 ### 5. Test restore (isolated)
 
@@ -297,9 +308,10 @@ make up STACK=flowise
    echo "MY_NEW_SECRET" >> stacks/<stack>/secrets.list
    ```
 
-2. Register the value in Infisical (via UI or API):
+2. Register the value in Infisical (via UI or API). The wrapper takes the
+   secret path first:
    ```bash
-   ./scripts/infisical-register.sh stacks/<stack>/<stack>.registry
+   ./scripts/infisical-register.sh /<stack> stacks/<stack>/<stack>.registry
    ```
 
 3. Reference in compose.yaml:
@@ -312,8 +324,12 @@ make up STACK=flowise
 
 ### Changing a secret value
 
-1. Update the value in Infisical (UI or `scripts/infisical-register.sh`)
+1. Update the value in Infisical (UI, or a local `KEY=value` file passed to
+   `scripts/infisical-register.sh /<stack> <file>`)
 2. Redeploy the stack: `make up STACK=<stack>`
+
+`make secrets-plan` prints which keys are committed configuration and which ones
+only exist in Infisical; keep the second list in your offline record.
 
 ### Adding a global variable
 
@@ -580,12 +596,28 @@ docker system prune -a
 ### Full platform restart
 
 ```bash
-# Restart all stacks in dependency order
-./scripts/verify-stacks.sh
-
-# Or via Makefile
-make restart-all
+make restart-all          # Infisical, Ollama, then the rest JOBS at a time
+make doctor               # confirm nothing came back unhealthy
 ```
+
+`scripts/verify-stacks.sh` still exists for a slower, stack-by-stack
+down/up cycle with a health check after each one; it takes the stack list from
+the Makefile, so it cannot miss a newly added stack.
+
+### TLS material
+
+Three certificates are host-local and gitignored, so they are recreated on a
+fresh clone rather than restored from Git:
+
+| File | Purpose | Issuer |
+| --- | --- | --- |
+| `.local/ca/glasswing-ca.{key,crt}` | private CA for LAN services | self |
+| `stacks/infisical/tls/{cert.pem,key.pem}` | nginx gateway on `:8095` | self-signed, deliberately |
+| `stacks/portainer/certs/{portainer.crt,key}` | Portainer on `:9443` | Glasswing CA |
+
+`make certificates` creates what is missing, `make certificates-check` fails when
+a certificate does not cover `GLASSWING_HOST_IP` or expires within 21 days, and
+`./scripts/04-certificates.sh --force` reissues everything after an IP change.
 
 ---
 
@@ -595,10 +627,24 @@ make restart-all
 2. Create `stacks/<name>/compose.yaml` with `name: glasswing-<name>`
 3. Create `stacks/<name>/secrets.list` (even if empty, with a comment)
 4. If the stack needs secrets, create `stacks/<name>/<name>.registry` with `KEY=value` pairs
-5. Register secrets: `./scripts/infisical-register.sh stacks/<name>/<name>.registry`
+5. Register secrets: `./scripts/infisical-register.sh /<name> stacks/<name>/<name>.registry`
 6. Deploy: `make up STACK=<name>`
-7. Add to `scripts/verify-stacks.sh` STACKS array if it should be part of full restarts
+7. Regenerate the access map: `make access` (doctor and ACCESS.md are the cross-checks)
 8. Commit everything to git
+
+`make restart-all` and `scripts/verify-stacks.sh` both enumerate
+`stacks/*/compose.yaml`, so a new stack needs no central registration.
+
+---
+
+## Rebuilding or restoring
+
+| Situation | Document |
+| --- | --- |
+| New hardware, no data to keep | [REBUILD.md](REBUILD.md) — fresh secrets, fresh volumes, verification checklist |
+| Reinstall on the same disks, keep data | [DR_RUNBOOK.md](DR_RUNBOOK.md) — restore volumes and the repository from Restic |
+| One stack is broken | [DR_RUNBOOK.md#partial-recovery](DR_RUNBOOK.md#partial-recovery) — restore that volume only |
+| Not sure what the host needs | [REBUILD.md#phase-1--host-and-user](REBUILD.md#phase-1--host-and-user) — packages, GPU, Docker, storage |
 
 ---
 
@@ -613,12 +659,15 @@ make restart-all
 | Validate config | `make check STACK=name` |
 | Restart all stacks | `make restart-all` (`JOBS=n` for parallelism, default 4) |
 | Check secret injection | `make secrets-check` |
+| Plan/verify secrets | `make secrets-plan` |
+| Recreate TLS material | `make certificates` / `make certificates-check` |
 | Run backup | `make backup` |
 | List snapshots | `make backup-list` |
 | Check image updates | `./scripts/check-updates.sh` |
 | Trigger automated updates | `./scripts/update-stacks.sh` |
 | Bump image version | `./scripts/bump-image.sh <stack> <old> <new>` |
 | Inspect running images | `./scripts/inspect-images.sh` |
-| Verify all stacks | `./scripts/verify-stacks.sh` |
+| Verify all stacks | `make doctor` (fast) or `./scripts/verify-stacks.sh` (stack-by-stack) |
+| Rebuild / restore | [REBUILD.md](REBUILD.md) / [DR_RUNBOOK.md](DR_RUNBOOK.md) |
 | GPU preflight | `make ai-preflight` |
 | Dagu Web UI | `http://192.168.68.62:3014` |

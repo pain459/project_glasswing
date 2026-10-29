@@ -2,6 +2,10 @@
 
 Step-by-step procedures for recovering the Glasswing platform after a total failure: hardware replacement, OS reinstall, or complete data loss.
 
+For a **clean install with nothing to restore**, use [REBUILD.md](REBUILD.md)
+instead. This document assumes you have a Restic snapshot and want the old data
+back.
+
 **Host:** `pathfinder` (Ubuntu Server)  
 **Repository:** `/home/ravik/src_git/project_glasswing`  
 **Backup repository:** `/mnt/cold/glasswing-backups/restic`  
@@ -258,27 +262,57 @@ mkdir -p .local/ca
 chmod 600 .local/ca/glasswing-ca.key
 ```
 
-If the CA key is lost, you must regenerate it and re-issue all TLS certificates:
-```bash
-# Regenerate CA (only if original is lost)
-openssl req -x509 -newkey rsa:4096 -sha256 \
-  -noenc -days 3650 \
-  -keyout .local/ca/glasswing-ca.key \
-  -out .local/ca/glasswing-ca.crt \
-  -subj "/CN=Glasswing Home CA" \
-  -addext "basicConstraints=critical,CA:TRUE" \
-  -addext "keyUsage=critical,keyCertSign,cRLSign"
-
-# Re-sign Portainer certificate (see stacks/portainer/certificate_instructions.md)
-# Re-sign Infisical certificate
-```
-
-### 4.4 Infisical TLS certificate
+If the CA key is lost, you must regenerate it and re-issue every leaf
+certificate. One command does both:
 
 ```bash
-# If stacks/infisical/tls/cert.pem is missing, regenerate:
-# See stacks/infisical/ for certificate generation instructions
+./scripts/04-certificates.sh --force   # new CA + Infisical + Portainer
+make certificates-check
+make up STACK=infisical
+make up STACK=portainer
 ```
+
+Clients that trusted the old CA must install the new
+`.local/ca/glasswing-ca.crt` (fingerprint and trust steps in
+[stacks/portainer/certificate_instructions.md](stacks/portainer/certificate_instructions.md#step-4--trust-the-glasswing-ca-on-your-workstation)).
+
+### 4.4 Infisical bootstrap file
+
+`stacks/infisical/.env` is gitignored and holds the values Infisical cannot read
+from itself: `GLASSWING_HOST_IP`, `SITE_URL`, `POSTGRES_PASSWORD`,
+`ENCRYPTION_KEY`, `AUTH_SECRET`. Restore it from the snapshot — never generate
+new values for an existing database, because the password and encryption key
+must match it:
+
+```bash
+sudo env \
+  RESTIC_REPOSITORY=/mnt/cold/glasswing-backups/restic \
+  RESTIC_PASSWORD_FILE=/etc/glasswing/backup/restic-password \
+  restic restore <snapshot-id> \
+    --target /tmp/glasswing-restore-env \
+    --include /home/ravik/src_git/project_glasswing/stacks/infisical/.env
+
+install -m 600 /tmp/glasswing-restore-env/home/ravik/src_git/project_glasswing/stacks/infisical/.env \
+  stacks/infisical/.env
+```
+
+If this is a **new** deployment rather than a restore, copy
+`stacks/infisical/.env.example` and follow [REBUILD.md](REBUILD.md#31-infisical-bootstrap-file).
+
+### 4.5 TLS material
+
+The CA key and the two stack certificate directories are gitignored; they come
+back with the repository snapshot, or you regenerate them:
+
+```bash
+./scripts/04-certificates.sh --force
+make certificates-check
+```
+
+The Infisical certificate is self-signed on purpose: `with-infisical.sh` and the
+documented `curl` calls verify it with `--cacert stacks/infisical/tls/cert.pem`.
+A new CA also changes Portainer's issuer, so clients must trust the new
+`.local/ca/glasswing-ca.crt`.
 
 ---
 
@@ -290,40 +324,58 @@ If the STORAGE disk (`/mnt/storage`) survived, Docker volumes are already in pla
 
 ### 5B. If Docker volumes need restoration from Restic
 
-```bash
-# List available snapshots
-sudo env \
-  RESTIC_REPOSITORY=/mnt/cold/glasswing-backups/restic \
-  RESTIC_PASSWORD_FILE=/etc/glasswing/backup/restic-password \
-  restic snapshots
-
-# Restore to the expected location
-sudo env \
-  RESTIC_REPOSITORY=/mnt/cold/glasswing-backups/restic \
-  RESTIC_PASSWORD_FILE=/etc/glasswing/backup/restic-password \
-  restic restore latest \
-    --target / \
-    --iinclude /var/lib/docker/volumes \
-    --exclude '**'
-```
-
-This restores only Docker volumes to their original paths. The `--iinclude/--exclude` pattern limits restoration to the volumes directory.
-
-### 5C. If the repository itself needs restoration
+Restore into a staging directory first. Never restore straight over
+`/var/lib/docker/volumes` while Docker is running: a partial or
+version-mismatched volume is worse than a missing one.
 
 ```bash
+make backup-list          # pick an explicit snapshot ID, not `latest`
+
 sudo env \
   RESTIC_REPOSITORY=/mnt/cold/glasswing-backups/restic \
   RESTIC_PASSWORD_FILE=/etc/glasswing/backup/restic-password \
-  restic restore latest \
-    --target / \
-    --iinclude /home/ravik/src_git/project_glasswing \
-    --exclude '**'
+  restic restore <snapshot-id> \
+    --target /mnt/storage/glasswing-restore \
+    --include /var/lib/docker/volumes
 ```
 
-Then re-clone or copy the restored directory.
+Inspect the restored tree, then copy it into place with Docker stopped:
 
----
+```bash
+sudo find /mnt/storage/glasswing-restore/var/lib/docker/volumes -maxdepth 1 | head
+sudo systemctl stop docker docker.socket
+sudo rsync -aHAX --info=progress2 \
+  /mnt/storage/glasswing-restore/var/lib/docker/volumes/ /var/lib/docker/volumes/
+sudo systemctl start docker
+```
+
+`restic restore` drops the absolute path beneath the target, which is why the
+source ends in `/var/lib/docker/volumes/`. Staging on `/mnt/storage` keeps the
+copy off the (possibly small) root filesystem.
+
+### 5C. If the repository and its host-local files need restoration
+
+```bash
+sudo env \
+  RESTIC_REPOSITORY=/mnt/cold/glasswing-backups/restic \
+  RESTIC_PASSWORD_FILE=/etc/glasswing/backup/restic-password \
+  restic restore <snapshot-id> \
+    --target /mnt/storage/glasswing-restore \
+    --include /home/ravik/src_git/project_glasswing
+```
+
+The restored tree contains `.local/infisical/credentials.env`, `.local/ca/`,
+`stacks/infisical/.env`, `stacks/infisical/tls/` and `stacks/portainer/certs/`.
+If you already cloned a fresh copy, copy those host-local paths into it instead
+of replacing the directory:
+
+```bash
+RESTORED=/mnt/storage/glasswing-restore/home/ravik/src_git/project_glasswing
+rsync -a "$RESTORED/.local/" .local/
+rsync -a "$RESTORED/stacks/infisical/tls/" stacks/infisical/tls/
+rsync -a "$RESTORED/stacks/portainer/certs/" stacks/portainer/certs/
+cp -a "$RESTORED/stacks/infisical/.env" stacks/infisical/.env
+```
 
 ## Phase 6 — Bring up the platform
 
@@ -332,27 +384,15 @@ Then re-clone or copy the restored directory.
 ```bash
 cd /home/ravik/src_git/project_glasswing
 
-# Option A: Use the verify script (restarts each stack and checks health)
-./scripts/verify-stacks.sh
-
-# Option B: Manual, step by step
-make up STACK=infisical
-make up STACK=otel-collector
-make up STACK=vector
-make up STACK=openobserve
-make up STACK=ollama
-# ... continue with remaining stacks
+make docker-pool     # only if /etc/docker/daemon.json was not restored
+make network         # shared 'glasswing' bridge with its explicit subnet
+make restart-all     # Infisical, Ollama, then the other 27 stacks JOBS at a time
 ```
 
-The stack restart order (defined in `scripts/verify-stacks.sh`) is:
-
-1. **Infrastructure:** otel-collector, vector, openobserve
-2. **AI platform:** ollama, open-notebook, steel, opencode, anythingllm, flowise, langfuse
-3. **Services:** homepage, stirling-pdf, forgejo, plex, beszel, adguard, kavita
-4. **Monitoring:** uptime-kuma, portainer, dagu
-5. **Tools:** cyberchef, excalidraw, it-tools, jupyterlab, dbgate
-
-**Note:** Dagu is started after the monitored services so its health-check and update DAGs have targets to reach. Dagu uses `network_mode: host` and does not require port mapping.
+`make restart-all` encodes the only ordering that matters: Infisical first
+(every other stack needs its secrets), Ollama second (the inference backend that
+`opencode` reconciles), everything else in parallel. `scripts/verify-stacks.sh`
+is the slow alternative — one stack at a time with a health check after each.
 
 ### 6.2 If Infisical was restored from backup
 
@@ -377,42 +417,39 @@ If Infisical secrets were lost and need to be re-entered:
 
 ## Phase 7 — Verify
 
-### 7.1 All containers running
+### 7.1 Host preflight
+
+```bash
+make doctor              # pool, shared network, ports, hardcoded IPs, restart loops, Infisical
+make certificates-check  # TLS covers the host IP and is not expiring
+make access-check        # ACCESS.md matches the compose files
+```
+
+### 7.2 Containers and secrets
 
 ```bash
 make status
-docker ps --format '{{.Names}}\t{{.Status}}' | grep glasswing
-```
-
-All `glasswing-*` containers should show `Up` with a reasonable uptime.
-
-### 7.2 Secret injection works
-
-```bash
 make secrets-check
 ```
 
+`make status` should show every `glasswing-*` container `Up`; a restarting
+container is a failure even if the stack reported success earlier.
+
 ### 7.3 Observability pipeline
 
-```bash
-# Check OpenObserve has recent data
-# Visit https://192.168.68.62:3018
-```
+Open `http://192.168.68.62:3018` and confirm recent logs from at least one other
+stack. Vector and the OTel collector read from the Docker socket, so an empty
+explorer usually means the socket group ID changed (`DOCKER_GID` is read at
+`make` time).
 
-### 7.4 Run a backup
+### 7.4 Backup
 
 ```bash
 make backup
 make backup-list
 ```
 
-### 7.5 Full stack verification
-
-```bash
-./scripts/verify-stacks.sh
-```
-
----
+A restore is not proven until a backup of the recovered host succeeds.
 
 ## Partial recovery
 
@@ -431,14 +468,18 @@ make check STACK=<stack>
 make down STACK=<stack>
 make up STACK=<stack>
 
-# If data volume is corrupted, restore from backup
+# If a data volume is corrupted, restore only that stack's volumes
 sudo env \
   RESTIC_REPOSITORY=/mnt/cold/glasswing-backups/restic \
   RESTIC_PASSWORD_FILE=/etc/glasswing/backup/restic-password \
-  restic restore latest \
-    --target / \
-    --iinclude "/var/lib/docker/volumes/glasswing-<stack>*" \
-    --exclude '**'
+  restic restore <snapshot-id> \
+    --target /mnt/storage/glasswing-restore \
+    --include '/var/lib/docker/volumes/glasswing-<stack>*'
+
+# Stop the stack, copy the volume across, start it again
+make down STACK=<stack>
+sudo rsync -aHAX /mnt/storage/glasswing-restore/var/lib/docker/volumes/ /var/lib/docker/volumes/
+make up STACK=<stack>
 ```
 
 ### Infisical data loss
@@ -476,10 +517,13 @@ Print this and keep it near the machine:
 - [ ] Restic password file at `/etc/glasswing/backup/restic-password`
 - [ ] Repository cloned to `/home/ravik/src_git/project_glasswing`
 - [ ] `.local/infisical/credentials.env` restored
-- [ ] `.local/ca/glasswing-ca.key` restored
+- [ ] `.local/ca/glasswing-ca.key` restored (or `make certificates` rerun)
+- [ ] `stacks/infisical/.env` restored (IP, SITE_URL, DB password, encryption key, auth secret)
+- [ ] `stacks/infisical/tls/` and `stacks/portainer/certs/` present (`make certificates-check`)
+- [ ] Docker pool widened and `glasswing` network present (`make doctor`)
 - [ ] Infisical started and healthy
-- [ ] All stacks started in order
-- [ ] `make secrets-check` passes
+- [ ] `make restart-all` finished with every stack `[PASS]`
+- [ ] `make secrets-check` and `make access-check` pass
 - [ ] Backup runs successfully
 - [ ] Restic password stored offline
 - [ ] CA key stored offline
