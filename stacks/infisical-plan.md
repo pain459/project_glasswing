@@ -26,7 +26,7 @@
 
 ### What's already working
 
-28 of 29 stacks have a `secrets.list` and load their variables from Infisical at
+29 of 30 stacks have a `secrets.list` and load their variables from Infisical at
 startup. The exception is `infisical` itself, which is configured from the
 gitignored `stacks/infisical/.env` (and its committed `.env.example`) because it
 cannot fetch its own secrets.

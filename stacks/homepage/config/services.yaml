@@ -188,6 +188,13 @@
         description: PDF Processing, OCR and Conversion
         siteMonitor: http://192.168.68.62:3016
 
+- World Clock:
+    - Datetime:
+        icon: mdi-clock-outline
+        href: http://192.168.68.62:3022
+        description: World Clock & Time Zones
+        siteMonitor: http://192.168.68.62:3022
+
 - Entertainment:
     - Plex:
         icon: plex.png
