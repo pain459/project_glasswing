@@ -489,4 +489,28 @@ R('target-heart-rate-zone-calculator', {
   }
 });
 
+// === CARDIOVASCULAR ===
+
+R('mean-arterial-pressure', {
+  title: 'Mean Arterial Pressure Calculator',
+  description: 'Average arterial pressure from systolic and diastolic blood pressure.',
+  tags: ['map', 'arterial', 'blood pressure', 'cardiology', 'health', 'bp'],
+  fields: [
+    { id: 'sbp', label: 'Systolic (SBP, mmHg)', type: 'number', step: 1, min: 50, max: 260, placeholder: 'e.g. 120', half: true },
+    { id: 'dbp', label: 'Diastolic (DBP, mmHg)', type: 'number', step: 1, min: 30, max: 180, placeholder: 'e.g. 80', half: true },
+  ],
+  formula: '<p><code>MAP = (SBP + 2 × DBP) / 3</code>, where SBP is weighted once and DBP is weighted twice.</p>',
+  background: '<p>Mean arterial pressure is the average pressure in the aorta during a heartbeat, approximated as systolic plus twice diastolic, divided by three. The diastolic time is longer than systolic, so it carries more weight, which is why the multiplier of two appears. Clinicians use MAP to assess perfusion and to set targets for vasopressors in shock, while home users use it as a rough gauge of blood pressure driving the heart.</p>',
+  calculate: function(v) {
+    const sbp = Number(v.sbp), dbp = Number(v.dbp);
+    if (!sbp || !dbp) return { error: 'Enter systolic and diastolic values' };
+    const map = (sbp + 2 * dbp) / 3;
+    return {
+      'Mean Arterial Pressure': core.formatNumber(map, 1) + ' mmHg',
+      'Systolic': core.formatNumber(sbp, 0) + ' mmHg',
+      'Diastolic': core.formatNumber(dbp, 0) + ' mmHg',
+    };
+  }
+});
+
 })(calculatorRegistry);

@@ -786,7 +786,7 @@ const applyCatalogAliases = () => {
   for (const [aliasSlug, targetSlug] of Object.entries(CATALOG_ALIASES)) {
     const target = reg.get('financial', targetSlug);
     if (target) {
-      R(aliasSlug, target);
+      reg.registerAlias('financial', aliasSlug, targetSlug);
     } else {
       unresolved.push(`${aliasSlug} -> ${targetSlug}`);
     }
@@ -2596,6 +2596,34 @@ R('tax-federal-est', {
       'Effective Tax Rate': core.formatPercent(effectiveRate),
       'Marginal Tax Rate': core.formatPercent(marginalRate),
       'After-Tax Income': core.formatCurrency(income - tax),
+    };
+  }
+});
+
+// === COMPOUND GROWTH ===
+
+R('compound-annual-growth', {
+  title: 'Compound Annual Growth Calculator',
+  description: 'Effective annual yield from a nominal rate and compounding frequency, plus the compounded growth over time.',
+  tags: ['compound', 'annual', 'growth', 'interest', 'yield', 'financial'],
+  fields: [
+    { id: 'rate', label: 'Nominal Annual Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, default: 7, half: true },
+    { id: 'compounds', label: 'Compounding Periods / Year', type: 'number', step: 1, min: 1, max: 365, default: 12, half: true },
+    { id: 'years', label: 'Years', type: 'number', step: 0.5, min: 0.5, max: 100, half: true },
+  ],
+  formula: '<p><code>APY = (1 + r/n)ⁿ − 1</code>, then growth factor over t years is <code>(1 + APY)ᵗ</code>.</p>',
+  background: '<p>A nominal rate is the headline APR, while the effective annual yield accounts for compounding: the same 7% nominal rate grows more when interest is added more often, because each compounding round earns interest on interest sooner. The effective rate is what you actually earn (or pay) per year, and it is what comparisons between savings accounts and loans should use. Over multiple years the compounded factor is exponential rather than linear, which is why doubling time grows logarithmically.</p>',
+  calculate: function(v) {
+    const rate = Number(v.rate) / 100;
+    const n = Number(v.compounds) || 1;
+    const years = Number(v.years) || 1;
+    if (rate < 0 || n < 1 || years < 0) return { error: 'Enter a rate of 0% or more, at least one compounding period and a positive number of years.' };
+    const apy = Math.pow(1 + rate / n, n) - 1;
+    const factor = Math.pow(1 + apy, years);
+    return {
+      'Effective Annual Yield': core.formatPercent(apy * 100),
+      'Growth Factor Over Years': core.formatNumber(factor, 4),
+      'Total Return Over Period': core.formatPercent((factor - 1) * 100),
     };
   }
 });
