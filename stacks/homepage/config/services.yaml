@@ -201,6 +201,13 @@
         description: Telugu Panchangam — Tithi, Nakshatra, Muhurtam & Festivals
         siteMonitor: http://192.168.68.62:3023
 
+- Home Management:
+    - HomeBox:
+        icon: mdi-home-analytics
+        href: http://192.168.68.62:3024
+        description: Home Inventory & Organization
+        siteMonitor: http://192.168.68.62:3024/api/v1/status
+
 - Entertainment:
     - Plex:
         icon: plex.png
