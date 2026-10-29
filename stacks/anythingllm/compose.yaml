@@ -7,9 +7,6 @@ services:
     container_name: glasswing-anythingllm
     restart: unless-stopped
 
-    ports:
-      - "192.168.68.62:3012:3001"
-
     environment:
       STORAGE_DIR: ${STORAGE_DIR:?Required from Infisical}
       JWT_SECRET: ${JWT_SECRET:?Required from Infisical}
@@ -34,6 +31,14 @@ services:
     labels:
       com.glasswing.service: anythingllm
 
+    networks:
+      - proxy
+
 volumes:
   anythingllm_data:
     name: glasswing-anythingllm-data
+
+networks:
+  proxy:
+    name: glasswing-proxy
+    external: true

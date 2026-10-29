@@ -8,10 +8,9 @@ services:
     restart: unless-stopped
 
     ports:
+      # DNS stays direct; an HTTP reverse proxy cannot carry it.
       - "192.168.68.62:53:53/tcp"
       - "192.168.68.62:53:53/udp"
-      - "192.168.68.62:3007:80/tcp"
-      - "192.168.68.62:3008:3000/tcp"
 
     volumes:
       - adguard_work:/opt/adguardhome/work
@@ -28,9 +27,17 @@ services:
     labels:
       com.glasswing.service: adguard
 
+    networks:
+      - proxy
+
 volumes:
   adguard_work:
     name: glasswing-adguard-work
 
   adguard_conf:
     name: glasswing-adguard-conf
+
+networks:
+  proxy:
+    name: glasswing-proxy
+    external: true

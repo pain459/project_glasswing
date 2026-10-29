@@ -41,3 +41,11 @@ services:
 
     labels:
       com.glasswing.service: ollama
+
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    name: glasswing-proxy
+    external: true

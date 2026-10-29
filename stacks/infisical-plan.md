@@ -1,5 +1,9 @@
 # Infisical Migration Plan — Glasswing Stack
 
+> **Historical document:** the URLs below predate the nginx reverse proxy and
+> are kept as a record of the migration. Current service URLs are in the root
+> [README](../README.md) and [stacks/proxy/README.md](../stacks/proxy/README.md).
+
 > **Goal:** Move every secret and configurable variable out of compose files, `.env` files, and host paths into Infisical. Load them at startup via `scripts/with-infisical.sh`.
 
 ---

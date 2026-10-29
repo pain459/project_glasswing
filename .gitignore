@@ -3,3 +3,5 @@ stacks/infisical/tls/
 stacks/homepage/config/logs/
 .local/
 stacks/portainer/certs/
+# Generated wildcard certificate for the reverse proxy
+stacks/proxy/certs/

@@ -14,14 +14,15 @@ INFISICAL_PATH ?= $(if $(filter otel-collector vector,$(STACK)),/openobserve,/$(
 # Needed by the OTEL collector to access /var/run/docker.sock as non-root.
 export DOCKER_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null)
 
-.PHONY: help up down restart rebuild logs ps check infisical homepage core status \
-        secrets-check secrets-injection-check
+.PHONY: help up down restart rebuild logs ps check infisical homepage proxy core status \
+        secrets-check secrets-injection-check proxy-migrate
 
 help:
 	@echo "Glasswing Stack Manager"
 	@echo ""
-	@echo "make core                         Start base stacks"
+	@echo "make core                         Start base stacks (Infisical, proxy, Homepage)"
 	@echo "make infisical                    Start Infisical"
+	@echo "make proxy                        Start the nginx reverse proxy"
 	@echo "make homepage                     Start Homepage"
 	@echo "make up STACK=name                Start a stack, run its hooks, wait for health"
 	@echo "make down STACK=name              Stop/remove stack containers"
@@ -35,6 +36,7 @@ help:
 	@echo "make ai-preflight                 Validate the Ollama/OpenCode inference baseline"
 	@echo "make secrets-check                Verify Infisical integration"
 	@echo "make secrets-injection-check      Verify test-secret injection"
+	@echo "make proxy-migrate                Push proxy-era URLs to Infisical"
 	@echo ""
 	@echo "Optional: INFISICAL_PATH=/custom/path (default /<stack>)"
 	@echo "Optional: stacks/<name>/pre-up.sh and post-up.sh run automatically with make up"
@@ -44,6 +46,8 @@ help:
 define run_compose
 set -eu; \
  test -f "$(COMPOSE_FILE)" || { echo "[FAIL] Unknown stack: $(STACK)"; exit 1; }; \
+ docker network inspect glasswing-proxy >/dev/null 2>&1 || \
+   docker network create glasswing-proxy >/dev/null; \
  if [ -s "$(SECRETS_FILE)" ]; then \
    echo "[INFO] Infisical path: $(INFISICAL_PATH)"; \
    ./scripts/with-infisical.sh "$(INFISICAL_PATH)" "$(SECRETS_FILE)" -- \
@@ -95,11 +99,15 @@ check:
 infisical:
 	@$(MAKE) --no-print-directory up STACK=infisical
 
+proxy:
+	@$(MAKE) --no-print-directory up STACK=proxy
+
 homepage:
 	@$(MAKE) --no-print-directory up STACK=homepage
 
 core:
 	@$(MAKE) --no-print-directory infisical
+	@$(MAKE) --no-print-directory proxy
 	@$(MAKE) --no-print-directory homepage
 	@echo "[PASS] Glasswing core stacks started"
 
@@ -131,6 +139,20 @@ secrets-injection-check:
 	@echo "[PASS] Infisical secret injection operational"
 
 
+# Push the URL/config values that changed when services moved behind the proxy.
+# Run this after `make up STACK=proxy` and before `make restart-all`.
+PROXY_MIGRATE_STACKS := anythingllm beszel flowise forgejo homepage langfuse opencode
+
+proxy-migrate:
+	@set -eu; \
+	for stack in $(PROXY_MIGRATE_STACKS); do \
+	  registry="stacks/$$stack/$$stack-config.registry"; \
+	  echo "[INFO] Registering $$stack config from $$registry"; \
+	  ./scripts/infisical-register.sh "/$$stack" "$$registry"; \
+	done; \
+	echo "[PASS] Proxy-era URLs registered in Infisical"
+
+
 # --------------------------------------------------
 # Glasswing platform-wide lifecycle management
 # --------------------------------------------------
@@ -156,7 +178,9 @@ restart-all:
 	  echo "[INFO] Starting Infisical"; \
 	  $(MAKE) --no-print-directory up STACK=infisical; \
 	fi; \
-	for stack in $(sort $(filter-out infisical,$(STACKS))); do \
+	echo "[INFO] Starting the reverse proxy"; \
+	$(MAKE) --no-print-directory up STACK=proxy; \
+	for stack in $(sort $(filter-out infisical proxy,$(STACKS))); do \
 	  echo ""; \
 	  echo "========================================"; \
 	  echo "[INFO] Deploying $$stack"; \

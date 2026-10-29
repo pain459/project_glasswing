@@ -15,6 +15,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 # Order matters: infrastructure first, then dependencies, then services.
 STACKS=(
+  proxy
   otel-collector
   vector
   openobserve

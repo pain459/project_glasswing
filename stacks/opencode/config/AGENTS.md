@@ -12,7 +12,7 @@ You are running in the Glasswing homelab on Pathfinder.
 ## Models
 
 - The default model is `ollama/qwen3.6-opencode:latest`, served by Ollama at
-  `http://192.168.68.62:11434`.
+  `http://glasswing-ollama:11434` (also `https://ollama.glasswing.lan`).
 - The effective context window is 131,072 tokens and the generation budget is
   32,768 tokens. Neither is unlimited.
 - Reasoning is disabled for coding (`reasoning_effort: "none"`). Answer directly

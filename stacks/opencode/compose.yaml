@@ -40,9 +40,6 @@ services:
     user: "1000:1000"
     working_dir: /workspace
 
-    ports:
-      - "192.168.68.62:3019:4096"
-
     environment:
       HOME: ${HOME:?Required from Infisical}
       OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD:?Required from Infisical}
@@ -87,6 +84,10 @@ services:
       com.glasswing.category: ai
       com.glasswing.monitoring: "true"
 
+    networks:
+      - default
+      - proxy
+
   open-notebook-mcp:
     build:
       context: ./mcp
@@ -125,6 +126,10 @@ services:
       com.glasswing.category: ai
       com.glasswing.monitoring: "true"
 
+    networks:
+      - default
+      - proxy
+
   # Self-hosted Steel gives the model a real Chrome. steel-mcp speaks stdio only,
   # so supergateway fronts it with the streamable HTTP transport OpenCode uses.
   steel-mcp:
@@ -160,3 +165,8 @@ services:
       com.glasswing.service: steel-mcp
       com.glasswing.category: ai
       com.glasswing.monitoring: "true"
+
+networks:
+  proxy:
+    name: glasswing-proxy
+    external: true
