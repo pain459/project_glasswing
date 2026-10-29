@@ -322,58 +322,6 @@ R('lumber-calculator', {
   }
 });
 
-// === CUBIC FEET CALCULATOR (alias) ===
-
-R('cubic-feet-calculator', {
-  title: 'Cubic Feet Calculator',
-  description: 'Calculate volume in cubic feet for storage, tanks, and containers.',
-  tags: ['cubic feet', 'volume', 'storage', 'container'],
-  fields: [
-    { id: 'length', label: 'Length (ft)', type: 'number', step: 0.25, min: 0.01, placeholder: 'e.g. 5', half: true },
-    { id: 'width', label: 'Width (ft)', type: 'number', step: 0.25, min: 0.01, placeholder: 'e.g. 4', half: true },
-    { id: 'height', label: 'Height (ft)', type: 'number', step: 0.25, min: 0.01, placeholder: 'e.g. 3', half: true },
-  ],
-  formula: '<p><code>Volume = L × W × H</code></p>',
-  background: '<p>This is the same cubic-foot volume measure used for box, appliance and container capacity, which is why the answer is also given in yards, cubic metres and gallons. Shipping and storage businesses quote cubic feet because carriers charge by volume as well as by weight, and the two rarely agree. The conversions matter in practice because tank sizes are usually printed in gallons and architectural plans in cubic yards.</p>',
-  calculate: function(v) {
-    const cuFt = v.length * v.width * v.height;
-    const cuYd = cuFt / 27;
-    const cuM = cuFt * 0.0283168;
-    const gal = cuFt * 7.48052;
-    return {
-      'Volume (cubic feet)': core.formatNumber(cuFt, 2),
-      'Volume (cubic yards)': core.formatNumber(cuYd, 2),
-      'Volume (cubic meters)': core.formatNumber(cuM, 2),
-      'Volume (gallons)': core.formatNumber(gal, 2),
-    };
-  }
-});
-
-// === CUBIC YARDS CALCULATOR (alias) ===
-
-R('cubic-yards-calculator', {
-  title: 'Cubic Yards Calculator',
-  description: 'Calculate volume in cubic yards for landscaping, gravel, and fill.',
-  tags: ['cubic yards', 'volume', 'landscaping', 'gravel'],
-  fields: [
-    { id: 'length', label: 'Length (ft)', type: 'number', step: 0.25, min: 0.01, placeholder: 'e.g. 20', half: true },
-    { id: 'width', label: 'Width (ft)', type: 'number', step: 0.25, min: 0.01, placeholder: 'e.g. 10', half: true },
-    { id: 'depth', label: 'Depth (inches)', type: 'number', step: 0.5, min: 0.25, placeholder: 'e.g. 6', half: true },
-  ],
-  formula: '<p><code>Cubic Yards = (L × W × D) / 324</code> where D is in inches.</p>',
-  background: '<p>Cubic yards remain the standard unit for ordering bulk aggregates and soil in the United States and Canada, where a delivery is described as so many yards of material. Because plans specify depth in inches and suppliers sell by the yard, the conversion is the step that most often goes wrong on a takeoff. Estimated tonnage is included because weighbridge tickets, not volume, are how many plants actually bill.</p>',
-  calculate: function(v) {
-    const cuFt = v.length * v.width * (v.depth / 12);
-    const cuYd = cuFt / 27;
-    const tons = cuYd * 1.35;
-    return {
-      'Volume (cubic feet)': core.formatNumber(cuFt, 2),
-      'Volume (cubic yards)': core.formatNumber(cuYd, 2),
-      'Estimated Weight (tons)': core.formatNumber(tons, 2),
-    };
-  }
-});
-
 // === FEET AND INCHES ===
 
 R('feetandinches', {

@@ -714,29 +714,6 @@ R('gravitational-potential', {
   }
 });
 
-R('hookes-law', {
-  title: "Hooke's Law Calculator",
-  description: 'Calculate spring force or displacement using F = kx.',
-  tags: ['hooke', 'spring', 'force', 'displacement', 'elasticity'],
-  fields: [
-    { id: 'springConstant', label: 'Spring Constant (N/m)', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 200' },
-    { id: 'displacement', label: 'Displacement (m)', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 0.1' },
-  ],
-  formula: '<p><code>F = kx</code> where k is the spring constant and x is displacement.</p>',
-  background: '<p>Hooke\'s law describes the restoring force of an ideal spring, which grows in proportion to the distance it is pulled from equilibrium. It is the basis of spring scales, vibration isolators and the simple harmonic oscillator used throughout physics and engineering. It is a small-deformation approximation; real springs stiffen or yield outside their linear range.</p>',
-  calculate: function(v) {
-    if (!v.springConstant || !v.displacement) return { error: 'Enter valid values' };
-    const F = v.springConstant * v.displacement;
-    const PE = 0.5 * v.springConstant * v.displacement * v.displacement;
-    return {
-      'Spring Force': core.formatNumber(F, 4) + ' N',
-      'Elastic PE': core.formatNumber(PE, 4) + ' J',
-      'Spring Constant': core.formatNumber(v.springConstant, 4) + ' N/m',
-      'Displacement': core.formatNumber(v.displacement, 4) + ' m',
-    };
-  }
-});
-
 R('impulse', {
   title: 'Impulse Calculator',
   description: 'Calculate impulse from force and time.',
@@ -779,28 +756,6 @@ R('impulse-momentum', {
       'Initial Momentum': core.formatNumber(v.mass * v.vInitial, 4) + ' kg·m/s',
       'Final Momentum': core.formatNumber(v.mass * v.vFinal, 4) + ' kg·m/s',
       'Mass': core.formatNumber(v.mass, 4) + ' kg',
-    };
-  }
-});
-
-R('kinetic', {
-  title: 'Kinetic Energy Calculator',
-  description: 'Calculate kinetic energy from mass and velocity.',
-  tags: ['kinetic', 'energy', 'KE', 'motion'],
-  fields: [
-    { id: 'mass', label: 'Mass (kg)', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 1000' },
-    { id: 'velocity', label: 'Velocity (m/s)', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 25' },
-  ],
-  formula: '<p><code>KE = ½mv²</code></p>',
-  background: '<p>Kinetic energy is the energy of motion, and its quadratic dependence on speed is why high-speed impacts are so much more damaging than slow ones. It appears in crash analysis, ballistics and efficiency studies, and the work-energy theorem shows it equals the net work done on the object. The expression is the low-speed limit of the relativistic energy formula.</p>',
-  calculate: function(v) {
-    if (!v.mass || !v.velocity) return { error: 'Enter valid values' };
-    const KE = 0.5 * v.mass * v.velocity * v.velocity;
-    return {
-      'Kinetic Energy': core.formatNumber(KE, 4) + ' J',
-      'Kinetic Energy (kJ)': core.formatNumber(KE / 1000, 4) + ' kJ',
-      'Mass': core.formatNumber(v.mass, 4) + ' kg',
-      'Velocity': core.formatNumber(v.velocity, 4) + ' m/s',
     };
   }
 });

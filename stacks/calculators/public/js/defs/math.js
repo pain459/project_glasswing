@@ -1172,16 +1172,6 @@ R('odd-even', {
   calculate: function(v) { return { 'Result': v.n % 2 === 0 ? 'Even' : 'Odd' }; }
 });
 
-R('absolute-value', {
-  title: 'Absolute Value Calculator',
-  description: 'Calculate the absolute value of a number.',
-  tags: ['absolute', 'value'],
-  fields: [{ id: 'n', label: 'Number', type: 'number', step: 0.01, placeholder: 'e.g. -42' }],
-  formula: '<p><code>|n|</code></p>',
-  background: '<p>Absolute value measures distance from zero on the number line, so it discards the sign and keeps only the magnitude. It appears in error analysis, tolerance checking and any definition of size that should not depend on direction. Because the result is never negative, absolute values are the natural ingredient of error and difference formulas.</p>',
-  calculate: function(v) { return { '|n|': Math.abs(v.n) }; }
-});
-
 R('continued-fraction', {
   title: 'Continued Fraction Calculator',
   description: 'Express a number as a continued fraction.',
@@ -1226,127 +1216,7 @@ R('repeating-decimal', {
   }
 });
 
-// === ALIASES ===
-
-R('decimal-to-fraction-calculator', {
-  title: 'Decimal to Fraction Calculator',
-  description: 'Convert a decimal to a simplified fraction.',
-  tags: ['decimal', 'fraction', 'convert'],
-  fields: [{ id: 'dec', label: 'Decimal', type: 'number', step: 0.000001, placeholder: 'e.g. 0.75' }],
-  formula: '<p><code>Decimal = num / 10^places</code>, then reduce by GCF.</p>',
-  background: '<p>Writing a terminating decimal over a power of ten and then reducing gives an exact rational value. This is useful when a decimal originates from a measurement or a spreadsheet and has to be expressed in its simplest fractional form. The reduced result is the unique representation with the smallest numerator and denominator.</p>',
-  calculate: function(v) {
-    const s = String(v.dec), parts = s.split('.');
-    if (parts.length === 1) return { 'Fraction': `${parts[0]}/1` };
-    const decPart = parts[1], pw = decPart.length;
-    let num = parseInt(parts[0] + decPart), den = Math.pow(10, pw);
-    if (parts[0].startsWith('-')) num = -num;
-    const g = core.gcd(Math.abs(num), den);
-    return { 'Fraction': `${num/g}/${den/g}`, 'Decimal': core.formatNumber((num/g)/(den/g), 8) };
-  }
-});
-
-R('decimal-to-percent-calculator', {
-  title: 'Decimal to Percentage Calculator',
-  description: 'Convert a decimal to a percentage.',
-  tags: ['decimal', 'percentage', 'convert'],
-  fields: [{ id: 'dec', label: 'Decimal', type: 'number', step: 0.0001, placeholder: 'e.g. 0.75' }],
-  formula: '<p><code>Percentage = Decimal × 100</code></p>',
-  background: '<p>Decimals and percentages carry the same information scaled by a hundred, so multiplying by 100 converts a proportion into parts per hundred. The conversion is routine in finance and statistics, where rates are quoted as percentages even when they are computed as decimals. It also makes values of very different sizes easier to compare at a glance.</p>',
-  calculate: function(v) { return { 'Percentage': core.formatPercent(v.dec * 100) }; }
-});
-
-R('fraction-to-decimal-calculator', {
-  title: 'Fraction to Decimal Calculator',
-  description: 'Convert a fraction to a decimal.',
-  tags: ['fraction', 'decimal', 'convert'],
-  fields: [
-    { id: 'n', label: 'Numerator', type: 'number', step: 1, placeholder: 'e.g. 3', half: true },
-    { id: 'd', label: 'Denominator', type: 'number', step: 1, min: 1, placeholder: 'e.g. 8', half: true },
-  ],
-  formula: '<p><code>Decimal = n / d</code></p>',
-  background: '<p>Dividing a fraction numerator by its denominator produces the decimal representation, which either terminates or repeats. Terminating decimals are exact, while repeating ones can only be shown to a chosen number of places, so the displayed value is an approximation. Long division is what makes the repeating pattern visible.</p>',
-  calculate: function(v) { return { 'Decimal': core.formatNumber(v.n / v.d, 8) }; }
-});
-
-R('fraction-to-percent-calculator', {
-  title: 'Fraction to Percent Calculator',
-  description: 'Convert a fraction to a percentage.',
-  tags: ['fraction', 'percent', 'convert'],
-  fields: [
-    { id: 'n', label: 'Numerator', type: 'number', step: 1, placeholder: 'e.g. 3', half: true },
-    { id: 'd', label: 'Denominator', type: 'number', step: 1, min: 1, placeholder: 'e.g. 4', half: true },
-  ],
-  formula: '<p><code>Percent = n / d × 100</code></p>',
-  background: '<p>A fraction becomes a percentage once the same proportion is expressed out of one hundred. That is the form used for scores, discounts and rates, so the conversion is common when moving between mathematical work and reporting. Any rounding should be stated alongside the result, since the decimal expansion may not terminate.</p>',
-  calculate: function(v) { return { 'Percent': core.formatPercent(v.n / v.d * 100) }; }
-});
-
-R('percent-to-decimal-calculator', {
-  title: 'Percent to Decimal Calculator',
-  description: 'Convert a percentage to a decimal.',
-  tags: ['percent', 'decimal', 'convert'],
-  fields: [{ id: 'pct', label: 'Percentage (%)', type: 'number', step: 0.01, placeholder: 'e.g. 75' }],
-  formula: '<p><code>Decimal = Percentage / 100</code></p>',
-  background: '<p>A percentage is already a count of hundredths, so dividing by one hundred restates it as a plain decimal suitable for multiplication. A rate applied repeatedly in a spreadsheet, for instance, needs the decimal form rather than the percent form. Shifting the decimal point two places is only shorthand for that division.</p>',
-  calculate: function(v) { return { 'Decimal': core.formatNumber(v.pct / 100, 6) }; }
-});
-
-R('percent-to-fraction-calculator', {
-  title: 'Percent to Fraction Calculator',
-  description: 'Convert a percentage to a simplified fraction.',
-  tags: ['percent', 'fraction', 'convert'],
-  fields: [{ id: 'pct', label: 'Percentage (%)', type: 'number', step: 0.01, placeholder: 'e.g. 37.5' }],
-  formula: '<p><code>Fraction = Percentage / 100</code>, then reduce by GCF</p>',
-  background: '<p>A percentage is a fraction over one hundred by definition, so writing it as a fraction is immediate, and reducing puts it in the familiar simplest form. Exact values such as 12.5 percent become eighths, which are often easier to use in measurement than decimals. Decimal places in the percentage have to be cleared from the numerator before reducing.</p>',
-  calculate: function(v) {
-    const s = String(v.pct), parts = s.split('.');
-    const decPart = parts[1] || '', pw = decPart.length;
-    let num = parseInt(parts[0] + decPart), den = Math.pow(10, pw + 2);
-    if (parts[0].startsWith('-')) num = -num;
-    const g = core.gcd(Math.abs(num), den);
-    return { 'Fraction': `${num/g}/${den/g}`, 'Decimal': core.formatNumber((num/g)/(den/g), 8) };
-  }
-});
-
-R('percentage', {
-  title: 'Percentage Calculator',
-  description: 'Calculate percentages: what is X% of Y, X is what % of Y, % change.',
-  tags: ['percentage', 'percent', 'of'],
-  fields: [
-    { id: 'pctType', label: 'Calculation Type', type: 'select', options: [
-      { value: 'pctof', label: 'What is X% of Y?', default: true },
-      { value: 'iswhatpct', label: 'X is what % of Y?' },
-      { value: 'pctchange', label: '% Change from X to Y?' }
-    ]},
-    { id: 'valX', label: 'X', type: 'number', step: 0.01, placeholder: 'e.g. 25', half: true },
-    { id: 'valY', label: 'Y', type: 'number', step: 0.01, placeholder: 'e.g. 200', half: true },
-  ],
-  formula: '<p><code>X% of Y = X/100 × Y</code>. <code>X is (X/Y×100)% of Y</code>. <code>% Change = (Y−X)/X × 100</code></p>',
-  background: '<p>Percentages express proportions out of one hundred, a convention that lets unlike quantities be compared directly. The three common questions, a percentage of a value, one value as a percentage of another, and the change between two values, are all rearrangements of the same proportional relationship. They appear in discounts, interest, statistics and everyday estimating.</p>',
-  calculate: function(v) {
-    const x = v.valX, y = v.valY;
-    if (v.pctType === 'pctof') return { Result: core.formatNumber(x / 100 * y) };
-    if (v.pctType === 'iswhatpct') return { Result: core.formatPercent(x / y * 100) };
-    return { Result: core.formatPercent((y - x) / x * 100) };
-  }
-});
-
-R('prime-factors', {
-  title: 'Prime Factorization Calculator',
-  description: 'Find the prime factorization of a number.',
-  tags: ['prime', 'factorization', 'factors'],
-  fields: [{ id: 'n', label: 'Number', type: 'number', step: 1, min: 2, placeholder: 'e.g. 360' }],
-  formula: '<p><code>n = p₁^e₁ × p₂^e₂ × …</code></p>',
-  background: '<p>Prime factorisation expresses a number as a product of primes, which is unique by the fundamental theorem of arithmetic. The decomposition makes divisibility, common factors and fraction simplification straightforward, and it is the basis of the modular arithmetic behind modern encryption. Repeated division by the smallest prime that fits is the most direct way to find it by hand.</p>',
-  calculate: function(v) {
-    const factors = core.primeFactors(v.n);
-    const expr = Object.entries(factors).map(([p, e]) => e > 1 ? `${p}^${e}` : String(p)).join(' × ');
-    return { 'Prime Factorization': expr, 'Factors': factors };
-  }
-});
-
-// === NEW CALCULATORS ===
+// === ADDITIONAL CALCULATORS ===
 
 R('significant-figures-rounding', {
   title: 'Significant Figures Rounding Calculator',

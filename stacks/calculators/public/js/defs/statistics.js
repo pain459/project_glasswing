@@ -1147,37 +1147,6 @@ R('average', {
   }
 });
 
-R('five-number-summary-calculator', {
-  title: 'Five-Number Summary Calculator',
-  description: 'Calculate the five-number summary: min, Q1, median, Q3, max.',
-  tags: ['five-number summary', 'box plot', 'quartiles', 'IQR'],
-  fields: [
-    { id: 'data', label: 'Data Set', type: 'textarea', placeholder: 'e.g. 3, 7, 8, 12, 15, 18, 22, 25, 30', hint: 'Enter numbers separated by commas' },
-  ],
-  formula: '<p>The five-number summary: Minimum, Q1, Median, Q3, Maximum.</p>',
-  background: '<p>This is a second, simpler version of the five-number summary, giving the minimum, Q1, median, Q3 and maximum. Because it relies on positions rather than squared deviations, a few extreme values do not distort it the way they distort a mean. It is the natural summary behind a box plot and pairs well with the interquartile range for outlier screening.</p>',
-  calculate: function(v) {
-    const data = core.getDataSet('data');
-    if (data.length < 1) return { error: 'Enter at least one number' };
-    const sorted = [...data].sort((a, b) => a - b);
-    const n = data.length;
-    const min = sorted[0], max = sorted[n - 1];
-    const median = core.median(data);
-    const q1Idx = (n - 1) * 0.25, q3Idx = (n - 1) * 0.75;
-    const q1 = sorted[Math.floor(q1Idx)] + (sorted[Math.ceil(q1Idx)] - sorted[Math.floor(q1Idx)]) * (q1Idx % 1);
-    const q3 = sorted[Math.floor(q3Idx)] + (sorted[Math.ceil(q3Idx)] - sorted[Math.floor(q3Idx)]) * (q3Idx % 1);
-    const iqr = q3 - q1;
-    return {
-      'Minimum': core.formatNumber(min),
-      'Q1': core.formatNumber(q1),
-      'Median': core.formatNumber(median),
-      'Q3': core.formatNumber(q3),
-      'Maximum': core.formatNumber(max),
-      'IQR': core.formatNumber(iqr),
-    };
-  }
-});
-
 R('gpa-calculator', {
   title: 'GPA Calculator',
   description: 'Calculate your GPA from course grades and credit hours.',
@@ -1456,30 +1425,6 @@ R('random-number-generator-1-100', {
   }
 });
 
-R('standard-deviation-calculator', {
-  title: 'Standard Deviation Calculator',
-  description: 'Calculate sample and population standard deviation.',
-  tags: ['standard deviation', 'std dev', 'spread', 'dispersion'],
-  fields: [
-    { id: 'data', label: 'Data Set', type: 'textarea', placeholder: 'e.g. 4, 8, 15, 16, 23, 42', hint: 'Enter numbers separated by commas' },
-  ],
-  formula: '<p><code>s = sqrt(Sum(x - mean)² / (n-1))</code> for sample. <code>σ = sqrt(Sum(x - mean)² / n)</code> for population.</p>',
-  background: '<p>Standard deviation summarises how tightly values cluster around the mean, in the same units as the data. The sample form divides by n − 1 to correct the downward bias caused by measuring deviations from the sample mean rather than the true one. Squaring the deviations makes the measure sensitive to outliers, so look at the raw data or a robust spread measure for skewed distributions.</p>',
-  calculate: function(v) {
-    const data = core.getDataSet('data');
-    if (data.length < 2) return { error: 'Enter at least two numbers' };
-    const mean = core.mean(data);
-    const s = core.stdDev(data);
-    const sigma = core.popStdDev(data);
-    return {
-      'Sample Std Dev (s)': core.formatNumber(s),
-      'Population Std Dev (σ)': core.formatNumber(sigma),
-      'Mean': core.formatNumber(mean),
-      'Count (n)': data.length,
-    };
-  }
-});
-
 R('statistics', {
   title: 'Statistics Calculator',
   description: 'Calculate comprehensive statistics for a data set.',
@@ -1511,119 +1456,6 @@ R('statistics', {
       'Min': core.formatNumber(min),
       'Max': core.formatNumber(max),
       'Range': core.formatNumber(range),
-    };
-  }
-});
-
-R('variance-calculator', {
-  title: 'Variance Calculator',
-  description: 'Calculate sample and population variance of a data set.',
-  tags: ['variance', 'spread', 'dispersion'],
-  fields: [
-    { id: 'data', label: 'Data Set', type: 'textarea', placeholder: 'e.g. 10, 12, 14, 16, 18', hint: 'Enter numbers separated by commas' },
-  ],
-  formula: '<p><code>s² = Sum(x - mean)² / (n-1)</code> for sample. <code>σ² = Sum(x - mean)² / n)</code> for population.</p>',
-  background: '<p>Variance is the mean squared deviation from the centre, so its units are squared and it is harder to interpret than standard deviation. A single outlier can inflate it dramatically because deviations are squared before averaging. The sample form divides by n − 1 so that repeated sampling averages to the true population variance.</p>',
-  calculate: function(v) {
-    const data = core.getDataSet('data');
-    if (data.length < 2) return { error: 'Enter at least two numbers' };
-    const mean = core.mean(data);
-    const s2 = core.variance(data);
-    const sigma2 = core.popStdDev(data) ** 2;
-    return {
-      'Sample Variance (s²)': core.formatNumber(s2),
-      'Population Variance (σ²)': core.formatNumber(sigma2),
-      'Mean': core.formatNumber(mean),
-      'Count (n)': data.length,
-    };
-  }
-});
-
-R('vote-percentage-calculator', {
-  title: 'Vote Percentage Calculator',
-  description: 'Calculate vote percentages and margins from election results.',
-  tags: ['vote', 'percentage', 'election', 'margin'],
-  fields: [
-    { id: 'votes', label: 'Votes per Candidate/Option', type: 'textarea', placeholder: 'e.g. 1200, 800, 500', hint: 'Enter vote counts separated by commas' },
-  ],
-  formula: '<p><code>Percentage = (Votes / Total Votes) × 100</code>, <code>Winning Margin = Top % − Runner-up %</code></p>',
-  background: '<p>This duplicate of the vote percentage tool converts raw tallies into shares of the total and shows the gap between the top two. Shares are of votes cast, so abstentions and invalid ballots change every percentage without changing the tallies. Margin in points and lead in percent are different statements and are often confused in reporting.</p>',
-  calculate: function(v) {
-    const votes = core.getDataSet('votes');
-    if (votes.length < 1) return { error: 'Enter at least one vote count' };
-    const total = votes.reduce((s, v) => s + v, 0);
-    const sorted = votes.map((v, i) => ({ idx: i + 1, votes: v, pct: (v / total) * 100 }))
-      .sort((a, b) => b.votes - a.votes);
-    let rows = '';
-    sorted.forEach((c, i) => {
-      const bar = '█'.repeat(Math.round(c.pct / 2));
-      rows += `<tr><td>${i === 0 ? '🥇 ' : ''}Candidate ${c.idx}</td><td>${c.votes.toLocaleString()}</td><td>${core.formatPercent(c.pct)}</td><td style="font-family:monospace">${bar}</td></tr>`;
-    });
-    const margin = sorted.length >= 2 ? sorted[0].pct - sorted[1].pct : 0;
-    return {
-      html: `<p><strong>Total Votes:</strong> ${total.toLocaleString()}</p>
-        <table><tr><th>Candidate</th><th>Votes</th><th>Percentage</th><th>Bar</th></tr>${rows}</table>
-        <p style="margin-top:0.5rem"><strong>Winning Margin:</strong> ${core.formatPercent(margin)}</p>`
-    };
-  }
-});
-
-R('word-counter', {
-  title: 'Word Counter',
-  description: 'Count words, characters, sentences, and paragraphs in your text.',
-  tags: ['word', 'count', 'characters', 'text', 'analysis'],
-  fields: [
-    { id: 'text', label: 'Enter or paste your text', type: 'textarea', placeholder: 'Type or paste your text here...', hint: 'The counter updates as you type' },
-  ],
-  formula: '<p>Counts words, characters, sentences, paragraphs and lines from the supplied text.</p>',
-  background: '<p>Word counts depend on the splitting rule: most tools treat runs of non-space characters as words, which splits hyphenated and apostrophised forms but merges some languages that do not use spaces. Sentences are usually detected by terminal punctuation, so abbreviations and decimals can inflate the count. Editors and exam boards often specify their own counting convention.</p>',
-  calculate: function(v) {
-    const text = v.text || '';
-    const chars = text.length;
-    const charsNoSpace = text.replace(/\s/g, '').length;
-    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-    const sentences = text.trim() ? (text.match(/[.!?]+/g) || []).length || (words > 0 ? 1 : 0) : 0;
-    const paragraphs = text.trim() ? text.trim().split(/\n\s*\n/).filter(p => p.trim()).length || 1 : 0;
-    const lines = text.trim() ? text.split('\n').length : 0;
-    const readingTime = Math.max(1, Math.ceil(words / 200));
-    return {
-      'Words': words.toLocaleString(),
-      'Characters': chars.toLocaleString(),
-      'Characters (no spaces)': charsNoSpace.toLocaleString(),
-      'Sentences': sentences.toLocaleString(),
-      'Paragraphs': paragraphs.toLocaleString(),
-      'Lines': lines.toLocaleString(),
-      'Reading Time': '~' + readingTime + ' min',
-    };
-  }
-});
-
-R('z-score-calculator', {
-  title: 'Z-Score Calculator',
-  description: 'Calculate the z-score for a value given the mean and standard deviation.',
-  tags: ['z-score', 'standard score', 'normalization'],
-  fields: [
-    { id: 'value', label: 'Value (x)', type: 'number', step: 0.01, placeholder: 'e.g. 85' },
-    { id: 'mean', label: 'Mean (μ)', type: 'number', step: 0.01, placeholder: 'e.g. 75', half: true },
-    { id: 'stddev', label: 'Std Dev (σ)', type: 'number', step: 0.01, min: 0.001, placeholder: 'e.g. 10', half: true },
-  ],
-  formula: '<p><code>z = (x − μ) / σ</code></p>',
-  background: '<p>The z-score expresses a value relative to the mean in standard deviation units, making results from different scales comparable. It assumes a normal reference distribution; for skewed data the score is still arithmetic but percentile interpretations no longer hold. Values beyond about ±3 are rare under normality and are worth investigating as possible outliers or data errors.</p>',
-  calculate: function(v) {
-    if (!v.value || v.mean === undefined || !v.stddev) return { error: 'Enter all values' };
-    const z = (v.value - v.mean) / v.stddev;
-    let interpretation = '';
-    if (z > 2) interpretation = 'Well above the mean (top ~2.5%)';
-    else if (z > 1) interpretation = 'Above the mean (top ~16%)';
-    else if (z > 0) interpretation = 'Slightly above the mean';
-    else if (z === 0) interpretation = 'Exactly at the mean';
-    else if (z > -1) interpretation = 'Slightly below the mean';
-    else if (z > -2) interpretation = 'Below the mean (bottom ~16%)';
-    else interpretation = 'Well below the mean (bottom ~2.5%)';
-    return {
-      'Z-Score': core.formatNumber(z, 4),
-      'Value (x)': core.formatNumber(v.value),
-      'Interpretation': interpretation,
     };
   }
 });

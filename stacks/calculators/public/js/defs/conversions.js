@@ -1291,28 +1291,6 @@ R('height-ft-and-in-to-cm', {
   }
 });
 
-// Height: FT/IN to CM (combined)
-R('heightftcm', {
-  title: 'Height Converter (ft/in to cm)',
-  description: 'Convert height between feet/inches and centimeters.',
-  tags: ['height', 'feet', 'cm', 'convert'],
-  formula: '<p>1 inch = 2.54 cm</p>',
-  background: '<p>This is the same conversion as the feet-and-inches height tool, presented for the combined height entry used in forms. The arithmetic is total inches times 2.54 cm, with the inch fixed by the 1959 international agreement. Results are shown in both centimetres and metres because metric forms vary in which they ask for.</p>',
-  fields: [
-    { id: 'feet', label: 'Feet', type: 'number', step: 1, min: 0, placeholder: 'e.g. 5', half: true },
-    { id: 'inches', label: 'Inches', type: 'number', step: 0.1, min: 0, max: 11.9, placeholder: 'e.g. 9', half: true },
-  ],
-  calculate: function(v) {
-    var totalInches = (v.feet || 0) * 12 + (v.inches || 0);
-    var cm = totalInches * 2.54;
-    return {
-      'Centimeters': core.formatNumber(cm, 2),
-      'Meters': core.formatNumber(cm / 100, 4),
-      'Formula': v.feet + '\'' + v.inches + '" = ' + core.formatNumber(cm, 2) + ' cm',
-    };
-  }
-});
-
 // Meters to Feet
 R('meters-to-feet', {
   title: 'Meters to Feet Converter',

@@ -354,26 +354,7 @@ R('cube-calculator', {
   }
 });
 
-// === ABSOLUTE VALUE & DIFFERENCE ===
-
-R('absolute-value-calculator', {
-  title: 'Absolute Value Calculator',
-  description: 'Calculate the absolute value of a number.',
-  tags: ['absolute', 'value', 'modulus', 'magnitude'],
-  fields: [
-    { id: 'number', label: 'Number', type: 'number', step: 0.01, placeholder: 'e.g. -42' },
-  ],
-  formula: '<p><code>|n|</code> — the non-negative magnitude of n, regardless of sign.</p>',
-  background: '<p>The absolute value strips a number of its sign, reporting its distance from zero on the number line regardless of direction. It is used for error margins, tolerances and distance calculations in algebra and programming, where only magnitude matters. The function is piecewise linear with a sharp corner at zero, which is why it is often rewritten as two separate cases.</p>',
-  calculate: function(v) {
-    const n = v.number;
-    return {
-      'Absolute Value': core.formatNumber(Math.abs(n), 10),
-      'Expression': '|' + core.formatNumber(n, 4) + '| = ' + core.formatNumber(Math.abs(n), 10),
-      'Sign': n >= 0 ? 'Non-negative' : 'Negative',
-    };
-  }
-});
+// === ABSOLUTE DIFFERENCE ===
 
 R('absolute-difference-calculator', {
   title: 'Absolute Difference Calculator',

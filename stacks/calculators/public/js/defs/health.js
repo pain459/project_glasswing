@@ -453,42 +453,6 @@ R('pregnancy-weight-gain-calculator', {
   }
 });
 
-// === TARGET HEART RATE ZONE CALCULATOR (alias) ===
-
-R('target-heart-rate-zone-calculator', {
-  title: 'Target Heart Rate Zone Calculator',
-  description: 'Calculate your target heart rate zones for exercise.',
-  tags: ['heart rate', 'target', 'exercise', 'fitness', 'zones'],
-  fields: [
-    { id: 'age', label: 'Age (years)', type: 'number', step: 1, min: 10, max: 100, placeholder: 'e.g. 30' },
-    { id: 'restingHR', label: 'Resting Heart Rate (bpm)', type: 'number', step: 1, min: 30, max: 120, placeholder: 'e.g. 60', half: true },
-  ],
-  formula: '<p><code>Max HR = 220 − Age</code>. Zones use the Karvonen formula: <code>Target = (Max − Resting) × % + Resting</code>.</p>',
-  background: '<p>The zone table applies the Karvonen method, which scales the heart-rate reserve between resting and maximum rather than taking a flat percentage of maximum alone. That makes the zones personal to the resting rate, though the 220-minus-age maximum remains an estimate. Use the bands as training guidance and stop if exercise produces chest pain, dizziness or unusual breathlessness.</p>',
-  calculate: function(v) {
-    const maxHR = 220 - v.age;
-    const rhr = v.restingHR || 60;
-    const hrr = maxHR - rhr;
-    const zones = [
-      { name: 'Very Light (50-60%)', lo: 0.50, hi: 0.60 },
-      { name: 'Light / Warm-up (60-70%)', lo: 0.60, hi: 0.70 },
-      { name: 'Moderate / Fat Burn (70-80%)', lo: 0.70, hi: 0.80 },
-      { name: 'Hard / Cardio (80-90%)', lo: 0.80, hi: 0.90 },
-      { name: 'Maximum (90-100%)', lo: 0.90, hi: 1.00 },
-    ];
-    let rows = '';
-    zones.forEach(z => {
-      const lo = core.formatNumber(hrr * z.lo + rhr, 0);
-      const hi = core.formatNumber(hrr * z.hi + rhr, 0);
-      rows += `<tr><td>${z.name}</td><td>${lo} – ${hi} bpm</td></tr>`;
-    });
-    return {
-      html: `<h3>Max Heart Rate: ${maxHR} bpm</h3>
-        <table><tr><th>Zone</th><th>Target (bpm)</th></tr>${rows}</table>`
-    };
-  }
-});
-
 // === CARDIOVASCULAR ===
 
 R('mean-arterial-pressure', {

@@ -305,42 +305,6 @@ R('trigonometricfunctions-pi', {
   }
 });
 
-// === INVERSE TRIGONOMETRIC FUNCTIONS (alias) ===
-
-R('inversetrigonometricfunctions', {
-  title: 'Inverse Trigonometric Functions Calculator',
-  description: 'Calculate arcsin, arccos, and arctan.',
-  tags: ['arcsin', 'arccos', 'arctan', 'inverse', 'trigonometric'],
-  fields: [
-    { id: 'value', label: 'Value', type: 'number', step: 0.0001, placeholder: 'e.g. 0.5' },
-    { id: 'outputUnit', label: 'Output Unit', type: 'select', options: [
-      { value: 'deg', label: 'Degrees' },
-      { value: 'rad', label: 'Radians' },
-    ]},
-  ],
-  formula: '<p>arcsin(x) &#8712; [&#8722;&#960;/2, &#960;/2], arccos(x) &#8712; [0, &#960;], arctan(x) &#8712; (&#8722;&#960;/2, &#960;/2)</p>',
-  background: '<p>These functions invert sine, cosine and tangent, returning the angle that would produce a given ratio. Because the originals repeat every full turn, each inverse is confined to a principal branch to make it single-valued, and ratios outside the domain of sine or cosine have no real answer. They are used wherever an angle must be recovered from measured lengths, as in surveying, robotics and collision response.</p>',
-  calculate: function(v) {
-    const x = v.value;
-    var asin, acos;
-    if (x < -1 || x > 1) {
-      asin = 'undefined (|x| &#8804; 1 required)';
-      acos = 'undefined (|x| &#8804; 1 required)';
-    } else {
-      var asinR = Math.asin(x), acosR = Math.acos(x);
-      asin = v.outputUnit === 'deg' ? core.formatNumber(core.rad2deg(asinR), 6) + '&#176;' : core.formatNumber(asinR, 6) + ' rad';
-      acos = v.outputUnit === 'deg' ? core.formatNumber(core.rad2deg(acosR), 6) + '&#176;' : core.formatNumber(acosR, 6) + ' rad';
-    }
-    var atanR = Math.atan(x);
-    var atan = v.outputUnit === 'deg' ? core.formatNumber(core.rad2deg(atanR), 6) + '&#176;' : core.formatNumber(atanR, 6) + ' rad';
-    var out = {};
-    out['arcsin(' + x + ')'] = asin;
-    out['arccos(' + x + ')'] = acos;
-    out['arctan(' + x + ')'] = atan;
-    return out;
-  }
-});
-
 // === GRAPHS: TRIGONOMETRIC FUNCTIONS ===
 
 R('graphs-trigonometricfunctions', {

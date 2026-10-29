@@ -1246,27 +1246,6 @@ R('simple-interest-plus-principal-calculator', {
   }
 });
 
-R('future-value-calculator-basic', {
-  title: 'Future Value Calculator',
-  description: 'Calculate the future value of a single sum.',
-  tags: ['FV', 'future value'],
-  fields: [
-    { id: 'pv', label: 'Present Value', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 10000' },
-    { id: 'rate', label: 'Annual Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 7', half: true },
-    { id: 'periods', label: 'Number of Periods (years)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10', half: true },
-  ],
-  formula: '<p><code>FV = PV(1 + r)ⁿ</code></p>',
-  background: '<p>The future value of a single sum compounded at a constant rate for a number of periods. Compounding is exponential, so the value roughly doubles every 72 divided by the percentage rate. The result assumes the rate is achievable and reinvested without tax or fees.</p>',
-  calculate: function(v) {
-    const r = (v.rate || 0) / 100, n = v.periods;
-    const fv = v.pv * Math.pow(1 + r, n);
-    return {
-      'Future Value': core.formatCurrency(fv),
-      'Growth': core.formatCurrency(fv - v.pv),
-    };
-  }
-});
-
 R('future-value-investment-calculator', {
   title: 'Future Value of Investment Calculator',
   description: 'Calculate the future value of a present investment sum.',
@@ -1355,28 +1334,6 @@ R('future-value-cash-flows-calculator', {
       'Future Value': core.formatCurrency(fv),
       'Total Cash Flows': core.formatCurrency(flows.reduce((s, v) => s + v, 0)),
       'Number of Flows': flows.length,
-    };
-  }
-});
-
-R('present-value-calculator-basic', {
-  title: 'Present Value Calculator',
-  description: 'Calculate the present value of a future sum.',
-  tags: ['PV', 'present value'],
-  fields: [
-    { id: 'fv', label: 'Future Value', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 50000' },
-    { id: 'rate', label: 'Annual Discount Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 5', half: true },
-    { id: 'periods', label: 'Number of Periods (years)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10', half: true },
-  ],
-  formula: '<p><code>PV = FV / (1 + r)ⁿ</code></p>',
-  background: '<p>The discounted value today of a single future amount. Higher rates and longer waits both shrink the present value, because money available sooner could be invested. This is the core of valuation and the inverse of compounding.</p>',
-  calculate: function(v) {
-    const r = (v.rate || 0) / 100, n = v.periods;
-    const pv = v.fv / Math.pow(1 + r, n);
-    return {
-      'Present Value': core.formatCurrency(pv),
-      'Future Value': core.formatCurrency(v.fv),
-      'Discount': core.formatCurrency(v.fv - pv),
     };
   }
 });

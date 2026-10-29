@@ -552,33 +552,6 @@ R('oddpermutations', {
   }
 });
 
-// === PASCAL'S TRIANGLE (alias) ===
-
-R('pascals-triangle', {
-  title: "Pascal's Triangle Generator",
-  description: 'Generate Pascal\'s Triangle up to a given row.',
-  tags: ['pascal', 'triangle', 'binomial', 'coefficients'],
-  fields: [
-    { id: 'rows', label: 'Number of Rows', type: 'number', step: 1, min: 1, max: 20, placeholder: 'e.g. 10' },
-  ],
-  formula: '<p>Each entry is the sum of the two entries above it. Row n gives coefficients of (a+b)^n.</p>',
-  background: '<p>Rows of Pascal\'s triangle give the binomial coefficients, so the array is a compact table of combination counts for small n. Each entry is formed by adding the two above it, a recurrence that mirrors the identity relating consecutive binomial coefficients. The triangle is used in probability, algebra and the study of fractals, where its pattern of odd entries produces the Sierpinski triangle.</p>',
-  calculate: function(v) {
-    const n = Math.min(v.rows, 20);
-    let html = '<table style="margin:0 auto">';
-    for (let i = 0; i < n; i++) {
-      html += '<tr>';
-      for (let j = 0; j <= i; j++) {
-        const val = core.combinations(i, j);
-        html += '<td style="text-align:center;padding:4px 12px">' + core.formatNumber(val, 0) + '</td>';
-      }
-      html += '</tr>';
-    }
-    html += '</table>';
-    return { html };
-  }
-});
-
 // === CIRCULAR PERMUTATIONS ===
 
 R('permutationscircular', {
