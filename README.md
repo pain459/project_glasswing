@@ -208,6 +208,7 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 | `anythingllm` | 3012 | Document chat over local models |
 | `cyberchef` | 3013 | Data transformations |
 | `calculators` | 3021 | Math, finance, and conversion calculators |
+| `datetime` | 3022 | World clock & time zones (self-hosted datetime.app) |
 | `it-tools` | 3015 | Small utilities |
 | `stirling-pdf` | 3016 | PDF operations |
 | `kavita` | 3017 | Book library |
@@ -322,7 +323,7 @@ Portainer at `:9443` serves as a read-only dashboard. It monitors containers and
 
 ## Secrets and Configuration
 
-Every stack except Infisical (28 of 29) loads its secrets and configuration from Infisical at startup. No hardcoded passwords, API keys, or configuration values remain in compose files.
+Every stack except Infisical (29 of 30) loads its secrets and configuration from Infisical at startup. No hardcoded passwords, API keys, or configuration values remain in compose files.
 
 ### How secret injection works
 

@@ -29,6 +29,7 @@ Host IP: `192.168.68.62` (from `GLASSWING_HOST_IP`, else `stacks/infisical/.env`
 | `openobserve` | `openobserve` | http://192.168.68.62:3018 | 5080/tcp | glasswing |
 | `opencode` | `opencode` | http://192.168.68.62:3019 | 4096/tcp | glasswing |
 | `calculators` | `calculators` | http://192.168.68.62:3021 | 80/tcp | glasswing |
+| `datetime` | `datetime` | http://192.168.68.62:3022 | 3000/tcp | glasswing |
 | `steel` | `steel` | http://192.168.68.62:3100 | 3000/tcp | glasswing |
 | `otel-collector` | `otel-collector` | http://192.168.68.62:4318 | 4318/tcp | glasswing |
 | `open-notebook` | `open_notebook` | http://192.168.68.62:5055 | 5055/tcp | internal+glasswing |

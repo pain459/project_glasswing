@@ -1,0 +1,44 @@
+name: glasswing-datetime
+
+services:
+  datetime:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: ghcr.io/airyland/datetime.app:latest
+    container_name: glasswing-datetime
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3022:3000"
+
+    environment:
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+
+      # Analytics / ad-network hooks are compile-time inlined in the Next.js
+      # image; the stock public image ships a working deployment, so they stay
+      # unset for the self-hosted instance.
+      NEXT_PUBLIC_GOOGLE_ADSENSE_ID: ""
+      NEXT_PUBLIC_ANALYTICS_DOMAIN: ""
+      NEXT_PUBLIC_ANALYTICS_SCRIPT: ""
+
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:3000', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+    labels:
+      com.glasswing.service: datetime
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
