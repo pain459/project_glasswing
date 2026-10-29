@@ -689,58 +689,74 @@ R('deferred-annuity', {
 });
 
 // === CATALOG ALIASES ===
-// These map catalog slugs (with -calculator suffix) to existing short-slug calculators.
+// Map catalog slugs (the "-calculator" suffixed names) onto the real calculators
+// defined in this file. Aliases are applied at the very end of the file, once every
+// target calculator has actually been registered.
 
-// Loan aliases
-R('loan-calculator', arguments[1]); // same as 'loan'
-R('mortgage-calculator', arguments[1]);
-R('mortgage-payment-calculator', arguments[1]);
-R('mortgage-repayment-calculator', arguments[1]);
-R('emi-loan-calculator', arguments[1]);
-R('loan-repayment-calculator', arguments[1]);
+const CATALOG_ALIASES = {
+  // Loan
+  'loan-calculator': 'loan',
+  'mortgage-calculator': 'loan',
+  'mortgage-payment-calculator': 'loan',
+  'mortgage-repayment-calculator': 'loan',
+  'emi-loan-calculator': 'loan',
+  'loan-repayment-calculator': 'loan',
+  'loan-calculator-advanced': 'loan-advanced',
+  'car-loan-calculator': 'car-loan',
+  'car-loan-payment-calculator': 'car-loan',
+  'amortization-schedule-calculator': 'amortization-schedule',
 
-R('loan-calculator-advanced', arguments[2]); // same as 'loan-advanced'
+  // Interest
+  'compound-interest-calculator': 'compound-interest',
+  'simple-interest-calculator': 'simple-interest',
+  'future-value-calculator': 'future-value',
+  'present-value-calculator': 'present-value',
 
-R('car-loan-calculator', arguments[3]); // same as 'car-loan'
-R('car-loan-payment-calculator', arguments[3]);
+  // ROI / Profit
+  'return-on-investment-roi-calculator': 'roi',
+  'discount-calculator': 'discount',
+  'profit-margin-calculator': 'profit-margin',
 
-R('amortization-schedule-calculator', arguments[4]); // same as 'amortization-schedule'
+  // Depreciation
+  'depreciation-calculator': 'depreciation',
+  'depreciation-straight-line': 'depreciation',
+  'depreciation-declining-double': 'depreciation-double-declining',
 
-// Interest aliases
-R('compound-interest-calculator', arguments[5]); // same as 'compound-interest'
-R('simple-interest-calculator', arguments[6]); // same as 'simple-interest'
-R('future-value-calculator', arguments[7]); // same as 'future-value'
-R('present-value-calculator', arguments[8]); // same as 'present-value'
+  // Salary
+  'hourly-to-salary-calculator': 'hourly-to-salary',
+  'gross-pay-calculator': 'gross-pay',
 
-// ROI / Profit aliases
-R('return-on-investment-roi-calculator', arguments[9]); // same as 'roi'
-R('discount-calculator', arguments[10]); // same as 'discount'
-R('profit-margin-calculator', arguments[11]); // same as 'profit-margin'
+  // Savings / Investment
+  'savings-calculator': 'savings',
+  'cagr-calculator': 'cagr',
+  'cd-calculator': 'cd',
 
-// Depreciation aliases
-R('depreciation-calculator', arguments[12]); // same as 'depreciation'
-R('depreciation-straight-line', arguments[12]);
-R('depreciation-declining-double', arguments[13]); // same as 'depreciation-double-declining'
+  // Currency / APR / Ratios / Other
+  'currency-appreciation-depreciation-calculator': 'currency-appreciation',
+  'apr-calculator': 'apr',
+  'apr-calculator-basic': 'apr',
+  'debt-ratios-calculator': 'debt-ratios',
+  'checkbook-calculator': 'checkbook',
+  'checkbook-balance-calculator': 'checkbook',
+  'bid-ask-calculator': 'bid-ask',
+  'adding-machine-calculator': 'adding-machine',
+  'deferred-fixed-annuity-calculator': 'deferred-annuity',
+};
 
-// Salary aliases
-R('hourly-to-salary-calculator', arguments[14]); // same as 'hourly-to-salary'
-R('gross-pay-calculator', arguments[15]); // same as 'gross-pay'
-
-// Savings / Investment aliases
-R('savings-calculator', arguments[16]); // same as 'savings'
-R('cagr-calculator', arguments[17]); // same as 'cagr'
-R('cd-calculator', arguments[18]); // same as 'cd'
-
-// Currency / APR / Ratios / Other aliases
-R('currency-appreciation-depreciation-calculator', arguments[19]); // same as 'currency-appreciation'
-R('apr-calculator', arguments[20]); // same as 'apr'
-R('apr-calculator-basic', arguments[20]);
-R('debt-ratios-calculator', arguments[21]); // same as 'debt-ratios'
-R('checkbook-calculator', arguments[22]); // same as 'checkbook'
-R('checkbook-balance-calculator', arguments[22]);
-R('bid-ask-calculator', arguments[23]); // same as 'bid-ask'
-R('adding-machine-calculator', arguments[24]); // same as 'adding-machine'
-R('deferred-fixed-annuity-calculator', arguments[26]); // same as 'deferred-annuity'
+const applyCatalogAliases = () => {
+  const unresolved = [];
+  for (const [aliasSlug, targetSlug] of Object.entries(CATALOG_ALIASES)) {
+    const target = reg.get('financial', targetSlug);
+    if (target) {
+      R(aliasSlug, target);
+    } else {
+      unresolved.push(`${aliasSlug} -> ${targetSlug}`);
+    }
+  }
+  if (unresolved.length) {
+    console.warn('[financial] unresolved catalog aliases:', unresolved);
+  }
+};
 
 // === NEW CALCULATORS ===
 
@@ -2418,5 +2434,8 @@ R('tax-federal-est', {
     };
   }
 });
+
+// Every calculator in this file is registered — now wire up the catalog aliases.
+applyCatalogAliases();
 
 })(calculatorRegistry);

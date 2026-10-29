@@ -19,8 +19,9 @@ const renderer = {
     for (const cat of cats) {
       const info = calculatorRegistry.categoryInfo[cat];
       if (!info) continue;
-      const calcs = calculatorRegistry.getCategory(cat);
-      const count = Object.keys(calcs).length;
+      const calcs = this._validEntries(calculatorRegistry.getCategory(cat));
+      const count = calcs.length;
+      if (count === 0) continue;
       html += `
         <a href="#/${cat}/" class="category-card">
           <div class="category-icon">${info.icon}</div>
@@ -78,20 +79,27 @@ const renderer = {
     window.scrollTo(0, 0);
   },
 
+  // Filter a category map down to usable entries
+  _validEntries(calcs) {
+    return Object.entries(calcs || {}).filter(
+      ([, cfg]) => cfg && typeof cfg === 'object' && cfg.title
+    );
+  },
+
   // Render category index page
   showCategoryIndex(category) {
-    const calcs = calculatorRegistry.getCategory(category);
+    const calcs = this._validEntries(calculatorRegistry.getCategory(category));
     const catInfo = calculatorRegistry.categoryInfo[category] || { icon: "📐", label: category };
 
     let html = `
       <a href="#/" class="back-link">← Home</a>
       <div class="calc-header">
         <h1>${catInfo.icon} ${catInfo.label}</h1>
-        <p>${Object.keys(calcs).length} calculators</p>
+        <p>${calcs.length} calculators</p>
       </div>
       <div class="calculator-list">`;
 
-    for (const [slug, cfg] of Object.entries(calcs)) {
+    for (const [slug, cfg] of calcs) {
       html += `<a href="#/${category}/${slug}" class="calculator-link">${cfg.title}</a>`;
     }
 
