@@ -4,7 +4,9 @@ name: glasswing-langfuse
 x-langfuse-env: &langfuse-env
   HOSTNAME: ${LANGFUSE_HOSTNAME:?Required from Infisical}
   NEXTAUTH_URL: ${LANGFUSE_NEXTAUTH_URL:?Required from Infisical}
-  DATABASE_URL: postgresql://langfuse:${LANGFUSE_POSTGRES_PASSWORD:?Required}@postgres:5432/langfuse
+  # The password is percent-encoded by with-infisical.sh; a raw '@' or
+  # '#' would otherwise truncate the URL and the app would fail auth.
+  DATABASE_URL: postgresql://langfuse:${LANGFUSE_POSTGRES_PASSWORD_URLENCODED:?Required from Infisical}@postgres:5432/langfuse
 
   SALT: ${LANGFUSE_SALT:?Required}
   ENCRYPTION_KEY: ${LANGFUSE_ENCRYPTION_KEY:?Required}

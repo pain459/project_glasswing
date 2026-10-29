@@ -103,6 +103,16 @@ fetch_one() {
   [[ -n "$VALUE" ]] || fail "Empty secret: $KEY"
 
   export "$KEY=$VALUE"
+
+  # Credentials embedded in URLs (postgresql://user:pass@host/db) must be
+  # percent-encoded or an '@', '/', ':' or '#' in the password changes the URL.
+  # Export a companion variable rather than mutating the secret itself.
+  case "$KEY" in
+    *_PASSWORD | *_SECRET | *_TOKEN)
+      export "${KEY}_URLENCODED=$(jq -rn --arg v "$VALUE" '$v | @uri')"
+      ;;
+  esac
+
   unset VALUE
 }
 

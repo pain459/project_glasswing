@@ -108,7 +108,8 @@ chmod 600 stacks/infisical/.env
 IP=192.168.68.62          # your LAN address
 sed -i "s|^GLASSWING_HOST_IP=.*|GLASSWING_HOST_IP=$IP|" stacks/infisical/.env
 sed -i "s|^SITE_URL=.*|SITE_URL=https://$IP:8095|" stacks/infisical/.env
-sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -base64 32)|" stacks/infisical/.env
+# hex, not base64: this password is embedded in Infisical's DB_CONNECTION_URI
+sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 24)|" stacks/infisical/.env
 sed -i "s|^ENCRYPTION_KEY=.*|ENCRYPTION_KEY=$(openssl rand -hex 16)|" stacks/infisical/.env
 sed -i "s|^AUTH_SECRET=.*|AUTH_SECRET=$(openssl rand -base64 32)|" stacks/infisical/.env
 ```
