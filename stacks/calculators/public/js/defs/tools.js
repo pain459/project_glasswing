@@ -38,55 +38,6 @@ R('character-counter', {
   }
 });
 
-// === RANDOM NUMBER GENERATOR ===
-
-R('random-number-generator', {
-  title: 'Random Number Generator',
-  description: 'Generate random numbers within a range.',
-  tags: ['random', 'number', 'generator', 'RNG', 'dice'],
-  fields: [
-    { id: 'min', label: 'Minimum', type: 'number', step: 1, placeholder: 'e.g. 1', half: true },
-    { id: 'max', label: 'Maximum', type: 'number', step: 1, placeholder: 'e.g. 100', half: true },
-    { id: 'count', label: 'How Many Numbers', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10', half: true },
-    { id: 'allowDup', label: 'Allow Duplicates?', type: 'select', options: [
-      { value: '1', label: 'Yes' }, { value: '0', label: 'No' }
-    ]},
-  ],
-  formula: '<p>Generates random integers between min and max (inclusive).</p>',
-  background: '<p>This utility draws uniformly from the integers between the minimum and maximum, inclusive, using the browser\'s pseudo-random generator. Allowing duplicates samples with replacement, while disallowing them samples without replacement and therefore cannot return more values than the range contains. The output is fine for games, raffles and test data but is not cryptographically secure, so it should not be used for passwords or keys.</p>',
-  calculate: function(v) {
-    const min = v.min, max = v.max, count = Math.min(v.count || 1, 100);
-    const allowDup = v.allowDup !== '0';
-    if (min >= max) return { error: 'Minimum must be less than maximum.' };
-    const range = max - min + 1;
-    if (!allowDup && count > range) return { error: 'Cannot generate ' + count + ' unique numbers from range of ' + range + '.' };
-    const results = [];
-    if (allowDup) {
-      for (let i = 0; i < count; i++) {
-        results.push(Math.floor(Math.random() * range) + min);
-      }
-    } else {
-      const pool = [];
-      for (let i = min; i <= max; i++) pool.push(i);
-      for (let i = pool.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [pool[i], pool[j]] = [pool[j], pool[i]];
-      }
-      for (let i = 0; i < count; i++) results.push(pool[i]);
-    }
-    const sum = results.reduce((a, b) => a + b, 0);
-    const avg = sum / results.length;
-    return {
-      'Numbers': results.join(', '),
-      'Count': results.length,
-      'Sum': sum,
-      'Average': core.formatNumber(avg, 2),
-      'Min Generated': Math.min(...results),
-      'Max Generated': Math.max(...results),
-    };
-  }
-});
-
 // === GAS MILEAGE CALCULATOR ===
 
 R('gas-mileage-calculator', {
