@@ -22,7 +22,7 @@ const renderer = {
       const calcs = calculatorRegistry.getCategory(cat);
       const count = Object.keys(calcs).length;
       html += `
-        <a href="#/${cat}/${Object.keys(calcs)[0]}" class="category-card">
+        <a href="#/${cat}/" class="category-card">
           <div class="category-icon">${info.icon}</div>
           <div>
             <h2>${info.label}</h2>

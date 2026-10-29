@@ -9,7 +9,13 @@ const router = {
 
   // Parse hash into route + params
   parse() {
-    const hash = window.location.hash.slice(2) || '/';
+    let hash = window.location.hash;
+    // Remove leading '#'
+    if (hash.startsWith('#')) hash = hash.slice(1);
+    // Default to home when empty
+    if (!hash) return '/';
+    // Ensure leading '/'
+    if (!hash.startsWith('/')) hash = '/' + hash;
     return hash;
   },
 
@@ -45,7 +51,7 @@ const router = {
     }
 
     // Search route
-    if (path === 'search') {
+    if (path === '/search') {
       this.currentRoute = path;
       renderer.showSearch();
       return;
