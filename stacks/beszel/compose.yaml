@@ -12,9 +12,6 @@ services:
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-beszel
 
-    ports:
-      - "192.168.68.62:8090:8090"
-
     volumes:
       - beszel_data:/beszel_data
 
@@ -28,6 +25,14 @@ services:
     labels:
       com.glasswing.service: beszel
 
+    networks:
+      - proxy
+
 volumes:
   beszel_data:
     name: glasswing-beszel-data
+
+networks:
+  proxy:
+    name: glasswing-proxy
+    external: true

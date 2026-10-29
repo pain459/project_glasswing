@@ -4,10 +4,8 @@ name: glasswing-homepage
 services:
   homepage:
     image: ghcr.io/gethomepage/homepage:v2.7.0
+    container_name: glasswing-homepage
     restart: unless-stopped
-
-    ports:
-      - "192.168.68.62:3006:3000"
 
     environment:
       HOMEPAGE_ALLOWED_HOSTS: ${HOMEPAGE_ALLOWED_HOSTS:?Required from Infisical}
@@ -21,7 +19,7 @@ services:
       - ./config:/app/config
       - ./icons:/app/public/icons:ro
 
-    # Resolve host for Glances API access
+    # Reach host-network services (Dagu, Plex) for site monitors.
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -30,3 +28,11 @@ services:
 
     labels:
       com.glasswing.service: homepage
+
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    name: glasswing-proxy
+    external: true

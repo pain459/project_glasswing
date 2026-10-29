@@ -7,18 +7,15 @@ services:
     container_name: glasswing-it-tools
     restart: unless-stopped
 
-    ports:
-      - "192.168.68.62:3015:80"
+    environment:
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-it-tools
 
     security_opt:
       - no-new-privileges:true
 
     labels:
       com.glasswing.service: it-tools
-    
-    environment:
-      # OTEL integration
-      OTEL_SERVICE_NAME: glasswing-it-tools
 
     read_only: true
 
@@ -26,3 +23,11 @@ services:
       - /tmp
       - /var/cache/nginx
       - /var/run
+
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    name: glasswing-proxy
+    external: true

@@ -7,9 +7,6 @@ services:
     container_name: glasswing-kavita
     restart: unless-stopped
 
-    ports:
-      - "192.168.68.62:3017:5000"
-
     environment:
       TZ: ${GLASSWING_TZ:?Required from Infisical}
       # OTEL integration
@@ -31,6 +28,14 @@ services:
     labels:
       com.glasswing.service: kavita
 
+    networks:
+      - proxy
+
 volumes:
   kavita_config:
     name: glasswing-kavita-config
+
+networks:
+  proxy:
+    name: glasswing-proxy
+    external: true

@@ -1,2 +1,5 @@
 # homepage stack config variables
-HOMEPAGE_ALLOWED_HOSTS=192.168.68.62:3006,localhost:3006
+# Public hostnames (no port, because the browser reaches Homepage on :443) plus
+# the internal name used by Homepage's own site monitor, which talks to
+# http://glasswing-homepage:3000 over the shared proxy network.
+HOMEPAGE_ALLOWED_HOSTS=glasswing.lan,homepage.glasswing.lan,glasswing-homepage:3000,192.168.68.62,localhost,localhost:3000

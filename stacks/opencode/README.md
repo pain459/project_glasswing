@@ -7,7 +7,7 @@ for retrieval-augmented context.
 
 | Service | Purpose |
 | --- | --- |
-| `opencode` | OpenCode V2 server and web UI on `192.168.68.62:3019` |
+| `opencode` | OpenCode V2 server and web UI on `https://opencode.glasswing.lan` |
 | `open-notebook-mcp` | Streamable HTTP MCP bridge to the Open Notebook API |
 | `steel-mcp` | Streamable HTTP MCP bridge to the self-hosted Steel browser |
 | `init-permissions` | One-shot ownership fix for the host bind mounts |
@@ -110,22 +110,22 @@ context. Re-measure after deploying; the earlier tuned setup reached about 91%.
 
 ## Access
 
-Open <http://192.168.68.62:3019>, choose **Use password**, and enter:
+Open <https://opencode.glasswing.lan>, choose **Use password**, and enter:
 
-- Server: `http://192.168.68.62:3019`
+- Server: `https://opencode.glasswing.lan`
 - Password: the value of `OPENCODE_SERVER_PASSWORD`
 
 The app's form has no username. If the browser instead shows its own grey
-**Sign in to 192.168.68.62:3019** dialog, that is HTTP Basic auth from the API:
-the username is `opencode` and the password is the same value. You can also
-cancel it and use the app's **Use password** form, which creates a 30-day
+**Sign in to opencode.glasswing.lan** dialog, that is HTTP Basic auth from the
+API: the username is `opencode` and the password is the same value. You can
+also cancel it and use the app's **Use password** form, which creates a 30-day
 session cookie.
 
 For a one-time pairing link instead:
 
 ```bash
 docker exec glasswing-opencode \
-  opencode pair --url http://192.168.68.62:3019
+  opencode pair --url https://opencode.glasswing.lan
 ```
 
 The link expires after five minutes and works once.
@@ -136,9 +136,9 @@ The link expires after five minutes and works once.
 right target for availability checks:
 
 - Homepage: `stacks/homepage/config/services.yaml` lists OpenCode under
-  **AI Platform** with `siteMonitor: http://192.168.68.62:3019/health`.
-- Uptime Kuma monitor URL: `http://192.168.68.62:3019/health`
-  (HTTP, 60s interval recommended).
+  **AI Platform** with `siteMonitor: http://glasswing-opencode:4096/health`.
+- Uptime Kuma monitor URL: `https://opencode.glasswing.lan/health`
+  (HTTPS, 60s interval recommended).
 
 Prefer `/health` over `/` for the actual check: `/` returns the app shell to
 every visitor, and `/api/health` requires Basic auth (`opencode` plus the server
@@ -163,7 +163,7 @@ To add material:
 - Web pages: ask OpenCode to call `create_source` with `type: "link"` and
   `embed: true`, or add the link in the Open Notebook UI.
 - PDFs and uploads: add them in the Open Notebook UI at
-  <http://192.168.68.62:8502>. The MCP bridge searches whatever Open Notebook
+  <https://notebook.glasswing.lan>. The MCP bridge searches whatever Open Notebook
   has already indexed.
 
 Automatic compaction keeps long sessions inside the window while preserving
@@ -193,7 +193,7 @@ Three places show retrieval happening. The first is usually enough.
    ```
    Shows each `tools/call` the OpenCode server makes and any error it returns.
 
-In the Open Notebook UI at <http://192.168.68.62:8502> you can confirm what is
+In the Open Notebook UI at <https://notebook.glasswing.lan> you can confirm what is
 indexed: **Notebooks** lists the sources, and each source shows its embedding
 status. The UI does not stream other clients' queries live, so the transcript
 and the container log are the real-time views.
@@ -325,9 +325,9 @@ redeploy:
 
 ## Notes
 
-- The web UI is plain HTTP on the LAN. Use an SSH tunnel
-  (`ssh -L 3019:192.168.68.62:3019 ravik@192.168.68.62`) or a TLS reverse proxy
-  if the network is not trusted.
+- The web UI is served over HTTPS by the Glasswing reverse proxy at
+  `https://opencode.glasswing.lan`. It is still LAN-only; do not port-forward
+  the proxy to the internet.
 - The OpenCode image is pinned to `2.1.2`. Update the tag in `Dockerfile` and
   the local image tag in `compose.yaml` together.
 - The MCP bridge pins `mcp==1.30.0` because `open-notebook-mcp` 0.3.0 imports

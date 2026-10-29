@@ -4,10 +4,11 @@ Day-to-day operations for keeping the platform healthy, current, and backed up.
 
 **Host:** `pathfinder` (Ubuntu Server)  
 **Repository:** `/home/ravik/src_git/project_glasswing`  
-**Homepage:** `http://192.168.68.62:3006`  
-**Infisical:** `https://192.168.68.62:8095`  
-**Portainer:** `https://192.168.68.62:9443`  
-**Dagu:** `http://192.168.68.62:3014`
+**Homepage:** `https://glasswing.lan`  
+**Infisical:** `https://infisical.glasswing.lan` (bootstrap `https://192.168.68.62:8095`)  
+**Portainer:** `https://portainer.glasswing.lan`  
+**Dagu:** `https://dagu.glasswing.lan`  
+**Reverse proxy:** `https://glasswing.lan` (nginx, `:80`/`:443`)
 
 ---
 
@@ -43,23 +44,30 @@ df -hT / /mnt/storage /mnt/cold
 
 ### Homepage dashboard
 
-Open `http://192.168.68.62:3006` and check:
+Open `https://glasswing.lan` and check:
 - **Top widgets** — Glances shows real host CPU, memory, disk I/O, network, temperature
 - **Service cards** — green status dots mean services are reachable
 - **Disk widgets** — `/`, `/mnt/storage`, `/mnt/cold` all have headroom
 
 ### Portainer dashboard
 
-Open `https://192.168.68.62:9443` and check:
+Open `https://portainer.glasswing.lan` and check:
 - **Containers** tab — all `glasswing-*` containers should be `Up`
 - **Images** tab — orange badges indicate newer images available
 - **Volumes** tab — no unexpectedly large volumes
 
 ### Observability sanity
 
-- **OpenObserve** (`:3018`) — confirm logs and metrics are arriving for the last hour
-- **Beszel** (`:8090`) — CPU, memory, disk within normal ranges
-- **Uptime Kuma** (`:3003`) — no monitors in `Down` state
+- **OpenObserve** (`https://openobserve.glasswing.lan`) — confirm logs and metrics are arriving for the last hour
+- **Beszel** (`https://beszel.glasswing.lan`) — CPU, memory, disk within normal ranges
+- **Uptime Kuma** (`https://uptime.glasswing.lan`) — no monitors in `Down` state
+
+### Reverse proxy
+
+- `make ps STACK=proxy` — the nginx container should be `Up`
+- `docker exec glasswing-proxy nginx -t` — configuration should be valid
+- Open `https://glasswing.lan` — a `502` means the upstream container is not on the `glasswing-proxy` network
+- `make logs STACK=proxy` — inspect upstream errors and request routing
 
 ---
 
@@ -96,7 +104,7 @@ The Dagu DAG `staged-image-update` runs every Sunday at 05:00 and handles update
 - **Pinned tags**: Checks registry for newer versions and reports availability
 - **Critical infrastructure** (Infisical, OTel, Vector, Postgres, Dagu): Excluded — update manually
 
-Review results in the Dagu Web UI at `http://192.168.68.62:3014` or trigger a manual run. The DAG always succeeds; per-stack failures are logged.
+Review results in the Dagu Web UI at `https://dagu.glasswing.lan` or trigger a manual run. The DAG always succeeds; per-stack failures are logged.
 
 #### Manual updates (pinned-tag stacks)
 
@@ -106,7 +114,7 @@ For stacks with pinned tags that Dagu reports as having updates available:
 # Terminal: compare running images against registry
 ./scripts/check-updates.sh
 
-# Or: browse Portainer at :9443, check for orange update badges
+# Or: browse Portainer at https://portainer.glasswing.lan, check for orange update badges
 ```
 
 If updates are available:
@@ -180,9 +188,18 @@ openssl x509 -in stacks/portainer/certs/portainer.crt -noout -dates
 
 # Infisical certificate
 openssl x509 -in stacks/infisical/tls/cert.pem -noout -dates
+
+# Proxy wildcard certificate
+openssl x509 -in stacks/proxy/certs/fullchain.pem -noout -dates -ext subjectAltName
 ```
 
 Renew before expiry using the procedures in `stacks/portainer/certificate_instructions.md`.
+The proxy certificate is renewed with:
+
+```bash
+./scripts/gen-proxy-cert.sh --force
+make restart STACK=proxy
+```
 
 ### 5. Test restore (isolated)
 
@@ -228,7 +245,7 @@ For each eligible stack:
 ```
 
 To trigger manually:
-- Open Dagu Web UI at `http://192.168.68.62:3014`
+- Open Dagu Web UI at `https://dagu.glasswing.lan`
 - Click the `staged-image-update` DAG → Run
 - Or run the script directly: `./scripts/update-stacks.sh`
 
@@ -237,8 +254,8 @@ To trigger manually:
 ```
 1. Discover updates
    ./scripts/check-updates.sh          # terminal
-   or Portainer :9443 → Images tab     # UI
-   or Dagu :3014 → DAG run logs        # automated check results
+   or Portainer https://portainer.glasswing.lan → Images tab     # UI
+   or Dagu https://dagu.glasswing.lan → DAG run logs             # automated check results
 
 2. Review release notes
    Check GitHub releases or project changelog
@@ -429,11 +446,12 @@ make restart-all
 
 1. Create directory: `mkdir stacks/<name>`
 2. Create `stacks/<name>/compose.yaml` with `name: glasswing-<name>`
+   - If it has a web UI, join the `glasswing-proxy` network, remove its `ports:` block, and add a server block in `stacks/proxy/nginx/conf.d/default.conf`. See `stacks/proxy/README.md`.
 3. Create `stacks/<name>/secrets.list` (even if empty, with a comment)
 4. If the stack needs secrets, create `stacks/<name>/<name>.registry` with `KEY=value` pairs
-5. Register secrets: `./scripts/infisical-register.sh stacks/<name>/<name>.registry`
+5. Register secrets: `./scripts/infisical-register.sh /<name> stacks/<name>/<name>.registry`
 6. Deploy: `make up STACK=<name>`
-7. Add to `scripts/verify-stacks.sh` STACKS array if it should be part of full restarts
+7. Add to `scripts/verify-stacks.sh` STACKS array if it should be part of full restarts, and add a Homepage card in `stacks/homepage/config/services.yaml`
 8. Commit everything to git
 
 ---
@@ -457,4 +475,6 @@ make restart-all
 | Inspect running images | `./scripts/inspect-images.sh` |
 | Verify all stacks | `./scripts/verify-stacks.sh` |
 | GPU preflight | `make ai-preflight` |
-| Dagu Web UI | `http://192.168.68.62:3014` |
+| Dagu Web UI | `https://dagu.glasswing.lan` |
+| Start the reverse proxy | `make proxy` |
+| Push proxy-era URLs to Infisical | `make proxy-migrate` |

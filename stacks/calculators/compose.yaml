@@ -2,8 +2,8 @@
 name: glasswing-calculators
 
 networks:
-  default:
-    name: glasswing-it-tools_default
+  proxy:
+    name: glasswing-proxy
     external: true
 
 services:
@@ -14,9 +14,6 @@ services:
     image: glasswing/calculators:latest
     container_name: glasswing-calculators
     restart: unless-stopped
-
-    ports:
-      - "192.168.68.62:3021:80"
 
     healthcheck:
       test:
@@ -38,6 +35,9 @@ services:
       com.glasswing.service: calculators
       com.glasswing.category: utilities
       com.glasswing.monitoring: "true"
+
+    networks:
+      - proxy
 
     read_only: true
 

@@ -7,9 +7,6 @@ services:
     container_name: glasswing-jupyterlab
     restart: unless-stopped
 
-    ports:
-      - "192.168.68.62:8889:8888"
-
     environment:
       JUPYTER_TOKEN: ${JUPYTER_TOKEN:?Required from Infisical}
       TZ: ${GLASSWING_TZ:?Required from Infisical}
@@ -19,6 +16,9 @@ services:
     command:
       - start-notebook.py
       - --ServerApp.root_dir=/home/jovyan/work
+      # Requests arrive from the proxy container, not localhost.
+      - --ServerApp.allow_remote_access=True
+      - --ServerApp.trust_xheaders=True
 
     volumes:
       - jupyterlab_data:/home/jovyan/work
@@ -29,6 +29,14 @@ services:
     labels:
       com.glasswing.service: jupyterlab
 
+    networks:
+      - proxy
+
 volumes:
   jupyterlab_data:
     name: glasswing-jupyterlab-data
+
+networks:
+  proxy:
+    name: glasswing-proxy
+    external: true
