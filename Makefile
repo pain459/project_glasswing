@@ -14,15 +14,14 @@ INFISICAL_PATH ?= $(if $(filter otel-collector vector,$(STACK)),/openobserve,/$(
 # Needed by the OTEL collector to access /var/run/docker.sock as non-root.
 export DOCKER_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null)
 
-.PHONY: help up down restart rebuild logs ps check infisical homepage proxy core status \
-        secrets-check secrets-injection-check proxy-migrate ip-migrate access
+.PHONY: help up down restart rebuild logs ps check infisical homepage core status \
+        secrets-check secrets-injection-check
 
 help:
 	@echo "Glasswing Stack Manager"
 	@echo ""
-	@echo "make core                         Start base stacks (Infisical, Homepage)"
+	@echo "make core                         Start base stacks"
 	@echo "make infisical                    Start Infisical"
-	@echo "make proxy                        Optional: start the nginx reverse proxy (needs DNS)"
 	@echo "make homepage                     Start Homepage"
 	@echo "make up STACK=name                Start a stack, run its hooks, wait for health"
 	@echo "make down STACK=name              Stop/remove stack containers"
@@ -36,8 +35,6 @@ help:
 	@echo "make ai-preflight                 Validate the Ollama/OpenCode inference baseline"
 	@echo "make secrets-check                Verify Infisical integration"
 	@echo "make secrets-injection-check      Verify test-secret injection"
-	@echo "make ip-migrate                   Push IP-based app URLs to Infisical"
-	@echo "make access                       Print the IP:port access map"
 	@echo ""
 	@echo "Optional: INFISICAL_PATH=/custom/path (default /<stack>)"
 	@echo "Optional: stacks/<name>/pre-up.sh and post-up.sh run automatically with make up"
@@ -47,8 +44,6 @@ help:
 define run_compose
 set -eu; \
  test -f "$(COMPOSE_FILE)" || { echo "[FAIL] Unknown stack: $(STACK)"; exit 1; }; \
- docker network inspect glasswing-proxy >/dev/null 2>&1 || \
-   docker network create glasswing-proxy >/dev/null; \
  if [ -s "$(SECRETS_FILE)" ]; then \
    echo "[INFO] Infisical path: $(INFISICAL_PATH)"; \
    ./scripts/with-infisical.sh "$(INFISICAL_PATH)" "$(SECRETS_FILE)" -- \
@@ -100,9 +95,6 @@ check:
 infisical:
 	@$(MAKE) --no-print-directory up STACK=infisical
 
-proxy:
-	@$(MAKE) --no-print-directory up STACK=proxy
-
 homepage:
 	@$(MAKE) --no-print-directory up STACK=homepage
 
@@ -139,26 +131,6 @@ secrets-injection-check:
 	@echo "[PASS] Infisical secret injection operational"
 
 
-# App URLs that must match how a browser reaches the service. They live in
-# Infisical, so changing compose files alone is not enough.
-URL_CONFIG_STACKS := anythingllm beszel flowise forgejo homepage langfuse opencode
-
-ip-migrate:
-	@set -eu; \
-	for stack in $(URL_CONFIG_STACKS); do \
-	  registry="stacks/$$stack/$$stack-config.registry"; \
-	  echo "[INFO] Registering $$stack config from $$registry"; \
-	  ./scripts/infisical-register.sh "/$$stack" "$$registry"; \
-	done; \
-	echo "[PASS] IP-based URLs registered in Infisical"
-
-# Kept as an alias: the same registries carried the proxy-era URLs.
-proxy-migrate: ip-migrate
-
-access:
-	@./scripts/access-map.sh
-
-
 # --------------------------------------------------
 # Glasswing platform-wide lifecycle management
 # --------------------------------------------------
@@ -184,7 +156,7 @@ restart-all:
 	  echo "[INFO] Starting Infisical"; \
 	  $(MAKE) --no-print-directory up STACK=infisical; \
 	fi; \
-	for stack in $(sort $(filter-out infisical proxy,$(STACKS))); do \
+	for stack in $(sort $(filter-out infisical,$(STACKS))); do \
 	  echo ""; \
 	  echo "========================================"; \
 	  echo "[INFO] Deploying $$stack"; \

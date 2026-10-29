@@ -7,7 +7,7 @@ for retrieval-augmented context.
 
 | Service | Purpose |
 | --- | --- |
-| `opencode` | OpenCode V2 server and web UI on `http://192.168.68.62:3019` |
+| `opencode` | OpenCode V2 server and web UI on `192.168.68.62:3019` |
 | `open-notebook-mcp` | Streamable HTTP MCP bridge to the Open Notebook API |
 | `steel-mcp` | Streamable HTTP MCP bridge to the self-hosted Steel browser |
 | `init-permissions` | One-shot ownership fix for the host bind mounts |
@@ -116,9 +116,9 @@ Open <http://192.168.68.62:3019>, choose **Use password**, and enter:
 - Password: the value of `OPENCODE_SERVER_PASSWORD`
 
 The app's form has no username. If the browser instead shows its own grey
-**Sign in to opencode.glasswing.lan** dialog, that is HTTP Basic auth from the
-API: the username is `opencode` and the password is the same value. You can
-also cancel it and use the app's **Use password** form, which creates a 30-day
+**Sign in to 192.168.68.62:3019** dialog, that is HTTP Basic auth from the API:
+the username is `opencode` and the password is the same value. You can also
+cancel it and use the app's **Use password** form, which creates a 30-day
 session cookie.
 
 For a one-time pairing link instead:
@@ -136,7 +136,7 @@ The link expires after five minutes and works once.
 right target for availability checks:
 
 - Homepage: `stacks/homepage/config/services.yaml` lists OpenCode under
-  **AI Platform** with `siteMonitor: http://glasswing-opencode:4096/health`.
+  **AI Platform** with `siteMonitor: http://192.168.68.62:3019/health`.
 - Uptime Kuma monitor URL: `http://192.168.68.62:3019/health`
   (HTTP, 60s interval recommended).
 
@@ -325,10 +325,9 @@ redeploy:
 
 ## Notes
 
-- The web UI is served on plain HTTP at `http://192.168.68.62:3019`, and over
-  HTTPS by the optional reverse proxy at `https://opencode.glasswing.lan`.
-  It is still LAN-only; do not port-forward
-  the proxy to the internet.
+- The web UI is plain HTTP on the LAN. Use an SSH tunnel
+  (`ssh -L 3019:192.168.68.62:3019 ravik@192.168.68.62`) or a TLS reverse proxy
+  if the network is not trusted.
 - The OpenCode image is pinned to `2.1.2`. Update the tag in `Dockerfile` and
   the local image tag in `compose.yaml` together.
 - The MCP bridge pins `mcp==1.30.0` because `open-notebook-mcp` 0.3.0 imports

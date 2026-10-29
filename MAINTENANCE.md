@@ -5,10 +5,9 @@ Day-to-day operations for keeping the platform healthy, current, and backed up.
 **Host:** `pathfinder` (Ubuntu Server)  
 **Repository:** `/home/ravik/src_git/project_glasswing`  
 **Homepage:** `http://192.168.68.62:3006`  
-**Infisical:** `https://192.168.68.62:8095` (self-signed certificate; the UI is the API gateway)  
+**Infisical:** `https://192.168.68.62:8095`  
 **Portainer:** `https://192.168.68.62:9443`  
-**Dagu:** `http://192.168.68.62:3014`  
-**Reverse proxy (optional):** `https://glasswing.lan` via `:443`; plain-IP access is the default (`make access`)
+**Dagu:** `http://192.168.68.62:3014`
 
 ---
 
@@ -58,21 +57,9 @@ Open `https://192.168.68.62:9443` and check:
 
 ### Observability sanity
 
-- **OpenObserve** (`http://192.168.68.62:3018`) — confirm logs and metrics are arriving for the last hour
-- **Beszel** (`http://192.168.68.62:8090`) — CPU, memory, disk within normal ranges
-- **Uptime Kuma** (`http://192.168.68.62:3003`) — no monitors in `Down` state
-
-### Reverse proxy (optional)
-
-Only relevant if you started it with `make proxy`. Plain-IP access does not use it.
-
-- `make ps STACK=proxy` — the nginx container should be `Up`
-- `docker exec glasswing-proxy nginx -t` — configuration should be valid
-- Open `https://glasswing.lan` — a `502` means the upstream container is not on the `glasswing-proxy` network
-- `make logs STACK=proxy` — inspect upstream errors and request routing
-
-If clients cannot resolve `*.glasswing.lan`, ignore the proxy entirely:
-`make access` lists every service on its own IP and port.
+- **OpenObserve** (`:3018`) — confirm logs and metrics are arriving for the last hour
+- **Beszel** (`:8090`) — CPU, memory, disk within normal ranges
+- **Uptime Kuma** (`:3003`) — no monitors in `Down` state
 
 ---
 
@@ -119,7 +106,7 @@ For stacks with pinned tags that Dagu reports as having updates available:
 # Terminal: compare running images against registry
 ./scripts/check-updates.sh
 
-# Or: browse Portainer at https://192.168.68.62:9443, check for orange update badges
+# Or: browse Portainer at :9443, check for orange update badges
 ```
 
 If updates are available:
@@ -193,18 +180,9 @@ openssl x509 -in stacks/portainer/certs/portainer.crt -noout -dates
 
 # Infisical certificate
 openssl x509 -in stacks/infisical/tls/cert.pem -noout -dates
-
-# Proxy wildcard certificate
-openssl x509 -in stacks/proxy/certs/fullchain.pem -noout -dates -ext subjectAltName
 ```
 
 Renew before expiry using the procedures in `stacks/portainer/certificate_instructions.md`.
-The proxy certificate is renewed with:
-
-```bash
-./scripts/gen-proxy-cert.sh --force
-make restart STACK=proxy
-```
 
 ### 5. Test restore (isolated)
 
@@ -259,8 +237,8 @@ To trigger manually:
 ```
 1. Discover updates
    ./scripts/check-updates.sh          # terminal
-   or Portainer https://192.168.68.62:9443 → Images tab     # UI
-   or Dagu http://192.168.68.62:3014 → DAG run logs             # automated check results
+   or Portainer :9443 → Images tab     # UI
+   or Dagu :3014 → DAG run logs        # automated check results
 
 2. Review release notes
    Check GitHub releases or project changelog
@@ -451,12 +429,11 @@ make restart-all
 
 1. Create directory: `mkdir stacks/<name>`
 2. Create `stacks/<name>/compose.yaml` with `name: glasswing-<name>`
-   - If it has a web UI, join the `glasswing-proxy` network, remove its `ports:` block, and add a server block in `stacks/proxy/nginx/conf.d/default.conf`. See `stacks/proxy/README.md`.
 3. Create `stacks/<name>/secrets.list` (even if empty, with a comment)
 4. If the stack needs secrets, create `stacks/<name>/<name>.registry` with `KEY=value` pairs
-5. Register secrets: `./scripts/infisical-register.sh /<name> stacks/<name>/<name>.registry`
+5. Register secrets: `./scripts/infisical-register.sh stacks/<name>/<name>.registry`
 6. Deploy: `make up STACK=<name>`
-7. Add to `scripts/verify-stacks.sh` STACKS array if it should be part of full restarts, and add a Homepage card in `stacks/homepage/config/services.yaml`
+7. Add to `scripts/verify-stacks.sh` STACKS array if it should be part of full restarts
 8. Commit everything to git
 
 ---
@@ -481,5 +458,3 @@ make restart-all
 | Verify all stacks | `./scripts/verify-stacks.sh` |
 | GPU preflight | `make ai-preflight` |
 | Dagu Web UI | `http://192.168.68.62:3014` |
-| Start the reverse proxy | `make proxy` |
-| Push proxy-era URLs to Infisical | `make proxy-migrate` |

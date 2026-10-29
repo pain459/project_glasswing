@@ -32,25 +32,4 @@ fi
 chmod 600 stacks/infisical/tls/key.pem
 
 
------------
-
-# Reverse proxy bootstrap (manual)
-#
-# 1. AdGuard Home -> Filters -> DNS rewrites (wildcards do not cover the apex):
-#      glasswing.lan    ->  192.168.68.62
-#      *.glasswing.lan  ->  192.168.68.62
-#
-# 2. Trust the Glasswing CA on client devices:
-#      .local/ca/glasswing-ca.crt
-#
-# 3. Deploy the proxy, migrate URLs, add the DNS rewrite, then recreate:
-#      make up STACK=proxy
-#      make proxy-migrate
-#      # add glasswing.lan and *.glasswing.lan -> 192.168.68.62 now, while
-#      # AdGuard is still reachable on its old port
-#      make restart-all
-#
-# 4. Open https://glasswing.lan
-
-
 -------------

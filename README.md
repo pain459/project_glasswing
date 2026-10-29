@@ -14,7 +14,6 @@ The design goal is not maximum service count. It is a platform that stays unders
 - [Getting started](#getting-started)
 - [Everyday commands](#everyday-commands)
 - [Stacks](#stacks)
-- [Reverse proxy](#reverse-proxy)
 - [Image management](#image-management)
 - [Secrets and Configuration](#secrets-and-configuration)
   - [How secret injection works](#how-secret-injection-works)
@@ -98,7 +97,7 @@ The wrapper also expects the Infisical CA certificate at `stacks/infisical/tls/c
 ### Start the core
 
 ```bash
-make core                        # Infisical, proxy, then Homepage
+make core                        # Infisical, then Homepage
 make secrets-check               # verify authentication and secret injection
 ```
 
@@ -121,8 +120,6 @@ make restart-all
 | `make ps STACK=name` | Show a stack's status |
 | `make check STACK=name` | Validate Compose config, then show status |
 | `make status` | Show every running container |
-| `make proxy` | Start the nginx reverse proxy |
-| `make proxy-migrate` | Push proxy-era public URLs into Infisical |
 | `make list-stacks` | List discovered stacks |
 | `make ollama-model` | Rebuild the coding model from its checked-in Modelfile |
 | `make ai-preflight` | Validate GPU access, Ollama settings, model limits, and OpenCode connectivity |
@@ -143,52 +140,38 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 
 ## Stacks
 
-| Stack | URL / direct port | Purpose |
+| Stack | Port(s) | Purpose |
 | --- | --- | --- |
-| `ollama` | `http://192.168.68.62:11434` | Local LLM inference on the RTX 4090 |
-| `flowise` | `http://192.168.68.62:3002` | Visual agent flows |
-| `uptime-kuma` | `http://192.168.68.62:3003` | Availability checks |
-| `dbgate` | `http://192.168.68.62:3004` | Database client |
-| `homepage` | `http://192.168.68.62:3006` | Dashboard and service map |
-| `adguard` | `http://192.168.68.62:3007` (DNS `:53`) | DNS filtering |
-| `excalidraw` | `http://192.168.68.62:3009` | Diagrams |
-| `langfuse` | `http://192.168.68.62:3010` (media `:9090`) | LLM tracing and evaluation |
-| `forgejo` | `http://192.168.68.62:3011` (SSH `:2222`) | Self-hosted Git and SSH |
-| `anythingllm` | `http://192.168.68.62:3012` | Document chat over local models |
-| `cyberchef` | `http://192.168.68.62:3013` | Data transformations |
-| `dagu` | `http://192.168.68.62:3014` (host network) | Workflow orchestrator (scheduled DAGs for updates, health checks) |
-| `it-tools` | `http://192.168.68.62:3015` | Small utilities |
-| `stirling-pdf` | `http://192.168.68.62:3016` | PDF operations |
-| `kavita` | `http://192.168.68.62:3017` | Book library |
-| `openobserve` | `http://192.168.68.62:3018` (ingestion `:3018`) | Logs, metrics, traces |
-| `opencode` | `http://192.168.68.62:3019` | Web coding agent with Ollama and Open Notebook RAG |
-| `calculators` | `http://192.168.68.62:3021` | Math, finance, and conversion calculators |
-| `steel` | `http://192.168.68.62:3100/ui` (API `:3100`, CDP `:9223`) | Cloud browser automation |
-| `plex` | `http://192.168.68.62:32400/web` (host network) | Media server |
-| `open-notebook` | `http://192.168.68.62:8502` (API `:5055`) | Research workflows |
-| `jupyterlab` | `http://192.168.68.62:8889/lab` | GPU notebooks |
-| `beszel` | `http://192.168.68.62:8090` | Host health |
-| `glances` | `http://192.168.68.62:61208` | Host system monitor (feeds Homepage widgets) |
-| `infisical` | `https://192.168.68.62:8095` | Secrets management |
-| `portainer` | `https://192.168.68.62:9443` | Container management |
-| `otel-collector` | health `http://192.168.68.62:13133` (OTLP `:4318`) | Telemetry ingestion |
-| `vector` | `http://192.168.68.62:8686` | Docker log shipping |
-| `proxy` | optional, see below | nginx reverse proxy and TLS termination |
+| `ollama` | 11434 | Local LLM inference on the RTX 4090 |
+| `flowise` | 3002 | Visual agent flows |
+| `uptime-kuma` | 3003 | Availability checks |
+| `dbgate` | 3004 | Database client |
+| `homepage` | 3006 | Dashboard and service map |
+| `adguard` | 53, 3007, 3008 | DNS filtering |
+| `excalidraw` | 3009 | Diagrams |
+| `langfuse` | 3010, 9090 | LLM tracing and evaluation |
+| `forgejo` | 3011, 2222 | Self-hosted Git and SSH |
+| `anythingllm` | 3012 | Document chat over local models |
+| `cyberchef` | 3013 | Data transformations |
+| `calculators` | 3021 | Math, finance, and conversion calculators |
+| `it-tools` | 3015 | Small utilities |
+| `stirling-pdf` | 3016 | PDF operations |
+| `kavita` | 3017 | Book library |
+| `openobserve` | 3018 | Logs, metrics, traces |
+| `jupyterlab` | 8889 | GPU notebooks |
+| `open-notebook` | 8502, 5055 | Research workflows |
+| `opencode` | 3019 | Web coding agent with Ollama and Open Notebook RAG |
+| `beszel` | 8090 | Host health |
+| `glances` | 61208 (localhost) | Host system monitor (feeds Homepage widgets) |
+| `portainer` | 9443 | Container management |
+| `plex` | 32400 (host network) | Media server |
+| `otel-collector` | 4318, 13133 | Telemetry ingestion |
+| `vector` | 8686 | Docker log shipping |
+| `infisical` | 8095 | Secrets management |
+| `steel` | 3020 | Cloud browser automation |
+| `dagu` | 3014 | Workflow orchestrator (scheduled DAGs for updates, health checks) |
 
-Web UIs are reached by **plain IP and port**; no client-side DNS is required.
-`make access` prints this map straight from the Compose files and
-`make access --probe` (or `./scripts/access-map.sh --probe`) curls every URL.
-
-The `proxy` stack is optional. It publishes `:80`/`:443` and serves the same
-services as `https://<service>.glasswing.lan`, but hostname routing requires
-DNS rewrites in AdGuard plus the Glasswing CA on every client, so it is not
-part of `make core` or `make restart-all`. Start it with `make proxy` when the
-clients on the network can resolve `glasswing.lan`. See
-[stacks/proxy/README.md](stacks/proxy/README.md).
-
-Application base URLs (`FORGEJO_SERVER_ROOT_URL`, `LANGFUSE_NEXTAUTH_URL`,
-`HOMEPAGE_ALLOWED_HOSTS`, …) live in Infisical. After changing a port, run
-`make ip-migrate` before `make restart-all`.
+Ports in the Compose files are bound to `192.168.68.62`, the LAN address of Pathfinder. Change them for your own host, or parameterize them with `HOST_IP` the way the Infisical stack does.
 
 `opencode` uses Open Notebook as a retrieval layer for context beyond the model window. See `stacks/opencode/README.md` for the required secrets, access details, and RAG workflow.
 
@@ -202,68 +185,19 @@ flash attention. The numbers must agree in both stacks; see
 reconciles Ollama first and runs the preflight automatically, including GPU
 residency.
 
-## Reverse proxy
-
-Every web UI now sits behind one nginx container, `glasswing-proxy`, on ports
-**80** and **443**. Services join the shared `glasswing-proxy` Docker network
-and drop their published HTTP ports; the exceptions are listed below. nginx
-routes by hostname:
-
-```
-https://glasswing.lan          -> Homepage
-https://forgejo.glasswing.lan  -> Forgejo
-https://opencode.glasswing.lan -> OpenCode
-```
-
-Hostname routing is deliberate. Path prefixes break the SPAs in the stack
-(Excalidraw, CyberChef, IT-Tools, Calculators), so each service keeps its
-natural root path.
-
-**DNS:** add two rewrites in AdGuard Home (a wildcard does not match the apex):
-`glasswing.lan -> 192.168.68.62` and `*.glasswing.lan -> 192.168.68.62`.
-Clients that do not use AdGuard need a hosts entry.
-
-**TLS:** `scripts/gen-proxy-cert.sh` issues a certificate for `glasswing.lan`
-and `*.glasswing.lan` from the existing Glasswing CA in `.local/ca`. Trust
-`.local/ca/glasswing-ca.crt` on client devices. The certificate and key live in
-`stacks/proxy/certs/` and are git-ignored.
-
-**First deployment or migration:**
-
-```bash
-make up STACK=proxy     # create the shared network and certificate, start nginx
-make proxy-migrate      # push new public URLs into Infisical
-# add the AdGuard rewrites now, while AdGuard still has its old port
-make restart-all        # recreate every stack on the shared network
-```
-
-Add both rewrites before `make restart-all`: AdGuard's own UI moves
-behind the proxy in that step, so the rewrite must already resolve. Then open
-`https://glasswing.lan`. Until a stack has been recreated on the shared
-network, its route returns `502`.
-
-**Ports that stay direct:** DNS (`53`), Forgejo SSH (`2222`), Plex (`32400`,
-host network), PostgreSQL (`5432`), OTLP ingestion (`4318`), OpenObserve
-ingestion (`3018`), Ollama API (`11434`), Steel API/CDP (`3100`, `9223`),
-Infisical bootstrap (`8095`), and Dagu (`3014`, host network). Everything else
-is behind `:443`.
-
-The full routing table, certificate renewal, adding a new service, and
-troubleshooting are in [stacks/proxy/README.md](stacks/proxy/README.md).
-
 ## Image management
 
 Most Docker images are pinned to explicit version tags. A few stacks use mutable tags (`:latest`, `:public`, `:4`, etc.) for automatic updates.
 
 ### Automated updates (Dagu)
 
-The **Dagu** workflow orchestrator at `https://dagu.glasswing.lan` runs a scheduled DAG every Sunday at 05:00 that safely updates images with health verification and rollback:
+The **Dagu** workflow orchestrator at `http://192.168.68.62:3014` runs a scheduled DAG every Sunday at 05:00 that safely updates images with health verification and rollback:
 
 - **Mutable tags** (`:latest`, `:public`, `:lts`, `:2`, `:4`, etc.) — pull new image, restart the stack, verify health for ~5 minutes, roll back automatically if broken.
 - **Pinned tags** (`:2.24.0`, `:v2.7.0`, etc.) — check for newer version in the registry and report if available. No automatic update (compose.yaml must be edited and committed).
 - **Critical infrastructure** (Infisical, OTel Collector, Vector, Postgres, Dagu itself) — excluded entirely. Update those manually.
 
-The DAG always succeeds even when individual stacks fail; partial failures are reported in the logs and summary. Review Dagu run history at `https://dagu.glasswing.lan` or trigger a manual run from the UI.
+The DAG always succeeds even when individual stacks fail; partial failures are reported in the logs and summary. Review Dagu run history at `http://192.168.68.62:3014` or trigger a manual run from the UI.
 
 The update logic lives in `scripts/update-stacks.sh`. It can also be run standalone:
 
@@ -305,10 +239,10 @@ make up STACK=ollama
 # Terminal: compare running images against registry
 ./scripts/check-updates.sh
 
-# UI: browse Portainer at https://portainer.glasswing.lan
+# UI: browse Portainer at https://192.168.68.62:9443
 # The Images tab shows orange badges for containers with newer images available
 
-# UI: Dagu at https://dagu.glasswing.lan
+# UI: Dagu at http://192.168.68.62:3014
 # The staged-image-update DAG run logs show per-stack update results
 ```
 
@@ -322,7 +256,7 @@ make up STACK=ollama
 ./scripts/inspect-images.sh ollama
 ```
 
-Portainer at `https://portainer.glasswing.lan` serves as a read-only dashboard. It monitors containers and detects available updates, but does not manage stacks. Git remains the source of truth for all configuration.
+Portainer at `:9443` serves as a read-only dashboard. It monitors containers and detects available updates, but does not manage stacks. Git remains the source of truth for all configuration.
 
 ## Secrets and Configuration
 
@@ -382,11 +316,7 @@ A small number of variables are kept outside Infisical by design:
 
 ### Managing secrets via the Infisical API
 
-The Infisical instance exposes a REST API. The bootstrap endpoint remains
-`https://192.168.68.62:8095` because `make` secret injection and the wrapper's
-CA pinning depend on it; the UI is also available at
-`https://infisical.glasswing.lan`. All operations use universal auth with the
-machine identity credentials.
+The Infisical instance at `https://192.168.68.62:8095` exposes a REST API. All operations use universal auth with the machine identity credentials.
 
 #### Authentication
 
@@ -500,10 +430,7 @@ A green container is not proof a service works. Check the destination too: telem
 
 ## Known limitations
 
-- `GLASSWING_HOST_IP` is registered in Infisical `/global`. The proxy uses it for `:80`/`:443`; some direct-port stacks still hardcode `192.168.68.62`. Full parameterization is pending.
-- Plex and Dagu use host networking, so their native ports (`32400`, `3014`) stay direct; the proxy also reaches them through `host.docker.internal`.
-- The DNS rewrites (`glasswing.lan` and `*.glasswing.lan`) are manual AdGuard Home steps.
-- Homepage widgets and site monitors use internal container names (plain HTTP where the service allows it), so the dashboard does not depend on the DNS rewrites or on the proxy being up. Public links still use HTTPS.
+- `GLASSWING_HOST_IP` is registered in Infisical `/global` but not all stacks use it for port bindings yet. Full parameterization is pending.
 - There is no off-host backup copy yet.
 - Backup scheduling is manual; systemd timers are planned.
 - A full application-state restore has not been attempted end to end. An isolated configuration restore has.
@@ -517,8 +444,7 @@ A green container is not proof a service works. Check the destination too: telem
 - **[MAINTENANCE.md](MAINTENANCE.md)** — Daily, weekly, and monthly maintenance tasks. Image updates, secret management, backup operations, troubleshooting, and adding new stacks.
 - **[DR_RUNBOOK.md](DR_RUNBOOK.md)** — Disaster recovery procedures for hardware failure, OS reinstall, or complete data loss. Step-by-step recovery from a fresh Ubuntu install.
 - **[backup/GLASSWING_RESTIC_BACKUP_RUNBOOK.md](backup/GLASSWING_RESTIC_BACKUP_RUNBOOK.md)** — Restic backup scope, encryption, restore procedures, and known risks.
-- **Dagu Web UI** (`https://dagu.glasswing.lan`) — Workflow orchestrator for scheduled image updates and health checks.
-- **[stacks/proxy/README.md](stacks/proxy/README.md)** — Reverse proxy routing table, DNS rewrite, TLS certificate renewal, and troubleshooting.
+- **Dagu Web UI** (`http://192.168.68.62:3014`) — Workflow orchestrator for scheduled image updates and health checks.
 
 ## License
 

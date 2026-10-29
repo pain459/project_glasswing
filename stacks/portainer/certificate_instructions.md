@@ -1,12 +1,6 @@
 ## Step 1 — Generate a local trusted certificate
 
-Portainer is now reached through the Glasswing reverse proxy at
-`https://192.168.68.62:9443`. The certificate below is still used on
-Portainer's internal `9443` listener; the proxy terminates client TLS with the
-wildcard certificate from `stacks/proxy/certs/`. Both certificates are signed
-by the same Glasswing CA, so clients only need to trust `.local/ca/glasswing-ca.crt`.
-
-Portainer's internal listener still uses a private-IP certificate, and a public certificate authority generally won't issue a certificate for that address. We'll create a private CA and use it to sign Portainer's certificate.
+Because Portainer is accessed through a private IP address, a public certificate authority generally won't issue a certificate for that address. We'll create a private CA and use it to sign Portainer's certificate.
 
 Run these commands on Pathfinder:
 
@@ -86,6 +80,9 @@ services:
       - --sslkey
       - /certs/portainer.key
 
+    ports:
+      - "192.168.68.62:9443:9443"
+
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
@@ -94,17 +91,9 @@ services:
     security_opt:
       - no-new-privileges:true
 
-    networks:
-      - proxy
-
 volumes:
   portainer_data:
     name: glasswing-portainer-data
-
-networks:
-  proxy:
-    name: glasswing-proxy
-    external: true
 
 ```
 
@@ -144,8 +133,7 @@ curl --fail --silent --show-error \
 echo "[PASS] Portainer trusted TLS"
 ```
 
-This validates the proxy's wildcard certificate, which is signed by the same
-Glasswing CA as Portainer's internal certificate.
+This validates the Portainer certificate against your new CA.
 
 ## Step 4 — Trust Glasswing CA on your Mac
 
@@ -176,7 +164,7 @@ This grants the Glasswing CA trust on the Mac, including for any future certific
 
 Now open:
 
-[Portainer — Trusted HTTPS](https://192.168.68.62:9443)
+[Portainer — Trusted HTTPS](https://192.168.68.62:9443?utm_source=chatgpt.com)
 
 Safari should display the page without certificate warnings. Restart the browser if it continues using a previously cached TLS connection.
 

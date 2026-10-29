@@ -55,7 +55,7 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 STACKS_DIR="$PROJECT_DIR/stacks"
 
 # Stacks to always skip — update these manually
-SKIP_STACKS="dagu infisical otel-collector vector postgres proxy"
+SKIP_STACKS="dagu infisical otel-collector vector postgres"
 
 # Healthcheck wait timeout (seconds)
 HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-120}"

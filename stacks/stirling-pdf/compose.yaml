@@ -7,6 +7,9 @@ services:
     container_name: glasswing-stirling-pdf
     restart: unless-stopped
 
+    ports:
+      - "192.168.68.62:3016:8080"
+
     environment:
       TZ: ${GLASSWING_TZ:?Required from Infisical}
       PUID: ${GLASSWING_PUID:?Required from Infisical}
@@ -36,13 +39,6 @@ services:
     labels:
       com.glasswing.service: stirling-pdf
 
-    ports:
-      # Direct IP access: reachable without DNS.
-      - "192.168.68.62:3016:8080"
-
-    networks:
-      - proxy
-
 volumes:
   stirling_configs:
     name: glasswing-stirling-configs
@@ -56,8 +52,3 @@ volumes:
     name: glasswing-stirling-storage
   stirling_tessdata:
     name: glasswing-stirling-tessdata
-
-networks:
-  proxy:
-    name: glasswing-proxy
-    external: true

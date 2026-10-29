@@ -7,6 +7,9 @@ services:
     container_name: glasswing-flowise
     restart: unless-stopped
 
+    ports:
+      - "192.168.68.62:3002:3000"
+
     environment:
       PORT: ${FLOWISE_PORT:?Required from Infisical}
       APP_URL: ${FLOWISE_APP_URL:?Required from Infisical}
@@ -36,15 +39,7 @@ services:
 
     labels:
       com.glasswing.service: flowise
-
-    ports:
-      # Direct IP access: reachable without DNS.
-      - "192.168.68.62:3002:3000"
-
-    networks:
-      - default
-      - proxy
-
+    
     depends_on:
       init-permissions:
         condition: service_completed_successfully
@@ -60,8 +55,3 @@ services:
 volumes:
   flowise_data:
     name: glasswing-flowise-data
-
-networks:
-  proxy:
-    name: glasswing-proxy
-    external: true

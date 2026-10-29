@@ -32,6 +32,10 @@ services:
     depends_on:
       - surrealdb
 
+    ports:
+      - "192.168.68.62:8502:8502"
+      - "192.168.68.62:5055:5055"
+
     environment:
       OPEN_NOTEBOOK_ENCRYPTION_KEY: ${OPEN_NOTEBOOK_ENCRYPTION_KEY:?Required from Infisical}
       OPEN_NOTEBOOK_PASSWORD: ${OPEN_NOTEBOOK_PASSWORD:?Required from Infisical}
@@ -53,25 +57,9 @@ services:
     labels:
       com.glasswing.service: open-notebook
 
-    ports:
-      # Direct IP access: reachable without DNS.
-      - "192.168.68.62:8502:8502"
-      - "192.168.68.62:5055:5055"
-
-    networks:
-      default:
-      proxy:
-        aliases:
-          - open-notebook
-
 volumes:
   surreal_data:
     name: glasswing-notebook-surreal-data
 
   notebook_data:
     name: glasswing-notebook-data
-
-networks:
-  proxy:
-    name: glasswing-proxy
-    external: true

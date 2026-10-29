@@ -54,11 +54,3 @@ services:
       com.glasswing.service: steel
       com.glasswing.category: ai
       com.glasswing.monitoring: "true"
-
-    networks:
-      - proxy
-
-networks:
-  proxy:
-    name: glasswing-proxy
-    external: true

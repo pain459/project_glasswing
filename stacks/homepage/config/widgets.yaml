@@ -3,7 +3,7 @@
 # https://gethomepage.dev/configs/info-widgets/
 
 - glances:
-    url: http://glasswing-glances:61208
+    url: http://192.168.68.62:61208
     version: 4
     cpu: true
     memory: true
