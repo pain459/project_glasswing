@@ -7,6 +7,14 @@ const calculatorRegistry = {
 
   // Register a single calculator
   register(category, slug, config) {
+    // Guard: never store an unusable config. A single undefined entry used to
+    // break rendering of the whole category page.
+    if (!config || typeof config !== 'object' || !config.title) {
+      if (typeof console !== 'undefined') {
+        console.warn(`[registry] ignoring invalid calculator registration: ${category}/${slug}`);
+      }
+      return;
+    }
     if (!this._catalog[category]) this._catalog[category] = {};
     this._catalog[category][slug] = config;
   },
