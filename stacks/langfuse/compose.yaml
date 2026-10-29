@@ -191,9 +191,12 @@ services:
     labels:
       com.glasswing.service: langfuse
 
+    # internal only: the shared `glasswing` bridge already carries the
+    # standalone `glasswing-postgres` stack, and a second `postgres` there makes
+    # Docker DNS resolve DATABASE_URL to the wrong server. Published ports work
+    # without joining that network.
     networks:
       - internal
-      - glasswing
 
 volumes:
   postgres_data:
@@ -203,8 +206,5 @@ volumes:
   minio_data:
 
 networks:
-  glasswing:
-    name: ${GLASSWING_NETWORK:-glasswing}
-    external: true
   internal:
     driver: bridge
