@@ -9,9 +9,10 @@
   "providers": {
     "ollama": {
       "settings": {
-        // Both stacks join the shared glasswing-proxy network, so use the
-        // container name instead of the host address or published port.
-        "baseURL": "http://glasswing-ollama:11434/v1"
+        // The Ollama and OpenCode stacks use separate Compose networks. If
+        // they are ever joined to a shared network, use
+        // http://glasswing-ollama:11434/v1 instead of the host address.
+        "baseURL": "http://192.168.68.62:11434/v1"
       },
       "models": {
         "qwen3.6-opencode:latest": {

@@ -7,6 +7,9 @@ services:
     container_name: glasswing-dbgate
     restart: unless-stopped
 
+    ports:
+      - "192.168.68.62:3004:3000"
+
     environment:
       LOGIN: ${DBGATE_USERNAME:?Required from Infisical}
       PASSWORD: ${DBGATE_PASSWORD:?Required from Infisical}
@@ -23,18 +26,6 @@ services:
     labels:
       com.glasswing.service: dbgate
 
-    ports:
-      # Direct IP access: reachable without DNS.
-      - "192.168.68.62:3004:3000"
-
-    networks:
-      - proxy
-
 volumes:
   dbgate_data:
     name: glasswing-dbgate-data
-
-networks:
-  proxy:
-    name: glasswing-proxy
-    external: true

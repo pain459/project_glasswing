@@ -1,5 +1,2 @@
 # homepage stack config variables
-# Direct IP access is the primary path (http://192.168.68.62:3006). The internal
-# name is kept for Homepage's own site monitor over the shared proxy network,
-# and the proxy hostnames stay listed so either route is accepted.
-HOMEPAGE_ALLOWED_HOSTS=192.168.68.62:3006,192.168.68.62,localhost:3006,localhost,glasswing-homepage:3000,glasswing.lan,homepage.glasswing.lan
+HOMEPAGE_ALLOWED_HOSTS=192.168.68.62:3006,localhost:3006

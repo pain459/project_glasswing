@@ -11,20 +11,11 @@ services:
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-cyberchef
 
+    ports:
+      - "192.168.68.62:3013:8080"
+
     security_opt:
       - no-new-privileges:true
 
     labels:
       com.glasswing.service: cyberchef
-
-    ports:
-      # Direct IP access: reachable without DNS.
-      - "192.168.68.62:3013:8080"
-
-    networks:
-      - proxy
-
-networks:
-  proxy:
-    name: glasswing-proxy
-    external: true

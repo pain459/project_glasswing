@@ -1,17 +1,13 @@
+
 # Glasswing — Homepage services.yaml
-#
-# Cards link to plain IP:port URLs, so no client-side DNS is required.
-# Widgets and site monitors use container names on the shared Docker network,
-# so they work even if the host IP changes. Where the service speaks HTTPS only
-# (Portainer, the Infisical gateway) the monitor uses HTTPS on the internal
-# name; Homepage's HTTP client does not verify upstream certificates.
+# Base URL: 192.168.68.62
 
 - System Monitoring:
     - CPU Usage:
         icon: mdi-speedometer
         widget:
             type: glances
-            url: http://glasswing-glances:61208
+            url: http://192.168.68.62:61208
             version: 4
             metric: cpu
 
@@ -19,7 +15,7 @@
         icon: mdi-memory
         widget:
             type: glances
-            url: http://glasswing-glances:61208
+            url: http://192.168.68.62:61208
             version: 4
             metric: memory
 
@@ -27,7 +23,7 @@
         icon: mdi-sitemap
         widget:
             type: glances
-            url: http://glasswing-glances:61208
+            url: http://192.168.68.62:61208
             version: 4
             metric: process
 
@@ -36,65 +32,65 @@
         icon: infisical.png
         href: https://192.168.68.62:8095
         description: Secrets & Credentials
-        siteMonitor: https://infisical-gateway/api/status
+        siteMonitor: https://192.168.68.62:8095/api/status
 
     - Uptime Kuma:
         icon: uptime-kuma.png
         href: http://192.168.68.62:3003
         description: Availability Monitoring
-        siteMonitor: http://glasswing-uptime-kuma:3001
+        siteMonitor: http://192.168.68.62:3003
 
     - Beszel:
         icon: beszel.png
         href: http://192.168.68.62:8090
         description: Host Telemetry
-        siteMonitor: http://glasswing-beszel:8090
+        siteMonitor: http://192.168.68.62:8090
 
     - Glances:
         icon: glances.png
         href: http://192.168.68.62:61208
         description: Host System Monitor
-        siteMonitor: http://glasswing-glances:61208/api/4/status
+        siteMonitor: http://192.168.68.62:61208/api/4/status
 
     - Portainer:
         icon: portainer.png
         href: https://192.168.68.62:9443
         description: Container Dashboard
-        siteMonitor: https://glasswing-portainer:9443
+        siteMonitor: https://192.168.68.62:9443
 
     - AdGuard Home:
         icon: adguard-home.png
         href: http://192.168.68.62:3007
         description: DNS & Network Security
-        siteMonitor: http://glasswing-adguard:80
+        siteMonitor: http://192.168.68.62:3007
 
     - Homepage:
         icon: homepage.png
         href: http://192.168.68.62:3006
         description: Operations Dashboard
-        siteMonitor: http://glasswing-homepage:3000
+        siteMonitor: http://192.168.68.62:3006
 
     - OpenObserve:
         icon: sh-openobserve
         href: http://192.168.68.62:3018
         description: Centralized Logs, Metrics and Traces
-        siteMonitor: http://glasswing-openobserve:5080/healthz
+        siteMonitor: http://192.168.68.62:3018/healthz
 
     - OpenTelemetry Collector:
         icon: mdi-chart-timeline-variant
         description: Centralized Docker Metrics and Telemetry
-        siteMonitor: http://glasswing-otel-collector:13133/
+        siteMonitor: http://192.168.68.62:13133/
 
     - Vector:
         icon: vector.png
         description: Centralized Docker Log Collector
-        siteMonitor: http://glasswing-vector:8686/health
+        siteMonitor: http://192.168.68.62:8686/health
 
     - Dagu:
         icon: mdi-clock-alert
         href: http://192.168.68.62:3014
         description: Workflow Scheduler & Cron Runner
-        siteMonitor: http://host.docker.internal:3014/api/v1/health
+        siteMonitor: http://192.168.68.62:3014/api/v1/health
 
     - PostgreSQL:
         icon: postgres.png
@@ -105,102 +101,102 @@
         icon: ollama.png
         href: http://192.168.68.62:11434
         description: RTX 4090 · Model Inference
-        siteMonitor: http://glasswing-ollama:11434/api/version
+        siteMonitor: http://192.168.68.62:11434/api/version
 
     - OpenCode:
         icon: mdi-console-line
         href: http://192.168.68.62:3019
         description: Web Coding Agent · Ollama + Open Notebook
-        siteMonitor: http://glasswing-opencode:4096/health
+        siteMonitor: http://192.168.68.62:3019/health
 
     - Flowise:
         icon: flowise.png
         href: http://192.168.68.62:3002
         description: Agents & AI Workflows
-        siteMonitor: http://glasswing-flowise:3000
+        siteMonitor: http://192.168.68.62:3002
 
     - Langfuse:
         icon: sh-langfuse
         href: http://192.168.68.62:3010
         description: LLM Tracing & Analytics
-        siteMonitor: http://langfuse:3000/api/public/health
+        siteMonitor: http://192.168.68.62:3010/api/public/health
 
     - Open Notebook:
         icon: open-notebook.png
         href: http://192.168.68.62:8502
         description: AI Research & Knowledge
-        siteMonitor: http://open-notebook:8502
+        siteMonitor: http://192.168.68.62:8502
 
     - AnythingLLM:
         icon: anything-llm.png
         href: http://192.168.68.62:3012
         description: Local AI Knowledge and Document RAG
-        siteMonitor: http://glasswing-anythingllm:3001
+        siteMonitor: http://192.168.68.62:3012
 
     - Steel Browser:
         icon: mdi-web
         href: http://192.168.68.62:3100/ui
         description: Private AI browser automation
-        siteMonitor: http://glasswing-steel:3000/v1/health
+        siteMonitor: http://192.168.68.62:3100/v1/health
 
 - Developer Workbench:
     - Forgejo:
         icon: forgejo.png
         href: http://192.168.68.62:3011
         description: Private Git Hosting
-        siteMonitor: http://glasswing-forgejo:3000
+        siteMonitor: http://192.168.68.62:3011
 
     - JupyterLab:
         icon: jupyter.png
         href: http://192.168.68.62:8889/lab
         description: Python & Data Science
-        siteMonitor: http://glasswing-jupyterlab:8888/login
+        siteMonitor: http://192.168.68.62:8889/login
 
     - DBGate:
         icon: dbgate.png
         href: http://192.168.68.62:3004
         description: Database Administration
-        siteMonitor: http://glasswing-dbgate:3000
+        siteMonitor: http://192.168.68.62:3004
 
     - Excalidraw:
         icon: excalidraw.png
         href: http://192.168.68.62:3009
         description: Architecture & Whiteboarding
-        siteMonitor: http://glasswing-excalidraw:80
+        siteMonitor: http://192.168.68.62:3009
 
     - CyberChef:
         icon: cyberchef.png
         href: http://192.168.68.62:3013
         description: Encoding, Decoding and Data Analysis
-        siteMonitor: http://glasswing-cyberchef:8080
+        siteMonitor: http://192.168.68.62:3013
 
     - IT-Tools:
         icon: it-tools.png
         href: http://192.168.68.62:3015
         description: Developer Utilities and Converters
-        siteMonitor: http://glasswing-it-tools:80
+        siteMonitor: http://192.168.68.62:3015
 
     - Calculators:
         icon: mdi-calculator-variant
         href: http://192.168.68.62:3021
         description: Math, Finance and Conversion Calculators
-        siteMonitor: http://glasswing-calculators:80
+        siteMonitor: http://192.168.68.62:3021
 
     - Stirling-PDF:
         icon: stirling-pdf.png
         href: http://192.168.68.62:3016
         description: PDF Processing, OCR and Conversion
-        siteMonitor: http://glasswing-stirling-pdf:8080
+        siteMonitor: http://192.168.68.62:3016
 
 - Entertainment:
     - Plex:
         icon: plex.png
         href: http://192.168.68.62:32400/web
         description: Movies, TV, Documentaries and Home Videos
-        siteMonitor: http://host.docker.internal:32400/identity
+        siteMonitor: http://192.168.68.62:32400/identity
 
     - Kavita:
         icon: kavita.png
         href: http://192.168.68.62:3017
         description: Books, Comics and Digital Reading
-        siteMonitor: http://glasswing-kavita:5000
+        siteMonitor: http://192.168.68.62:3017

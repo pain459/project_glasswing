@@ -7,6 +7,9 @@ services:
     container_name: glasswing-uptime-kuma
     restart: unless-stopped
 
+    ports:
+      - "192.168.68.62:3003:3001"
+
     volumes:
       - uptime_kuma_data:/app/data
 
@@ -30,18 +33,6 @@ services:
     labels:
       com.glasswing.service: uptime-kuma
 
-    ports:
-      # Direct IP access: reachable without DNS.
-      - "192.168.68.62:3003:3001"
-
-    networks:
-      - proxy
-
 volumes:
   uptime_kuma_data:
     name: glasswing-uptime-kuma-data
-
-networks:
-  proxy:
-    name: glasswing-proxy
-    external: true

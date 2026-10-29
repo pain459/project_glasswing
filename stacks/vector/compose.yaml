@@ -27,6 +27,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - vector_data:/var/lib/vector
 
+    ports:
+      - "192.168.68.62:8686:8686"
+
     mem_limit: 512m
 
     security_opt:
@@ -35,18 +38,6 @@ services:
     labels:
       com.glasswing.service: vector
 
-    ports:
-      # Direct IP access: reachable without DNS.
-      - "192.168.68.62:8686:8686"
-
-    networks:
-      - proxy
-
 volumes:
   vector_data:
     name: glasswing-vector-data
-
-networks:
-  proxy:
-    name: glasswing-proxy
-    external: true

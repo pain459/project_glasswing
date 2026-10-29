@@ -13,6 +13,9 @@ services:
       - --sslkey
       - /certs/portainer.key
 
+    ports:
+      - "192.168.68.62:9443:9443"
+
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
@@ -24,13 +27,6 @@ services:
     labels:
       com.glasswing.service: portainer
 
-    ports:
-      # Direct IP access: reachable without DNS.
-      - "192.168.68.62:9443:9443"
-
-    networks:
-      - proxy
-
     environment:
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-portainer
@@ -38,8 +34,3 @@ services:
 volumes:
   portainer_data:
     name: glasswing-portainer-data
-
-networks:
-  proxy:
-    name: glasswing-proxy
-    external: true

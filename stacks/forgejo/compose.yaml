@@ -24,9 +24,8 @@ services:
       OTEL_SERVICE_NAME: glasswing-forgejo
 
     ports:
-      # SSH and the web UI stay direct; the optional proxy also routes HTTPS.
-      - "192.168.68.62:2222:22"
       - "192.168.68.62:3011:3000"
+      - "192.168.68.62:2222:22"
 
     volumes:
       - forgejo_data:/data
@@ -38,14 +37,6 @@ services:
     labels:
       com.glasswing.service: forgejo
 
-    networks:
-      - proxy
-
 volumes:
   forgejo_data:
     name: glasswing-forgejo-data
-
-networks:
-  proxy:
-    name: glasswing-proxy
-    external: true

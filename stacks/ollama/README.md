@@ -1,16 +1,13 @@
 # Ollama
 
-Local inference on Pathfinder's RTX 4090. Containers on the shared proxy
-network (OpenCode, AnythingLLM, Flowise) reach the OpenAI-compatible `/v1`
-endpoint at `http://glasswing-ollama:11434/v1`. Host-side tooling and local
-clients use the direct API on `http://192.168.68.62:11434`. The optional proxy
-also serves it at `https://ollama.glasswing.lan` when DNS is available.
+Local inference on Pathfinder's RTX 4090. OpenCode reaches it through the
+OpenAI-compatible `/v1` endpoint at `http://192.168.68.62:11434/v1`.
 
 ## Services
 
 | Service | Purpose |
 | --- | --- |
-| `ollama` | Model server with GPU access on `192.168.68.62:11434` (`glasswing-ollama:11434` internally) |
+| `ollama` | Model server with GPU access on `192.168.68.62:11434` |
 
 ## Runtime settings
 

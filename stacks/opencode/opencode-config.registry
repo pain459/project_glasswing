@@ -1,7 +1,7 @@
 # opencode stack config variables
 HOME=/home/opencode
 OPENCODE_DISABLE_AUTOUPDATE=1
-OPEN_NOTEBOOK_URL=http://open-notebook:5055
+OPEN_NOTEBOOK_URL=http://192.168.68.62:5055
 HOST=0.0.0.0
 PORT=8000
 MCP_PATH=/mcp

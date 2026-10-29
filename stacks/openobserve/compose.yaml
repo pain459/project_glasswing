@@ -33,14 +33,6 @@ services:
     labels:
       com.glasswing.service: openobserve
 
-    networks:
-      - proxy
-
 volumes:
   openobserve_data:
     name: glasswing-openobserve-data
-
-networks:
-  proxy:
-    name: glasswing-proxy
-    external: true

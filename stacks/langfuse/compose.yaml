@@ -123,18 +123,11 @@ services:
       MINIO_ROOT_USER: ${LANGFUSE_MINIO_ROOT_USER:?Required from Infisical}
       MINIO_ROOT_PASSWORD: ${LANGFUSE_MINIO_PASSWORD:?Required}
 
-    volumes:
-      - minio_data:/data
-
     ports:
-      # Direct IP access: reachable without DNS.
       - "192.168.68.62:9090:9000"
 
-    networks:
-      default:
-      proxy:
-        aliases:
-          - langfuse-minio
+    volumes:
+      - minio_data:/data
 
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
@@ -157,24 +150,17 @@ services:
 
     depends_on: *langfuse-depends
 
+    ports:
+      - "192.168.68.62:3010:3000"
+
     environment:
       <<: *langfuse-env
       NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:?Required}
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-langfuse
 
-    ports:
-      # Direct IP access: reachable without DNS.
-      - "192.168.68.62:3010:3000"
-
     labels:
       com.glasswing.service: langfuse
-
-    networks:
-      default:
-      proxy:
-        aliases:
-          - langfuse
 
 volumes:
   postgres_data:
@@ -182,8 +168,3 @@ volumes:
   clickhouse_data:
   clickhouse_logs:
   minio_data:
-
-networks:
-  proxy:
-    name: glasswing-proxy
-    external: true

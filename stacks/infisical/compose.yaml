@@ -105,18 +105,11 @@ services:
       OTEL_METRICS_EXPORTER: otlp
       OTEL_LOGS_EXPORTER: otlp
       OTEL_RESOURCE_ATTRIBUTES: deployment.environment=homelab,host.name=pathfinder
-    networks:
-      internal:
-      proxy:
-        aliases:
-          - infisical-gateway
+    networks: [internal]
 
 networks:
   internal:
     driver: bridge
-  proxy:
-    name: glasswing-proxy
-    external: true
 
 volumes:
   postgres_data:

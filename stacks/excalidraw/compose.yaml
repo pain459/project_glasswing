@@ -8,6 +8,9 @@ services:
     container_name: glasswing-excalidraw
     restart: unless-stopped
 
+    ports:
+      - "192.168.68.62:3009:80"
+
     healthcheck:
       test:
         - CMD-SHELL
@@ -26,15 +29,3 @@ services:
 
     labels:
       com.glasswing.service: excalidraw
-
-    ports:
-      # Direct IP access: reachable without DNS.
-      - "192.168.68.62:3009:80"
-
-    networks:
-      - proxy
-
-networks:
-  proxy:
-    name: glasswing-proxy
-    external: true
