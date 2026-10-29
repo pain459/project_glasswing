@@ -14,6 +14,7 @@ R('loan', {
     { id: 'termMonths', label: 'Term (months)', type: 'number', step: 1, min: 1, max: 600, placeholder: 'e.g. 360', half: true },
   ],
   formula: '<p><code>M = P × r × (1+r)ⁿ / ((1+r)ⁿ − 1)</code> where P is principal, r is monthly rate, n is number of payments.</p>',
+  background: '<p>The fixed monthly payment that fully amortizes a loan over its term. Because interest is charged on the outstanding balance, early payments are mostly interest and later ones mostly principal, and the total cost rises sharply with both rate and term. The rate entered is a nominal annual rate divided by twelve, so it ignores fees and any gap between APR and the effective rate.</p>',
   calculate: function(v) {
     const P = v.loanAmount, r = (v.interestRate || 0) / 100 / 12, n = v.termMonths;
     if (!P || !n) return { error: 'Enter valid amounts' };
@@ -40,6 +41,7 @@ R('loan-advanced', {
     { id: 'extraPayment', label: 'Extra Monthly Payment', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 0', half: true },
   ],
   formula: '<p>Same as standard loan but accounts for down payment and extra monthly payments to reduce the term.</p>',
+  background: '<p>A standard amortizing loan with a down payment and optional extra monthly payments. The down payment reduces the amount financed, while extra payments go straight to principal, so each one removes all future interest that principal would have earned and shortens the term. Results assume the rate stays fixed and no prepayment penalty applies.</p>',
   calculate: function(v) {
     const principal = v.loanAmount - (v.downPayment || 0);
     const r = (v.interestRate || 0) / 100 / 12;
@@ -83,6 +85,7 @@ R('car-loan', {
     { id: 'termMonths', label: 'Term (months)', type: 'number', step: 1, min: 1, max: 120, placeholder: 'e.g. 60', half: true },
   ],
   formula: '<p>Price + tax − down payment − trade-in = principal. Then standard amortization.</p>',
+  background: '<p>Car financing usually rolls sales tax into the amount borrowed, then subtracts a down payment and trade-in allowance. Because the loan is amortized, a longer term lowers the payment but raises total interest, and negative equity from an older trade-in is often added to the new balance. Dealer fees, registration and optional warranties are not included.</p>',
   calculate: function(v) {
     const tax = v.carPrice * (v.salesTax || 0) / 100;
     const principal = v.carPrice + tax - (v.downPayment || 0) - (v.tradeIn || 0);
@@ -109,6 +112,8 @@ R('amortization-schedule', {
     { id: 'interestRate', label: 'Annual Interest Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 6', half: true },
     { id: 'termYears', label: 'Term (years)', type: 'number', step: 0.5, min: 0.5, max: 50, placeholder: 'e.g. 30', half: true },
   ],
+  formula: '<p><code>M = P × r × (1+r)ⁿ / ((1+r)ⁿ − 1)</code> where r is the monthly rate and n = years × 12; each row shows interest = balance × r and principal = M − interest.</p>',
+  background: '<p>A period-by-period breakdown of how each payment splits between interest and principal. Interest is front-loaded because it is charged on the balance still outstanding, which is why the balance falls slowly at first and faster near the end. The schedule assumes a fixed rate and on-time payments throughout.</p>',
   calculate: function(v) {
     const P = v.loanAmount, r = (v.interestRate || 0) / 100 / 12, n = Math.round(v.termYears * 12);
     if (!P || !n) return { error: 'Enter valid amounts' };
@@ -157,6 +162,7 @@ R('compound-interest', {
     { id: 'years', label: 'Number of Years', type: 'number', step: 0.5, min: 0.1, max: 100, placeholder: 'e.g. 20' },
   ],
   formula: '<p><code>A = P(1 + r/n)^(nt) + PMT × ((1 + r/n)^(nt) − 1) / (r/n)</code></p>',
+  background: '<p>Growth of a balance when earned interest is reinvested and itself earns interest. More frequent compounding raises the effective yield for the same nominal rate, and the continuous option uses the limiting factor e^r − 1. Contributions are credited at the chosen frequency, and taxes and fees are ignored.</p>',
   calculate: function(v) {
     const P = v.principal, PMT = v.contributions || 0, freq = v.contribFreq || 0;
     const r = (v.interestRate || 0) / 100, n = v.compoundFreq, t = v.years;
@@ -192,6 +198,7 @@ R('simple-interest', {
     { id: 'time', label: 'Time (years)', type: 'number', step: 0.1, min: 0, max: 100, placeholder: 'e.g. 3', half: true },
   ],
   formula: '<p><code>I = P × r × t</code> and <code>A = P + I</code></p>',
+  background: '<p>Interest calculated only on the original principal, never on previously accrued interest, so the balance grows in a straight line. It is common for short-term loans, flat-rate auto and personal loans, and some bonds. Time is measured in years, so months must be expressed as a fraction of a year.</p>',
   calculate: function(v) {
     const P = v.principal, r = (v.rate || 0) / 100, t = v.time;
     const I = P * r * t, A = P + I;
@@ -214,6 +221,7 @@ R('future-value', {
     { id: 'periods', label: 'Number of Periods (years)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10' },
   ],
   formula: '<p><code>FV = PV(1+r)^n + PMT × ((1+r)^n − 1) / r</code></p>',
+  background: '<p>The value at a future date of a lump sum plus a stream of equal payments, all growing at a constant rate. Each payment compounds for the number of periods remaining, which is why earlier payments contribute disproportionately more. The model assumes reinvestment at the same rate and end-of-period deposits.</p>',
   calculate: function(v) {
     const PV = v.pv, PMT = v.pmt || 0, r = (v.rate || 0) / 100, n = v.periods;
     if (!n) return { error: 'Enter valid values' };
@@ -238,6 +246,7 @@ R('present-value', {
     { id: 'periods', label: 'Number of Periods (years)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>PV = FV / (1 + r)^n</code></p>',
+  background: '<p>The amount a future sum is worth today given a required rate of return. Discounting reverses compounding: the further away the cash flow and the higher the rate, the less it is worth now. This is the basis of bond pricing, project appraisal and any comparison of cash flows at different dates.</p>',
   calculate: function(v) {
     const FV = v.fv, r = (v.rate || 0) / 100, n = v.periods;
     const PV = r === 0 ? FV : FV / Math.pow(1 + r, n);
@@ -260,6 +269,7 @@ R('roi', {
     { id: 'returned', label: 'Amount Returned', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 15000' },
   ],
   formula: '<p><code>ROI = (Returned − Invested) / Invested × 100%</code></p>',
+  background: '<p>A simple percentage gain relative to the amount invested, widely used to compare deals quickly. It ignores how long the money was tied up, so a 20% return in one year and in ten years look identical here. Annualizing or comparing with CAGR gives a fairer picture.</p>',
   calculate: function(v) {
     const gain = v.returned - v.invested;
     const roi = (gain / v.invested) * 100;
@@ -280,6 +290,7 @@ R('discount', {
     { id: 'discountPct', label: 'Discount (%)', type: 'number', step: 0.1, min: 0, max: 100, placeholder: 'e.g. 25' },
   ],
   formula: '<p><code>Sale Price = Original × (1 − Discount%)</code></p>',
+  background: '<p>The reduced price a buyer pays after a percentage markdown, the everyday retail calculation. The discount applies to the original price, not to a previously discounted price, and successive discounts compound rather than add. Sales tax, if any, is usually calculated on the reduced amount.</p>',
   calculate: function(v) {
     const saved = v.originalPrice * v.discountPct / 100;
     return {
@@ -299,6 +310,7 @@ R('profit-margin', {
     { id: 'price', label: 'Selling Price', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 100' },
   ],
   formula: '<p><code>Margin = (Price − Cost) / Price × 100%</code></p>',
+  background: '<p>Profit as a share of the selling price, the standard measure of how much of each sale is kept. Margin and markup use different denominators, so a 25% markup is only a 20% margin; margin can never reach 100% unless cost is zero. Both figures here are gross and exclude fixed overheads.</p>',
   calculate: function(v) {
     const profit = v.price - v.cost;
     const margin = v.price ? (profit / v.price) * 100 : 0;
@@ -323,6 +335,7 @@ R('depreciation', {
     { id: 'life', label: 'Useful Life (years)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>Annual Depreciation = (Cost − Salvage) / Life</code></p>',
+  background: '<p>An accounting allocation of an asset cost over the years it is used, not a measure of its market value. Straight-line treatment spreads the depreciable base evenly, which suits assets that wear out steadily. Salvage value is the estimated residual at the end of the useful life, and tax rules may prescribe different lives.</p>',
   calculate: function(v) {
     const annual = (v.cost - v.salvage) / v.life;
     const monthly = annual / 12;
@@ -346,6 +359,7 @@ R('depreciation-double-declining', {
     { id: 'life', label: 'Useful Life (years)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>Rate = 2 / Life. Each year: Depreciation = Book Value × Rate (not below salvage).</code></p>',
+  background: '<p>An accelerated method that writes off more of an asset early, when repairs are cheap and the asset is most productive. The rate is twice the straight-line rate and is applied to the remaining book value rather than the original depreciable base, so the charge falls each year. Depreciation stops at salvage value, and many firms switch to straight line near the end to finish the write-off.</p>',
   calculate: function(v) {
     const rate = 2 / v.life;
     let bv = v.cost, total = 0;
@@ -375,6 +389,8 @@ R('hourly-to-salary', {
     { id: 'hours', label: 'Hours per Week', type: 'number', step: 1, min: 1, max: 168, placeholder: 'e.g. 40', half: true },
     { id: 'weeks', label: 'Working Weeks per Year', type: 'number', step: 1, min: 1, max: 52, placeholder: 'e.g. 52', half: true },
   ],
+  formula: '<p><code>Annual = Hourly × Hours per Week × Weeks per Year</code>; monthly = annual / 12, bi-weekly = annual / 26, weekly = annual / weeks, daily = hourly × 8.</p>',
+  background: '<p>Converts an hourly wage into the annual and periodic pay it implies. The result depends heavily on the assumed working weeks, since unpaid leave, holidays and overtime all change actual annual pay, and 52 weeks is a gross convention rather than a typical paid year. Bi-weekly figures assume 26 paychecks, not 24 semi-monthly ones.</p>',
   calculate: function(v) {
     const annual = v.hourly * v.hours * v.weeks;
     return {
@@ -398,6 +414,8 @@ R('gross-pay', {
     { id: 'fica', label: 'FICA / Social Security (%)', type: 'number', step: 0.1, min: 0, max: 100, placeholder: 'e.g. 7.65', half: true },
     { id: 'other', label: 'Other Deductions (%)', type: 'number', step: 0.1, min: 0, max: 100, placeholder: 'e.g. 0', half: true },
   ],
+  formula: '<p><code>Net = Gross × (1 − (Federal + State + FICA + Other) / 100)</code></p>',
+  background: '<p>Take-home pay after flat-percentage deductions from gross wages. Real payroll taxes are progressive and have wage caps, so applying a single federal rate is only a rough estimate, and pre-tax items such as retirement contributions or health premiums would lower taxable wages first. FICA is 7.65% for most employees, split between Social Security and Medicare.</p>',
   calculate: function(v) {
     const fed = v.gross * (v.fedTax || 0) / 100;
     const state = v.gross * (v.stateTax || 0) / 100;
@@ -429,6 +447,8 @@ R('savings', {
     { id: 'rate', label: 'Annual Interest Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 4', half: true },
     { id: 'years', label: 'Years', type: 'number', step: 0.5, min: 0.5, max: 50, placeholder: 'e.g. 10' },
   ],
+  formula: '<p><code>FV = P(1 + r)ⁿ + PMT × ((1 + r)ⁿ − 1) / r</code> with r = annual rate / 12 and n = years × 12, contributions added at each month end.</p>',
+  background: '<p>The balance reached by starting with a lump sum and adding a fixed amount each month while interest compounds. Deposits are credited at month end, so the newest contributions earn almost nothing while early ones compound for the whole horizon. The quoted annual rate is divided by twelve, which slightly understates the true effective yield.</p>',
   calculate: function(v) {
     const r = (v.rate || 0) / 100 / 12, n = v.years * 12;
     let bal = v.initial;
@@ -452,6 +472,7 @@ R('cagr', {
     { id: 'years', label: 'Number of Years', type: 'number', step: 0.5, min: 0.1, max: 100, placeholder: 'e.g. 5' },
   ],
   formula: '<p><code>CAGR = (End / Begin)^(1/years) − 1</code></p>',
+  background: '<p>The constant annual rate that would take a starting value to an ending value over a number of years. It smooths a volatile path into one geometric average, so it says nothing about the swings along the way, and it assumes no cash was added or withdrawn. Compare it with the arithmetic average return, which is usually higher.</p>',
   calculate: function(v) {
     const cagr = (Math.pow(v.end / v.begin, 1 / v.years) - 1) * 100;
     return {
@@ -474,6 +495,8 @@ R('cd', {
       { value: '12', label: 'Monthly', default: true }, { value: '4', label: 'Quarterly' }, { value: '1', label: 'Annually' }, { value: '365', label: 'Daily' }
     ]},
   ],
+  formula: '<p><code>FV = P(1 + r/n)^(n·t)</code> with r the annual rate, n compounding periods per year, t the term in years; <code>APY = (1 + r/n)ⁿ − 1</code>.</p>',
+  background: '<p>A certificate of deposit pays a fixed rate for a fixed term and compounds at a stated frequency. Because interest is reinvested, the annual percentage yield exceeds the nominal rate whenever compounding happens more than once a year. Early withdrawal typically forfeits some interest, and the result ignores tax on the interest.</p>',
   calculate: function(v) {
     const r = (v.rate || 0) / 100 / v.compound, n = v.compound * v.term / 12;
     const fv = v.deposit * Math.pow(1 + r, n);
@@ -496,6 +519,7 @@ R('currency-appreciation', {
     { id: 'newRate', label: 'New Exchange Rate', type: 'number', step: 0.0001, min: 0.0001, placeholder: 'e.g. 1.20' },
   ],
   formula: '<p><code>Change% = (New − Old) / Old × 100</code></p>',
+  background: '<p>The percentage change in an exchange rate between two dates, which tells you how one currency moved against another. Direction depends on the quoting convention: if the rate is units of foreign currency per dollar, a rising number means the dollar appreciated. A currency that appreciates makes imports cheaper and exports dearer.</p>',
   calculate: function(v) {
     const change = ((v.newRate - v.oldRate) / v.oldRate) * 100;
     const type = change >= 0 ? 'Appreciation' : 'Depreciation';
@@ -519,6 +543,8 @@ R('apr', {
     { id: 'fee', label: 'Finance Charges / Fees', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 500', half: true },
     { id: 'term', label: 'Term (months)', type: 'number', step: 1, min: 1, max: 600, placeholder: 'e.g. 36', half: true },
   ],
+  formula: '<p>Solves the monthly rate i where <code>P × i(1+i)ⁿ / ((1+i)ⁿ − 1) = (P + Fees) / n</code>, then <code>APR = i × 12</code>.</p>',
+  background: '<p>The annualized cost of borrowing that includes upfront fees as well as interest. It is found by solving for the rate at which the loan amount equals the present value of the payments actually made, then multiplying the monthly rate by twelve, so it is a nominal APR rather than an effective one. US Truth in Lending disclosures use this convention; some charges, such as late fees, are excluded.</p>',
   calculate: function(v) {
     const monthlyPayment = (v.amount + v.fee) / v.term;
     // Approximate APR using iteration
@@ -549,6 +575,8 @@ R('debt-ratios', {
     { id: 'housing', label: 'Monthly Housing Payment', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 1200', half: true },
     { id: 'otherDebt', label: 'Other Monthly Debt Payments', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 400', half: true },
   ],
+  formula: '<p><code>Front-End = Housing / Income × 100%</code>; <code>Back-End = (Housing + Other Debt) / Income × 100%</code></p>',
+  background: '<p>Lenders compare housing costs and total debt service with gross monthly income. The front-end ratio covers housing alone, while the back-end ratio adds car loans, student debt and credit cards; a back-end ratio near 36% is traditionally comfortable and 43% is the usual qualified-mortgage ceiling. These thresholds are rules of thumb and vary by lender and loan program.</p>',
   calculate: function(v) {
     const frontEnd = (v.housing / v.income) * 100;
     const backEnd = ((v.housing + v.otherDebt) / v.income) * 100;
@@ -571,6 +599,8 @@ R('checkbook', {
     { id: 'deposits', label: 'Deposits (comma-separated)', type: 'textarea', placeholder: 'e.g. 2000, 500, 1500', hint: 'Enter all deposits separated by commas' },
     { id: 'withdrawals', label: 'Withdrawals (comma-separated)', type: 'textarea', placeholder: 'e.g. 800, 300, 150, 200', hint: 'Enter all withdrawals separated by commas' },
   ],
+  formula: '<p><code>Balance = Σ Deposits − Σ Withdrawals</code> (only positive amounts are counted).</p>',
+  background: '<p>A running total of deposits minus withdrawals, the arithmetic behind reconciling a bank account. Only positive amounts are read, so withdrawals are entered as positive numbers and subtracted rather than signed. Outstanding cheques, pending card transactions and bank interest are not captured until they clear.</p>',
   calculate: function(v) {
     const dep = v.deposits.split(/[\s,;]+/).map(Number).filter(n => !isNaN(n) && n > 0);
     const wth = v.withdrawals.split(/[\s,;]+/).map(Number).filter(n => !isNaN(n) && n > 0);
@@ -596,6 +626,8 @@ R('bid-ask', {
     { id: 'bid', label: 'Bid Price', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 99.50', half: true },
     { id: 'ask', label: 'Ask Price', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 100.50', half: true },
   ],
+  formula: '<p><code>Spread = Ask − Bid</code>; <code>Midpoint = (Bid + Ask) / 2</code>; <code>Spread % = Spread / Midpoint × 100</code></p>',
+  background: '<p>The gap between the highest price a buyer will pay and the lowest a seller will accept in a market. That spread is a real transaction cost, and quoting it as a percentage of the midpoint makes it comparable across assets of different prices; liquid markets have very tight spreads. Midpoint is the conventional mark for valuing a position between trades.</p>',
   calculate: function(v) {
     const spread = v.ask - v.bid;
     const mid = (v.bid + v.ask) / 2;
@@ -617,6 +649,8 @@ R('adding-machine', {
   fields: [
     { id: 'values', label: 'Values (comma-separated)', type: 'textarea', placeholder: 'e.g. 100, -20, 50, 30, -10', hint: 'Use negative numbers for subtractions' },
   ],
+  formula: '<p><code>Total = Σ values</code> (negative values are subtracted).</p>',
+  background: '<p>A running tape of signed amounts, the way a physical adding machine totals a column of figures. Positive entries add and negative entries subtract, so the total is a net sum rather than a count of items. It is a convenience tool, not a ledger, and it does not reconcile against any account.</p>',
   calculate: function(v) {
     const vals = v.values.split(/[\s,;]+/).map(Number).filter(n => !isNaN(n));
     const positives = vals.filter(n => n > 0);
@@ -642,6 +676,8 @@ R('annuity-table', {
     { id: 'startPeriod', label: 'Starting Periods', type: 'number', step: 1, min: 1, max: 360, placeholder: 'e.g. 12', half: true },
     { id: 'endPeriod', label: 'Ending Periods', type: 'number', step: 1, min: 1, max: 360, placeholder: 'e.g. 60', half: true },
   ],
+  formula: '<p><code>Factor = i / (1 − (1 + i)⁻ᵖ)</code> where i is the monthly rate (annual rate / 12) and p the number of periods.</p>',
+  background: '<p>A reference grid of the payment factor that repays one unit of principal over a given number of periods at a given rate. It is the reciprocal of the present value annuity factor, which is why the factor rises with the rate and falls with a longer term. Rates are monthly, so the annual rate is divided by twelve before use.</p>',
   calculate: function(v) {
     let html = '<table><tr><th>Periods \\ Rate</th>';
     const rates = [];
@@ -675,6 +711,8 @@ R('deferred-annuity', {
     { id: 'payoutRate', label: 'Payout Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 4', half: true },
     { id: 'payoutYears', label: 'Payout Years', type: 'number', step: 1, min: 1, max: 40, placeholder: 'e.g. 15', half: true },
   ],
+  formula: '<p><code>Accumulated = P(1 + rₐ)ᵗ</code>; <code>Monthly Payout = A × i / (1 − (1 + i)⁻ⁿ)</code> with i = payout rate / 12 and n = payout years × 12.</p>',
+  background: '<p>A contract with two phases: money accumulates at a fixed rate, then is paid out as level income for a chosen number of years. The payout is just an amortizing withdrawal of the accumulated balance, so a longer payout period lowers each payment but raises the total received. Insurer fees, surrender charges and mortality pooling are not modelled.</p>',
   calculate: function(v) {
     const accumFV = v.initial * Math.pow(1 + v.accumRate / 100, v.accumYears);
     const r = v.payoutRate / 100 / 12, n = v.payoutYears * 12;
@@ -772,6 +810,7 @@ R('loan-calculator-simple', {
     { id: 'n', label: 'Number of Payments (months)', type: 'number', step: 1, min: 1, max: 600, placeholder: 'e.g. 360', half: true },
   ],
   formula: '<p><code>M = P × r × (1+r)ⁿ / ((1+r)ⁿ − 1)</code></p>',
+  background: '<p>The ordinary fixed-rate amortizing loan payment, labelled simple because it takes only three inputs. Each payment covers the interest due on the remaining balance and reduces principal by the rest. Fees, insurance and variable rates are outside the calculation.</p>',
   calculate: function(v) {
     const P = v.P, r = (v.r || 0) / 100 / 12, n = v.n;
     if (!P || !n) return { error: 'Enter valid amounts' };
@@ -795,6 +834,8 @@ R('how-much-car-can-i-afford', {
     { id: 'termMonths', label: 'Term (months)', type: 'number', step: 1, min: 1, max: 120, placeholder: 'e.g. 60', half: true },
     { id: 'salesTax', label: 'Sales Tax Rate (%)', type: 'number', step: 0.1, min: 0, max: 50, placeholder: 'e.g. 7', half: true },
   ],
+  formula: '<p><code>Max Price = (M / factor + Down) / (1 + tax)</code> where <code>factor = r(1+r)ⁿ / ((1+r)ⁿ − 1)</code>.</p>',
+  background: '<p>Works backwards from a monthly payment budget to the sticker price it can support. The budget first becomes a loan principal through the inverse of the amortization factor, then a down payment is added and sales tax removed. Insurance, fuel, maintenance and registration are ongoing costs that a lender affordability check would also consider.</p>',
   calculate: function(v) {
     const M = v.monthlyBudget, r = (v.interestRate || 0) / 100 / 12, n = v.termMonths;
     const taxRate = (v.salesTax || 0) / 100;
@@ -825,6 +866,8 @@ R('how-much-house-can-i-afford', {
     { id: 'maxDTI', label: 'Max Debt-to-Income Ratio (%)', type: 'number', step: 0.5, min: 1, max: 100, placeholder: 'e.g. 36', half: true },
     { id: 'otherDebt', label: 'Other Monthly Debt', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 300', half: true },
   ],
+  formula: '<p><code>Housing Budget = (Annual Income / 12) × DTI% − Other Debt</code>; <code>Max Loan = Budget / factor</code>; <code>Max Price = Loan + Down Payment</code>.</p>',
+  background: '<p>Estimates a price ceiling from income and existing debt using debt-to-income limits. The allowed monthly housing payment is the DTI share of gross income minus other debt, which is then converted into a loan and increased by the down payment. Property tax, insurance, HOA dues and mortgage insurance are not deducted, so the figure is optimistic.</p>',
   calculate: function(v) {
     const monthlyIncome = v.annualIncome / 12;
     const maxMonthly = monthlyIncome * (v.maxDTI || 36) / 100;
@@ -852,6 +895,8 @@ R('how-much-loan-can-i-afford', {
     { id: 'interestRate', label: 'Annual Interest Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 6', half: true },
     { id: 'termMonths', label: 'Term (months)', type: 'number', step: 1, min: 1, max: 600, placeholder: 'e.g. 360', half: true },
   ],
+  formula: '<p><code>P = M × ((1+r)ⁿ − 1) / (r(1+r)ⁿ)</code></p>',
+  background: '<p>The largest principal whose payments fit a given monthly budget. It is the present value of an annuity of that payment at the loan rate, so a longer term or lower rate supports a larger loan for the same budget. Total interest grows with the term even as the payment falls.</p>',
   calculate: function(v) {
     const M = v.monthlyPayment, r = (v.interestRate || 0) / 100 / 12, n = v.termMonths;
     if (!M || !n) return { error: 'Enter valid amounts' };
@@ -875,6 +920,8 @@ R('loan-payment-table', {
     { id: 'rate', label: 'Interest Rate (%)', type: 'number', step: 0.25, min: 0, max: 50, placeholder: 'e.g. 6', half: true },
     { id: 'term', label: 'Term (years)', type: 'number', step: 1, min: 1, max: 50, placeholder: 'e.g. 30', half: true },
   ],
+  formula: '<p><code>M = A × r × (1+r)ⁿ / ((1+r)ⁿ − 1)</code> for each loan amount A; r = annual rate / 12, n = term years × 12.</p>',
+  background: '<p>A grid of payments and total costs across a range of loan amounts at one rate and term. The payment is linear in the amount borrowed, so doubling the principal doubles the payment, while rate and term affect it nonlinearly. Useful for comparing scenarios at a glance before running a full amortization.</p>',
   calculate: function(v) {
     const r = (v.rate || 0) / 100 / 12, n = v.term * 12;
     let html = '<table><tr><th>Loan Amount</th><th>Monthly Payment</th><th>Total Paid</th><th>Total Interest</th></tr>';
@@ -896,6 +943,8 @@ R('amortization-equal-principal-payments-calculator', {
     { id: 'interestRate', label: 'Annual Interest Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 6', half: true },
     { id: 'termYears', label: 'Term (years)', type: 'number', step: 0.5, min: 0.5, max: 50, placeholder: 'e.g. 30', half: true },
   ],
+  formula: '<p><code>Principal = P / n</code> each month; <code>Interest = Balance × r</code>; <code>Payment = Principal + Interest</code>.</p>',
+  background: '<p>A schedule where the same amount of principal is repaid every month, so total payments start high and decline. Because the balance falls faster than under a level-payment loan, total interest is lower, but the initial payment is higher. Common in some mortgage markets and in equipment finance.</p>',
   calculate: function(v) {
     const P = v.loanAmount, r = (v.interestRate || 0) / 100 / 12, n = Math.round(v.termYears * 12);
     if (!P || !n) return { error: 'Enter valid amounts' };
@@ -932,6 +981,8 @@ R('interest-only-mortgage-calculator', {
     { id: 'interestRate', label: 'Annual Interest Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 6', half: true },
     { id: 'termYears', label: 'Interest-Only Period (years)', type: 'number', step: 1, min: 1, max: 30, placeholder: 'e.g. 5', half: true },
   ],
+  formula: '<p><code>Monthly Interest = P × r</code>; <code>Total Interest = P × r × n</code>; balloon payment = P.</p>',
+  background: '<p>During the interest-only period the payment covers only the interest due, leaving the principal untouched. The payment is therefore lower than an amortizing loan, but no equity is built and the full balance becomes due as a balloon at the end, which creates refinancing risk. Total interest over the term is higher than with amortization.</p>',
   calculate: function(v) {
     const P = v.loanAmount, r = (v.interestRate || 0) / 100 / 12, n = v.termYears * 12;
     const monthlyInterest = P * r;
@@ -957,6 +1008,7 @@ R('depreciation-declining-balance', {
     { id: 'rate', label: 'Declining Rate Multiplier', type: 'number', step: 0.1, min: 0.1, max: 5, placeholder: 'e.g. 1.5', half: true },
   ],
   formula: '<p><code>Rate = Multiplier / Life. Each year: Depreciation = Book Value × Rate (not below salvage).</code></p>',
+  background: '<p>A declining-balance method with a rate set as a multiple of the straight-line rate. Because the rate is applied to the shrinking book value, the annual charge falls over time, which suits assets that lose value fastest when new. A salvage floor prevents the book value from dropping below the estimated residual.</p>',
   calculate: function(v) {
     const rate = (v.rate || 2) / v.life;
     let bv = v.cost, total = 0;
@@ -986,6 +1038,7 @@ R('depreciation-activity', {
     { id: 'unitsUsed', label: 'Units Used This Period', type: 'number', step: 1, min: 0, placeholder: 'e.g. 12000', half: true },
   ],
   formula: '<p><code>Rate per Unit = (Cost − Salvage) / Total Units. Depreciation = Rate × Units Used.</code></p>',
+  background: '<p>Depreciation driven by how much an asset is used rather than how old it is. The depreciable base is spread over total expected units, and each period is charged for the units actually consumed, which matches cost to output. It is common for machinery, vehicles and aircraft.</p>',
   calculate: function(v) {
     const ratePerUnit = (v.cost - v.salvage) / v.totalUnits;
     const dep = ratePerUnit * v.unitsUsed;
@@ -1009,6 +1062,8 @@ R('depreciation-units-production', {
     { id: 'totalUnits', label: 'Total Estimated Production', type: 'number', step: 1, min: 1, placeholder: 'e.g. 100000', half: true },
     { id: 'unitsProduced', label: 'Units Produced This Period', type: 'number', step: 1, min: 0, placeholder: 'e.g. 12000', half: true },
   ],
+  formula: '<p><code>Rate per Unit = (Cost − Salvage) / Total Units</code>; <code>Depreciation = Rate × Units Produced</code>.</p>',
+  background: '<p>The same usage-based method under its production name: cost minus salvage is divided by expected lifetime output, then multiplied by output in the period. It produces variable depreciation that tracks wear rather than the calendar. If actual lifetime output differs from the estimate, the rate must be revised.</p>',
   calculate: function(v) {
     const ratePerUnit = (v.cost - v.salvage) / v.totalUnits;
     const dep = ratePerUnit * v.unitsProduced;
@@ -1030,6 +1085,7 @@ R('depreciation-sum-of-years', {
     { id: 'life', label: 'Useful Life (years)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>SYD = n(n+1)/2. Year k depreciation = (n−k+1)/SYD × (Cost − Salvage).</code></p>',
+  background: '<p>An accelerated method that allocates cost using a descending fraction of the digits 1 through n. More is written off in the early years and less later, on the theory that an asset loses value faster when new. Total depreciation over the life still equals the depreciable base.</p>',
   calculate: function(v) {
     const syd = v.life * (v.life + 1) / 2;
     const depreciable = v.cost - v.salvage;
@@ -1060,6 +1116,8 @@ R('depreciation-property-realestate', {
       { value: '39', label: 'Commercial (39 years)' }
     ]},
   ],
+  formula: '<p><code>Annual = Cost / Useful Life</code> (27.5 years residential, 39 years commercial); monthly = annual / 12.</p>',
+  background: '<p>US tax rules depreciate the building, not the land, straight line over 27.5 years for residential rental property and 39 years for commercial property. Only the depreciable basis counts, so land value and certain closing costs are excluded. Actual tax depreciation starts in the placed-in-service month and may be recaptured on sale.</p>',
   calculate: function(v) {
     const life = parseFloat(v.propertyType || '27.5');
     const annual = v.cost / life;
@@ -1088,6 +1146,8 @@ R('depreciation-fixed-declining-balance', {
     { id: 'life', label: 'Useful Life (years)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10', half: true },
     { id: 'rate', label: 'Annual Depreciation Rate (%)', type: 'number', step: 0.1, min: 0.1, max: 100, placeholder: 'e.g. 20', half: true },
   ],
+  formula: '<p><code>Depreciation = min(Book Value × Rate, Book Value − Salvage)</code> each year, with Rate = entered rate / 100.</p>',
+  background: '<p>A declining-balance schedule using a rate you supply rather than one derived from the asset life. The rate is applied to book value, so the charge shrinks each year, and the schedule stops at salvage. With a low rate the asset may not fully depreciate within its stated life.</p>',
   calculate: function(v) {
     const rate = v.rate / 100;
     let bv = v.cost, total = 0;
@@ -1116,6 +1176,8 @@ R('depreciation-variable-declining-balance', {
     { id: 'life', label: 'Useful Life (years)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10', half: true },
     { id: 'rate', label: 'Declining Rate Multiplier', type: 'number', step: 0.1, min: 0.1, max: 5, placeholder: 'e.g. 1.5', half: true },
   ],
+  formula: '<p><code>Rate = Multiplier / Life</code>; each year <code>Depreciation = min(Book Value × Rate, Book Value − Salvage)</code>.</p>',
+  background: '<p>A declining-balance method where a multiplier sets the rate relative to the asset life, for example 1.5 for 150% declining balance. It is a middle ground between straight line and double declining, front-loading depreciation without doubling it. The salvage floor applies as in the other declining methods.</p>',
   calculate: function(v) {
     const rate = (v.rate || 1) / v.life;
     let bv = v.cost, total = 0;
@@ -1146,6 +1208,8 @@ R('compound-interest-calculator-periodic', {
     { id: 'rate', label: 'Annual Interest Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 7', half: true },
     { id: 'periods', label: 'Number of Periods', type: 'number', step: 1, min: 1, max: 1000, placeholder: 'e.g. 120', half: true },
   ],
+  formula: '<p><code>FV = P(1+r)ⁿ + PMT × ((1+r)ⁿ − 1) / r</code> where r is the rate per period and n the number of periods.</p>',
+  background: '<p>Compounding over discrete periods with a rate that already applies to that period. Contributions are added at the end of each period, so a deposit earns nothing until the next one begins. This form is useful when the statement period does not match a year, and it does not annualize the result.</p>',
   calculate: function(v) {
     const r = (v.rate || 0) / 100, n = v.periods;
     let bal = v.principal;
@@ -1171,6 +1235,7 @@ R('simple-interest-plus-principal-calculator', {
     { id: 'time', label: 'Time (years)', type: 'number', step: 0.1, min: 0, max: 100, placeholder: 'e.g. 3', half: true },
   ],
   formula: '<p><code>A = P(1 + rt)</code></p>',
+  background: '<p>The total repayment under simple interest, combining principal and the interest accrued on it. Because interest is never added to the principal for further calculation, growth is linear in time and rate. This is the classic textbook and short-term note convention; most consumer credit compounds instead.</p>',
   calculate: function(v) {
     const A = v.principal * (1 + (v.rate || 0) / 100 * v.time);
     return {
@@ -1190,6 +1255,8 @@ R('future-value-calculator-basic', {
     { id: 'rate', label: 'Annual Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 7', half: true },
     { id: 'periods', label: 'Number of Periods (years)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10', half: true },
   ],
+  formula: '<p><code>FV = PV(1 + r)ⁿ</code></p>',
+  background: '<p>The future value of a single sum compounded at a constant rate for a number of periods. Compounding is exponential, so the value roughly doubles every 72 divided by the percentage rate. The result assumes the rate is achievable and reinvested without tax or fees.</p>',
   calculate: function(v) {
     const r = (v.rate || 0) / 100, n = v.periods;
     const fv = v.pv * Math.pow(1 + r, n);
@@ -1209,6 +1276,8 @@ R('future-value-investment-calculator', {
     { id: 'rate', label: 'Annual Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 7', half: true },
     { id: 'periods', label: 'Number of Periods (years)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10', half: true },
   ],
+  formula: '<p><code>FV = PV(1 + r)ⁿ</code></p>',
+  background: '<p>The amount a one-off investment grows to at a constant rate of return. It is the same compounding arithmetic as any future value calculation, applied to an initial portfolio value. Real returns vary year to year, so a single average rate is a simplification.</p>',
   calculate: function(v) {
     const r = (v.rate || 0) / 100, n = v.periods;
     const fv = v.pv * Math.pow(1 + r, n);
@@ -1229,6 +1298,8 @@ R('future-value-investment-account-calculator', {
     { id: 'rate', label: 'Annual Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 7', half: true },
     { id: 'periods', label: 'Number of Periods (years)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10', half: true },
   ],
+  formula: '<p><code>FV = PV(1+r)ⁿ + PMT × ((1+r)ⁿ − 1) / r</code></p>',
+  background: '<p>Growth of an initial balance plus regular contributions, all compounded at one rate. Contributions made late in the horizon have little time to compound, so the split between the starting balance and the deposits matters as much as the rate. The model ignores fees, taxes and volatility.</p>',
   calculate: function(v) {
     const r = (v.rate || 0) / 100, n = v.periods;
     const fvPV = v.pv * Math.pow(1 + r, n);
@@ -1251,6 +1322,7 @@ R('future-value-annuity-calculator', {
     { id: 'periods', label: 'Number of Periods', type: 'number', step: 1, min: 1, max: 500, placeholder: 'e.g. 120', half: true },
   ],
   formula: '<p><code>FV = PMT × ((1+r)ⁿ − 1) / r</code></p>',
+  background: '<p>The value accumulated by a series of equal payments made at the end of each period. Each payment compounds for the periods remaining, which is why the total exceeds the sum of the payments. An annuity due, paid at the start of each period, would be worth one extra period of interest.</p>',
   calculate: function(v) {
     const r = (v.rate || 0) / 100, n = v.periods;
     const fv = r === 0 ? v.pmt * n : v.pmt * (Math.pow(1 + r, n) - 1) / r;
@@ -1270,6 +1342,8 @@ R('future-value-cash-flows-calculator', {
     { id: 'cashFlows', label: 'Cash Flows (comma-separated)', type: 'textarea', placeholder: 'e.g. 1000, 1500, 2000, 1200', hint: 'Enter each cash flow separated by commas' },
     { id: 'rate', label: 'Annual Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 7', half: true },
   ],
+  formula: '<p><code>FV = Σ CFᵢ(1 + r)^(m − 1 − i)</code> where the last cash flow is compounded for zero periods.</p>',
+  background: '<p>The value at the end of the series of uneven cash flows, each compounded forward to that date. The last flow is not compounded at all, the second-last for one period, and so on, so the order of the flows changes the answer. Flows are assumed to arrive at period ends.</p>',
   calculate: function(v) {
     const flows = v.cashFlows.split(/[\s,;]+/).map(Number).filter(n => !isNaN(n));
     const r = (v.rate || 0) / 100;
@@ -1294,6 +1368,8 @@ R('present-value-calculator-basic', {
     { id: 'rate', label: 'Annual Discount Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 5', half: true },
     { id: 'periods', label: 'Number of Periods (years)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10', half: true },
   ],
+  formula: '<p><code>PV = FV / (1 + r)ⁿ</code></p>',
+  background: '<p>The discounted value today of a single future amount. Higher rates and longer waits both shrink the present value, because money available sooner could be invested. This is the core of valuation and the inverse of compounding.</p>',
   calculate: function(v) {
     const r = (v.rate || 0) / 100, n = v.periods;
     const pv = v.fv / Math.pow(1 + r, n);
@@ -1314,6 +1390,8 @@ R('present-value-investment-calculator', {
     { id: 'rate', label: 'Annual Discount Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 5', half: true },
     { id: 'periods', label: 'Number of Periods (years)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 10', half: true },
   ],
+  formula: '<p><code>PV = FV / (1 + r)ⁿ</code></p>',
+  background: '<p>What a future sum is worth today when discounted at a required return. The gap between the future and present figures is the compensation for waiting, and it widens with the rate and the horizon. Use it to compare a future payout against cash in hand now.</p>',
   calculate: function(v) {
     const r = (v.rate || 0) / 100, n = v.periods;
     const pv = v.fv / Math.pow(1 + r, n);
@@ -1335,6 +1413,7 @@ R('present-value-annuity-calculator', {
     { id: 'periods', label: 'Number of Periods', type: 'number', step: 1, min: 1, max: 500, placeholder: 'e.g. 120', half: true },
   ],
   formula: '<p><code>PV = PMT × (1 − (1+r)⁻ⁿ) / r</code></p>',
+  background: '<p>The lump sum equivalent today of a series of equal future payments. It is how loan balances, lease obligations and pensions are valued, and it is the inverse of the loan payment calculation. Payments are assumed at period end; an annuity due is worth one extra period of interest.</p>',
   calculate: function(v) {
     const r = (v.rate || 0) / 100, n = v.periods;
     const pv = r === 0 ? v.pmt * n : v.pmt * (1 - Math.pow(1 + r, -n)) / r;
@@ -1354,6 +1433,8 @@ R('present-value-cash-flows-calculator', {
     { id: 'cashFlows', label: 'Cash Flows (comma-separated)', type: 'textarea', placeholder: 'e.g. 1000, 1500, 2000, 1200', hint: 'Enter each future cash flow separated by commas' },
     { id: 'rate', label: 'Annual Discount Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 5', half: true },
   ],
+  formula: '<p><code>PV = Σ CFᵢ / (1 + r)^(i+1)</code> (the first cash flow is discounted one period).</p>',
+  background: '<p>Discounts a series of uneven cash flows to today, with the first flow one period away. The exponents reflect timing, so moving a cash flow later reduces its present value. Order of the flows therefore matters, unlike a simple sum.</p>',
   calculate: function(v) {
     const flows = v.cashFlows.split(/[\s,;]+/).map(Number).filter(n => !isNaN(n));
     const r = (v.rate || 0) / 100;
@@ -1379,6 +1460,7 @@ R('net-present-value-calculator', {
     { id: 'rate', label: 'Discount Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 10', half: true },
   ],
   formula: '<p><code>NPV = −Initial + Σ CFₜ / (1+r)ᵗ</code></p>',
+  background: '<p>The value created by a project after discounting all its future cash flows at the required return. A positive NPV means the project earns more than the cost of capital and should add value; a negative one destroys it. Comparing NPV across projects is more reliable than comparing IRR, especially when sizes or timings differ.</p>',
   calculate: function(v) {
     const flows = v.cashFlows.split(/[\s,;]+/).map(Number).filter(n => !isNaN(n));
     const r = (v.rate || 0) / 100;
@@ -1404,6 +1486,7 @@ R('effective-annual-rate-calculator', {
     { id: 'compoundFreq', label: 'Compounding Frequency per Year', type: 'number', step: 1, min: 1, max: 365, placeholder: 'e.g. 12', half: true },
   ],
   formula: '<p><code>EAR = (1 + r/n)ⁿ − 1</code></p>',
+  background: '<p>The yearly rate actually earned or paid once compounding is taken into account. It rises with the compounding frequency and converges to e^r − 1 under continuous compounding, so it is the correct rate for comparing products with different compounding. It is the same concept as APY.</p>',
   calculate: function(v) {
     const r = v.nominalRate / 100, n = v.compoundFreq;
     const ear = (Math.pow(1 + r / n, n) - 1) * 100;
@@ -1423,6 +1506,8 @@ R('effective-interest-rate-calculator', {
     { id: 'nominalRate', label: 'Nominal Annual Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 12' },
     { id: 'compoundFreq', label: 'Compounding Frequency per Year', type: 'number', step: 1, min: 1, max: 365, placeholder: 'e.g. 12', half: true },
   ],
+  formula: '<p><code>EIR = (1 + r/n)ⁿ − 1</code></p>',
+  background: '<p>The true annual cost of a loan once intra-year compounding is included, expressed on an annual basis. Lenders often quote a nominal rate, which understates the cost whenever interest compounds more than once a year. This is the rate to use when comparing facilities with different compounding.</p>',
   calculate: function(v) {
     const r = v.nominalRate / 100, n = v.compoundFreq;
     const eir = (Math.pow(1 + r / n, n) - 1) * 100;
@@ -1442,6 +1527,8 @@ R('equivalent-interest-rate-calculator', {
     { id: 'fromFreq', label: 'From Compounding Frequency', type: 'number', step: 1, min: 1, max: 365, placeholder: 'e.g. 12', half: true },
     { id: 'toFreq', label: 'To Compounding Frequency', type: 'number', step: 1, min: 1, max: 365, placeholder: 'e.g. 4', half: true },
   ],
+  formula: '<p><code>EAR = (1 + r/n₁)^n₁ − 1</code>; <code>r₂ = ((1 + EAR)^(1/n₂) − 1) × n₂</code></p>',
+  background: '<p>Converts a nominal rate at one compounding frequency into the nominal rate that gives the same effective annual return at another frequency. Both rates share the same effective yield, so the comparison is fair despite different quoted numbers. More frequent compounding means a lower nominal rate for the same annual result.</p>',
   calculate: function(v) {
     const r = v.rate / 100;
     const ear = Math.pow(1 + r / v.fromFreq, v.fromFreq) - 1;
@@ -1463,6 +1550,8 @@ R('nominal-interest-rate-calculator', {
     { id: 'effectiveRate', label: 'Effective Annual Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 12.68' },
     { id: 'compoundFreq', label: 'Compounding Frequency per Year', type: 'number', step: 1, min: 1, max: 365, placeholder: 'e.g. 12', half: true },
   ],
+  formula: '<p><code>Nominal = ((1 + EAR)^(1/n) − 1) × n</code></p>',
+  background: '<p>The quoted annual rate that, when compounded n times a year, produces a given effective rate. It is always below the effective rate when compounding occurs more than once a year, and the gap widens with frequency. Regulators require nominal rates to be disclosed alongside the effective rate for this reason.</p>',
   calculate: function(v) {
     const ear = v.effectiveRate / 100, n = v.compoundFreq;
     const nominal = (Math.pow(1 + ear, 1 / n) - 1) * n * 100;
@@ -1482,6 +1571,8 @@ R('periodic-interest-rate-calculator', {
     { id: 'annualRate', label: 'Annual Interest Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 12' },
     { id: 'periodsPerYear', label: 'Periods per Year', type: 'number', step: 1, min: 1, max: 365, placeholder: 'e.g. 12', half: true },
   ],
+  formula: '<p><code>Periodic Rate = Annual Rate / Periods per Year</code></p>',
+  background: '<p>The rate charged or earned in a single compounding period, obtained by dividing the nominal annual rate by the number of periods. Credit cards, for example, quote a monthly rate this way. This simple division is a convention; converting between frequencies properly requires the effective rate.</p>',
   calculate: function(v) {
     const periodic = v.annualRate / v.periodsPerYear;
     return {
@@ -1502,6 +1593,8 @@ R('interest-rate-table', {
     { id: 'startPeriod', label: 'Starting Periods', type: 'number', step: 1, min: 1, max: 360, placeholder: 'e.g. 12', half: true },
     { id: 'endPeriod', label: 'Ending Periods', type: 'number', step: 1, min: 1, max: 360, placeholder: 'e.g. 60', half: true },
   ],
+  formula: '<p><code>Factor = (1 + i)ᵖ</code> where i is the rate per period and p the number of periods.</p>',
+  background: '<p>A reference table of compound factors showing what one unit grows to at each rate and horizon. It is the future value of a single sum, so multiplying a present amount by the factor gives its future value. Tables like this predate calculators and remain a quick way to scan a range of assumptions.</p>',
   calculate: function(v) {
     let html = '<table><tr><th>Periods \\ Rate</th>';
     const rates = [];
@@ -1534,6 +1627,8 @@ R('savings-goal-calculator', {
     { id: 'rate', label: 'Annual Interest Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 5', half: true },
     { id: 'years', label: 'Years to Save', type: 'number', step: 0.5, min: 0.5, max: 50, placeholder: 'e.g. 10', half: true },
   ],
+  formula: '<p><code>PMT = (Goal − P(1+r)ⁿ) × r / ((1+r)ⁿ − 1)</code> with r = annual rate / 12 and n = years × 12.</p>',
+  background: '<p>The monthly deposit needed to reach a target balance, after allowing existing savings to grow. It is the annuity payment solved backwards from a future value, so a higher assumed return or a longer horizon sharply reduces the required deposit. Investment risk means the assumed return may not be delivered.</p>',
   calculate: function(v) {
     const r = (v.rate || 0) / 100 / 12, n = v.years * 12;
     const fvInitial = v.initial * Math.pow(1 + r, n);
@@ -1558,6 +1653,8 @@ R('investment-calculator', {
     { id: 'rate', label: 'Annual Return (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 8', half: true },
     { id: 'years', label: 'Years', type: 'number', step: 0.5, min: 0.5, max: 50, placeholder: 'e.g. 20', half: true },
   ],
+  formula: '<p><code>FV = P(1 + r)ⁿ + PMT × ((1 + r)ⁿ − 1) / r</code> with r = annual return / 12 and n = years × 12.</p>',
+  background: '<p>Projects a portfolio balance from monthly contributions and a constant annual return. Returns are compounded monthly and deposits are made at month end, so the sequence and timing of contributions matter. Actual returns vary, and fees and taxes would reduce the result.</p>',
   calculate: function(v) {
     const r = (v.rate || 0) / 100 / 12, n = v.years * 12;
     let bal = v.initial;
@@ -1581,6 +1678,8 @@ R('investment-inflation-calculator', {
     { id: 'inflation', label: 'Annual Inflation Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 3', half: true },
     { id: 'years', label: 'Years', type: 'number', step: 0.5, min: 0.5, max: 50, placeholder: 'e.g. 20', half: true },
   ],
+  formula: '<p><code>Nominal = P(1 + r)ᵗ</code>; <code>Real = Nominal / (1 + i)ᵗ</code>; <code>Real Rate = (1 + r)/(1 + i) − 1</code></p>',
+  background: '<p>Separates nominal growth from real purchasing power by deflating the future balance at the inflation rate. Dividing by the inflation factor, rather than subtracting rates, is the exact Fisher relationship; the familiar real rate is only an approximation of nominal minus inflation. The distinction matters most over long horizons and high inflation.</p>',
   calculate: function(v) {
     const nominalFV = v.initial * Math.pow(1 + v.rate / 100, v.years);
     const realFV = nominalFV / Math.pow(1 + v.inflation / 100, v.years);
@@ -1605,6 +1704,8 @@ R('retirement-savings-calculator', {
     { id: 'yearsToRetire', label: 'Years Until Retirement', type: 'number', step: 1, min: 1, max: 50, placeholder: 'e.g. 30', half: true },
     { id: 'retirementYears', label: 'Years in Retirement', type: 'number', step: 1, min: 1, max: 40, placeholder: 'e.g. 20', half: true },
   ],
+  formula: '<p><code>Nest Egg = P(1+r)ⁿ + PMT × ((1+r)ⁿ − 1)/r</code>; <code>Monthly Income = Nest Egg × r / (1 − (1+r)⁻ᵐ)</code> with monthly r and m payout months.</p>',
+  background: '<p>Projects a nest egg from current savings and monthly contributions, then converts it into a level retirement income. The accumulation phase compounds monthly, and the payout phase is an amortizing withdrawal that assumes the balance continues to earn the same rate. Social Security, taxes, healthcare and the risk of a bad market early in retirement are not included.</p>',
   calculate: function(v) {
     const r = (v.rate || 0) / 100 / 12;
     let bal = v.currentSavings;
@@ -1631,6 +1732,8 @@ R('inflation-calculator', {
     { id: 'inflation', label: 'Annual Inflation Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 3', half: true },
     { id: 'years', label: 'Years', type: 'number', step: 0.5, min: 0.5, max: 100, placeholder: 'e.g. 10', half: true },
   ],
+  formula: '<p><code>Future Cost = Amount × (1 + i)ᵗ</code>; <code>Purchasing Power = Amount / (1 + i)ᵗ</code></p>',
+  background: '<p>Shows how a price level or a sum of money changes if inflation runs at a constant rate. Compounding works against cash: the same amount buys less each year, while the cost of goods rises. Real inflation varies by category and by year, so a single rate is only a planning assumption.</p>',
   calculate: function(v) {
     const futureValue = v.amount * Math.pow(1 + v.inflation / 100, v.years);
     const purchasingPower = v.amount / Math.pow(1 + v.inflation / 100, v.years);
@@ -1650,6 +1753,7 @@ R('rule-of-72-calculator', {
     { id: 'rate', label: 'Annual Interest Rate (%)', type: 'number', step: 0.01, min: 0.1, max: 100, placeholder: 'e.g. 8' },
   ],
   formula: '<p><code>Years to Double = 72 / Rate</code></p>',
+  background: '<p>A mental shortcut for doubling time: divide 72 by the percentage growth rate. It comes from the fact that the natural log of 2 is about 0.693, and 72 is used because it divides neatly and stays accurate for rates around 6 to 10%. The exact logarithmic calculation is shown alongside for comparison.</p>',
   calculate: function(v) {
     const years = 72 / v.rate;
     const exactYears = Math.log(2) / Math.log(1 + v.rate / 100);
@@ -1670,6 +1774,8 @@ R('salary-inflation-calculator', {
     { id: 'inflation', label: 'Annual Inflation Rate (%)', type: 'number', step: 0.01, min: 0, max: 100, placeholder: 'e.g. 3', half: true },
     { id: 'years', label: 'Years', type: 'number', step: 1, min: 1, max: 50, placeholder: 'e.g. 10', half: true },
   ],
+  formula: '<p><code>Adjusted Salary = Salary × (1 + i)ᵗ</code></p>',
+  background: '<p>The raise needed for pay to keep pace with rising prices, expressed as an inflation-adjusted salary. It compounds the current salary by the assumed inflation rate over the period, which is why a modest annual rate produces a large cumulative adjustment. Taxes and promotions are not considered; this is purely a purchasing-power adjustment.</p>',
   calculate: function(v) {
     const adjusted = v.salary * Math.pow(1 + v.inflation / 100, v.years);
     return {
@@ -1691,6 +1797,8 @@ R('salary-to-hourly-calculator', {
     { id: 'hours', label: 'Hours per Week', type: 'number', step: 1, min: 1, max: 168, placeholder: 'e.g. 40', half: true },
     { id: 'weeks', label: 'Working Weeks per Year', type: 'number', step: 1, min: 1, max: 52, placeholder: 'e.g. 52', half: true },
   ],
+  formula: '<p><code>Hourly = Salary / (Hours per Week × Weeks per Year)</code>; weekly = salary / weeks, bi-weekly = salary / 26, monthly = salary / 12.</p>',
+  background: '<p>Converts an annual salary into an implied hourly rate and periodic pay. The hourly figure depends entirely on the assumed hours and weeks, and a salaried employee is usually paid for holidays and leave that a contractor is not. Dividing by 2,080 hours is the common full-time convention.</p>',
   calculate: function(v) {
     const hourly = v.salary / (v.hours * v.weeks);
     return {
@@ -1711,6 +1819,8 @@ R('tip-calculator', {
     { id: 'tipPercent', label: 'Tip Percentage (%)', type: 'number', step: 0.5, min: 0, max: 100, placeholder: 'e.g. 18', half: true },
     { id: 'split', label: 'Split Between (people)', type: 'number', step: 1, min: 1, max: 50, placeholder: 'e.g. 1', half: true },
   ],
+  formula: '<p><code>Tip = Bill × Tip%</code>; <code>Total = Bill + Tip</code>; <code>Per Person = Total / Split</code></p>',
+  background: '<p>The gratuity added to a restaurant or service bill. In the US, 15 to 20% is conventional and is normally calculated on the pre-tax subtotal, though many people round up for simplicity. Splitting the total evenly is the usual approach when the bill is shared.</p>',
   calculate: function(v) {
     const tip = v.bill * (v.tipPercent || 0) / 100;
     const total = v.bill + tip;
@@ -1731,6 +1841,8 @@ R('time-card-calculator', {
     { id: 'entries', label: 'Time Entries (start-end, one per line)', type: 'textarea', placeholder: 'e.g. 9:00-12:00\n1:00-5:30', hint: 'Enter each shift as start-end time, one per line' },
     { id: 'hourlyRate', label: 'Hourly Rate', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 25', half: true },
   ],
+  formula: '<p><code>Hours = Σ (End − Start)</code> per shift; earnings = total hours × hourly rate.</p>',
+  background: '<p>Totals hours worked from clock-in and clock-out times, the basic payroll calculation for hourly staff. Times are converted to decimal hours, so 8:30 becomes 8.5, and earnings are hours times the rate. Unpaid breaks, overtime premiums and rounding rules are not applied.</p>',
   calculate: function(v) {
     const lines = v.entries.split('\n').filter(l => l.trim());
     let totalHours = 0;
@@ -1767,6 +1879,8 @@ R('sales-tax-calculator', {
     { id: 'price', label: 'Purchase Price', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 100' },
     { id: 'taxRate', label: 'Tax Rate (%)', type: 'number', step: 0.1, min: 0, max: 100, placeholder: 'e.g. 8.5', half: true },
   ],
+  formula: '<p><code>Tax = Price × Rate</code>; <code>Total = Price + Tax</code></p>',
+  background: '<p>Tax added to a purchase at the point of sale, charged as a percentage of the price. In the US it is set by state and local governments and added at checkout rather than included in the displayed price, unlike VAT systems. Exemptions, shipping charges and reduced rates for some goods are not handled here.</p>',
   calculate: function(v) {
     const tax = v.price * (v.taxRate || 0) / 100;
     return {
@@ -1785,6 +1899,8 @@ R('sales-tax-calculator-reverse', {
     { id: 'total', label: 'Total Price (including tax)', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 108.50' },
     { id: 'taxRate', label: 'Tax Rate (%)', type: 'number', step: 0.1, min: 0, max: 100, placeholder: 'e.g. 8.5', half: true },
   ],
+  formula: '<p><code>Pre-tax = Total / (1 + Rate)</code>; <code>Tax = Total − Pre-tax</code></p>',
+  background: '<p>Extracts the tax already embedded in a tax-inclusive total. Dividing by one plus the rate is the correct inverse of adding tax; subtracting the rate from the total would overstate the tax. This is the calculation to use when a receipt shows only the final amount.</p>',
   calculate: function(v) {
     const preTax = v.total / (1 + (v.taxRate || 0) / 100);
     const tax = v.total - preTax;
@@ -1805,6 +1921,8 @@ R('sales-tax-calculator-state-local', {
     { id: 'stateTax', label: 'State Tax Rate (%)', type: 'number', step: 0.1, min: 0, max: 100, placeholder: 'e.g. 6', half: true },
     { id: 'localTax', label: 'Local Tax Rate (%)', type: 'number', step: 0.1, min: 0, max: 100, placeholder: 'e.g. 2.5', half: true },
   ],
+  formula: '<p><code>Tax = Price × (State% + Local%)</code>; <code>Total = Price + Tax</code></p>',
+  background: '<p>Combines state and local sales tax rates applied to the same purchase. Rates are additive on the price, but some states exempt local tax on certain goods or cap local rates, so the combined figure is an approximation. The total is the price plus both components.</p>',
   calculate: function(v) {
     const stateAmt = v.price * (v.stateTax || 0) / 100;
     const localAmt = v.price * (v.localTax || 0) / 100;
@@ -1827,6 +1945,8 @@ R('property-tax-calculator', {
     { id: 'assessedValue', label: 'Assessed Property Value', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 250000' },
     { id: 'taxRate', label: 'Tax Rate (per $1000)', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 15', half: true },
   ],
+  formula: '<p><code>Annual Tax = Assessed Value × Rate / 1000</code>; monthly = annual / 12.</p>',
+  background: '<p>Local property tax is usually levied as a mill rate per $1,000 of assessed value rather than as a percentage of market price. Assessed value can differ from market value because of assessment ratios, caps and appeals, so the effective rate is often lower than the headline mill rate suggests. Exemptions for owner-occupiers are not included.</p>',
   calculate: function(v) {
     const annual = v.assessedValue * (v.taxRate || 0) / 1000;
     return {
@@ -1845,6 +1965,8 @@ R('service-tax-calculator-india', {
     { id: 'amount', label: 'Service Amount', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 10000' },
     { id: 'taxRate', label: 'Tax Rate (%)', type: 'number', step: 0.1, min: 0, max: 100, placeholder: 'e.g. 18', half: true },
   ],
+  formula: '<p><code>Tax = Amount × Rate</code>; <code>Total = Amount + Tax</code></p>',
+  background: '<p>A tax on services billed by a provider, calculated on the amount charged. India replaced its service tax with GST in 2017, so current rates and rules differ from the older regime this models. The tax is shown separately from the base amount, as invoices normally require.</p>',
   calculate: function(v) {
     const tax = v.amount * (v.taxRate || 0) / 100;
     return {
@@ -1865,6 +1987,8 @@ R('profit-calculator', {
     { id: 'revenue', label: 'Revenue', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 1000' },
     { id: 'cost', label: 'Cost', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 700', half: true },
   ],
+  formula: '<p><code>Profit = Revenue − Cost</code>; <code>Margin = Profit / Revenue</code>; <code>Markup = Profit / Cost</code></p>',
+  background: '<p>Profit is what remains when costs are subtracted from revenue, the most basic measure of trading performance. The same profit can be expressed as a margin on revenue or a markup on cost, and confusing the two is a common pricing error. Fixed overheads are not deducted here, so this is a gross figure.</p>',
   calculate: function(v) {
     const profit = v.revenue - v.cost;
     return {
@@ -1885,6 +2009,8 @@ R('profit-goal-calculator', {
     { id: 'fixedCost', label: 'Fixed Costs', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 5000', half: true },
     { id: 'profitGoal', label: 'Profit Goal', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 10000', half: true },
   ],
+  formula: '<p><code>Units = ⌈(Fixed Costs + Profit Goal) / (Price − Cost)⌉</code></p>',
+  background: '<p>The number of units needed to cover fixed costs and still hit a target profit. Each sale contributes its price minus variable cost, and dividing the combined fixed and target amount by that contribution gives the unit count, rounded up because partial units cannot be sold. The model assumes constant costs and no volume discounts.</p>',
   calculate: function(v) {
     const contribution = v.price - v.cost;
     const units = contribution > 0 ? Math.ceil((v.fixedCost + v.profitGoal) / contribution) : Infinity;
@@ -1904,6 +2030,8 @@ R('margin-calculator', {
     { id: 'cost', label: 'Cost', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 70' },
     { id: 'price', label: 'Selling Price', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 100', half: true },
   ],
+  formula: '<p><code>Margin = (Price − Cost) / Price × 100%</code></p>',
+  background: '<p>Profit expressed as a percentage of the selling price, the figure used in retail and management accounts. Because the denominator is the price, margin is always lower than the equivalent markup on cost and cannot reach 100% unless cost is zero. It is a gross margin, before overheads.</p>',
   calculate: function(v) {
     const profit = v.price - v.cost;
     const margin = v.price ? (profit / v.price) * 100 : 0;
@@ -1922,6 +2050,8 @@ R('markup-calculator', {
     { id: 'cost', label: 'Cost', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 70' },
     { id: 'markup', label: 'Markup (%)', type: 'number', step: 0.1, min: 0, max: 1000, placeholder: 'e.g. 40', half: true },
   ],
+  formula: '<p><code>Price = Cost × (1 + Markup%)</code></p>',
+  background: '<p>The amount added to cost to set a selling price, expressed as a percentage of cost. Markup is the pricing view used by many wholesalers and contractors, while margin is the accounting view; a given profit is always a larger percentage when measured as markup. Rounding to a psychological price point will change the achieved margin slightly.</p>',
   calculate: function(v) {
     const sellingPrice = v.cost * (1 + (v.markup || 0) / 100);
     const profit = sellingPrice - v.cost;
@@ -1941,6 +2071,8 @@ R('price-calculator', {
     { id: 'cost', label: 'Cost', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 70' },
     { id: 'margin', label: 'Desired Margin (%)', type: 'number', step: 0.1, min: 0, max: 100, placeholder: 'e.g. 30', half: true },
   ],
+  formula: '<p><code>Price = Cost / (1 − Margin%)</code></p>',
+  background: '<p>Sets a selling price that will deliver a desired gross margin. Dividing cost by one minus the margin is not the same as adding the margin to cost, and using the wrong operation is a frequent cause of underpricing. The method breaks down as the target margin approaches 100%.</p>',
   calculate: function(v) {
     const price = v.cost / (1 - (v.margin || 0) / 100);
     return {
@@ -1964,6 +2096,8 @@ R('selling-price-calculator', {
     ]},
     { id: 'value', label: 'Value', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 30', half: true },
   ],
+  formula: '<p><code>Price = Cost / (1 − Margin%)</code>, <code>Cost × (1 + Markup%)</code>, or <code>Cost + Target Profit</code>, depending on the selected method.</p>',
+  background: '<p>Computes a selling price from cost using one of three common targets: a margin on price, a markup on cost, or a fixed profit per unit. The margin method divides by one minus the margin, the others multiply or add, which is why the same cost gives different prices. Choose the method that matches how your accounts report profit.</p>',
   calculate: function(v) {
     let price;
     if (v.method === 'margin') price = v.cost / (1 - v.value / 100);
@@ -1984,6 +2118,8 @@ R('sale-price-calculator', {
     { id: 'originalPrice', label: 'Original Price', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 100' },
     { id: 'discountPct', label: 'Discount (%)', type: 'number', step: 0.1, min: 0, max: 100, placeholder: 'e.g. 25', half: true },
   ],
+  formula: '<p><code>Sale Price = Original × (1 − Discount%)</code></p>',
+  background: '<p>The price after a percentage discount is taken from the original. Discounts are normally quoted against the list price, and two successive 20% discounts reduce the price by 36%, not 40%. The saving shown is the difference between list and sale price.</p>',
   calculate: function(v) {
     const saved = v.originalPrice * (v.discountPct || 0) / 100;
     return {
@@ -2002,6 +2138,8 @@ R('list-price-markdown-calculator', {
     { id: 'listPrice', label: 'List Price', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 100' },
     { id: 'salePrice', label: 'Sale Price', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 75', half: true },
   ],
+  formula: '<p><code>Markdown = List Price − Sale Price</code>; <code>Markdown % = Markdown / List Price × 100</code></p>',
+  background: '<p>The reduction from a list price to an actual selling price, expressed in money and as a percentage of list. Retailers use markdown percentages to plan promotions and to compare the depth of different sales. The percentage is always taken against the original list price, not the sale price.</p>',
   calculate: function(v) {
     const markdown = v.listPrice - v.salePrice;
     const markdownPct = v.listPrice ? (markdown / v.listPrice) * 100 : 0;
@@ -2021,6 +2159,8 @@ R('sales-calculator', {
     { id: 'price', label: 'Price per Unit', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 25', half: true },
     { id: 'cost', label: 'Cost per Unit', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 15', half: true },
   ],
+  formula: '<p><code>Revenue = Quantity × Price</code>; <code>Profit = Revenue − Quantity × Cost</code></p>',
+  background: '<p>Revenue from selling a quantity at a unit price, and the gross profit once unit cost is deducted. It is a single-product calculation, so it ignores fixed costs, returns and volume discounts. Margin and markup can be derived from the same three numbers.</p>',
   calculate: function(v) {
     const revenue = v.quantity * v.price;
     const totalCost = v.quantity * v.cost;
@@ -2043,6 +2183,8 @@ R('liquidity-ratios-calculator', {
     { id: 'currentLiabilities', label: 'Current Liabilities', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 250000', half: true },
     { id: 'inventory', label: 'Inventory', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 100000', half: true },
   ],
+  formula: '<p><code>Current Ratio = Current Assets / Current Liabilities</code>; <code>Quick Ratio = (Current Assets − Inventory) / Current Liabilities</code></p>',
+  background: '<p>Short-term solvency measures that compare assets easily turned into cash with obligations due within a year. The current ratio includes inventory, while the quick ratio strips it out because stock may be hard to sell quickly. A ratio above 1 means current assets cover current liabilities; comfortable levels vary by industry, and very high ratios can indicate idle cash.</p>',
   calculate: function(v) {
     const currentRatio = v.currentAssets / v.currentLiabilities;
     const quickRatio = (v.currentAssets - (v.inventory || 0)) / v.currentLiabilities;
@@ -2064,6 +2206,8 @@ R('operations-ratios-calculator', {
     { id: 'receivables', label: 'Average Receivables', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 80000', half: true },
     { id: 'revenue', label: 'Revenue', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 800000', half: true },
   ],
+  formula: '<p><code>Inventory Turnover = COGS / Inventory</code>; <code>Days Inventory = 365 / Turnover</code>; <code>Receivables Turnover = Revenue / Receivables</code>; <code>DSO = 365 / Receivables Turnover</code></p>',
+  background: '<p>Efficiency measures showing how quickly a business turns inventory and collects receivables. Turnover counts how many times a balance is replaced in a year, and dividing 365 by it expresses that as days. Using average rather than year-end balances gives a more representative result, especially for seasonal businesses.</p>',
   calculate: function(v) {
     const invTurnover = v.costOfGoods / v.inventory;
     const daysInv = 365 / invTurnover;
@@ -2088,6 +2232,8 @@ R('profitability-ratios-calculator', {
     { id: 'equity', label: 'Shareholders Equity', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 200000', half: true },
     { id: 'revenue', label: 'Revenue', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 300000', half: true },
   ],
+  formula: '<p><code>ROA = Net Income / Total Assets</code>; <code>ROE = Net Income / Equity</code>; <code>Profit Margin = Net Income / Revenue</code></p>',
+  background: '<p>How much profit a company generates from its assets, its equity and its sales. ROA shows how productively the asset base is used, while ROE is higher when the business carries more debt, so a high ROE is not automatically better. Comparing ratios within an industry is more meaningful than across industries.</p>',
   calculate: function(v) {
     const roa = (v.netIncome / v.totalAssets) * 100;
     const roe = (v.netIncome / v.equity) * 100;
@@ -2110,6 +2256,8 @@ R('stock-ratios-calculator', {
     { id: 'netIncome', label: 'Net Income', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 50000000', half: true },
     { id: 'dividends', label: 'Annual Dividends per Share', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 2', half: true },
   ],
+  formula: '<p><code>Price = Market Cap / Shares</code>; <code>EPS = Net Income / Shares</code>; <code>P/E = Price / EPS</code>; <code>Dividend Yield = Dividend / Price</code></p>',
+  background: '<p>Basic per-share valuation measures derived from market capitalization, earnings and dividends. The price-to-earnings ratio says how many dollars investors pay for each dollar of annual earnings, and the dividend yield what cash return the shares pay. Trailing figures, buybacks and debt levels all affect interpretation, and high-growth companies often carry high P/E ratios.</p>',
   calculate: function(v) {
     const price = v.marketCap / v.shares;
     const eps = v.netIncome / v.shares;
@@ -2142,6 +2290,8 @@ R('money-calculator', {
     { id: 'nickels', label: 'Nickels', type: 'number', step: 1, min: 0, placeholder: '0', half: true },
     { id: 'pennies', label: 'Pennies', type: 'number', step: 1, min: 0, placeholder: '0', half: true },
   ],
+  formula: '<p><code>Total = Σ (Count × Denomination)</code> across bills and coins.</p>',
+  background: '<p>Counts a drawer or wallet by multiplying the number of each US bill and coin by its face value. The denominations follow the standard US series from $100 notes down to pennies. It totals cash on hand only and does not include cheques or digital balances.</p>',
   calculate: function(v) {
     const total = (v.hundreds||0)*100 + (v.fifties||0)*50 + (v.twenties||0)*20 + (v.tens||0)*10 + (v.fives||0)*5 + (v.ones||0)*1 + (v.quarters||0)*0.25 + (v.dimes||0)*0.10 + (v.nickels||0)*0.05 + (v.pennies||0)*0.01;
     return {
@@ -2157,6 +2307,8 @@ R('money-change-calculator', {
   fields: [
     { id: 'amount', label: 'Change Amount', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 37.63' },
   ],
+  formula: '<p>Greedy change: for each denomination from $100 down to 1¢, <code>Count = ⌊Remaining / Denomination⌋</code>.</p>',
+  background: '<p>Works out the notes and coins to give as change, using the largest denomination that fits at each step. For US currency this greedy approach produces the fewest pieces, a property that does not hold for every coin system. Amounts are rounded to the nearest cent to avoid floating-point drift.</p>',
   calculate: function(v) {
     let cents = Math.round(v.amount * 100);
     const denom = [
@@ -2193,6 +2345,8 @@ R('layaway-plan-calculator', {
     { id: 'monthlyPayment', label: 'Monthly Payment', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 50', half: true },
     { id: 'fee', label: 'Layaway Fee', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 25', half: true },
   ],
+  formula: '<p><code>Months = ⌈(Price + Fee − Down Payment) / Monthly Payment⌉</code>; <code>Last Payment = Remaining − (Months − 1) × Monthly</code></p>',
+  background: '<p>A layaway plan holds goods while the buyer pays in instalments, usually with a service fee and no interest. The number of payments is rounded up, so the final instalment is smaller than the rest. It is not credit: ownership normally transfers only after the balance is paid.</p>',
   calculate: function(v) {
     const remaining = v.itemPrice + (v.fee || 0) - (v.downPayment || 0);
     const months = v.monthlyPayment > 0 ? Math.ceil(remaining / v.monthlyPayment) : 0;
@@ -2235,6 +2389,8 @@ R('currency-converter', {
       { value: 'CNY', label: 'CNY - Chinese Yuan' },
     ]},
   ],
+  formula: '<p><code>Converted = Amount × Rate(To) / Rate(From)</code> using approximate USD rates.</p>',
+  background: '<p>Converts an amount using fixed cross rates expressed against the US dollar. Every conversion passes through USD, so the effective rate is the ratio of the two dollar rates, and no spread or commission is applied. Real rates move continuously, so treat the output as indicative only.</p>',
   calculate: function(v) {
     // Approximate rates to USD
     const rates = { USD: 1, EUR: 1.08, GBP: 1.27, JPY: 0.0067, INR: 0.012, CAD: 0.74, AUD: 0.65, CHF: 1.13, CNY: 0.14 };
@@ -2258,6 +2414,8 @@ R('future-value-table-1', {
     { id: 'startPeriod', label: 'Starting Periods', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 1', half: true },
     { id: 'endPeriod', label: 'Ending Periods', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 20', half: true },
   ],
+  formula: '<p><code>Factor = (1 + i)ᵖ</code> for each rate i and period p.</p>',
+  background: '<p>A table of compound factors showing the future value of one dollar at each rate and horizon. Multiplying any present amount by the factor gives its future value, which is why these tables were standard before calculators. Factors assume annual compounding and reinvestment of all interest.</p>',
   calculate: function(v) {
     let html = '<table><tr><th>Periods \\ Rate</th>';
     const rates = [];
@@ -2287,6 +2445,8 @@ R('future-value-table-annuity', {
     { id: 'startPeriod', label: 'Starting Periods', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 1', half: true },
     { id: 'endPeriod', label: 'Ending Periods', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 20', half: true },
   ],
+  formula: '<p><code>Factor = ((1 + i)ᵖ − 1) / i</code> for each rate i and period p.</p>',
+  background: '<p>A table of annuity factors showing what a series of one-dollar end-of-period payments accumulates to. Each factor sums the compound growth of every payment, so it grows faster than the single-sum factor. Used for savings plans, sinking funds and lease deposits.</p>',
   calculate: function(v) {
     let html = '<table><tr><th>Periods \\ Rate</th>';
     const rates = [];
@@ -2317,6 +2477,8 @@ R('present-value-table-1', {
     { id: 'startPeriod', label: 'Starting Periods', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 1', half: true },
     { id: 'endPeriod', label: 'Ending Periods', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 20', half: true },
   ],
+  formula: '<p><code>Factor = 1 / (1 + i)ᵖ</code> for each rate i and period p.</p>',
+  background: '<p>A table of discount factors showing what one dollar received in the future is worth today. The factors fall as the rate or the horizon rises, which is the whole intuition behind discounting. Multiply any future amount by the factor to bring it to present value.</p>',
   calculate: function(v) {
     let html = '<table><tr><th>Periods \\ Rate</th>';
     const rates = [];
@@ -2346,6 +2508,8 @@ R('present-value-table-annuity', {
     { id: 'startPeriod', label: 'Starting Periods', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 1', half: true },
     { id: 'endPeriod', label: 'Ending Periods', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 20', half: true },
   ],
+  formula: '<p><code>Factor = (1 − (1 + i)⁻ᵖ) / i</code> for each rate i and period p.</p>',
+  background: '<p>A table of factors giving the present value of one dollar paid at the end of each period. It is the basis of loan and lease calculations: multiplying a payment by the factor gives the principal it can amortize. Factors rise with the term and fall with the rate.</p>',
   calculate: function(v) {
     let html = '<table><tr><th>Periods \\ Rate</th>';
     const rates = [];
@@ -2381,6 +2545,7 @@ R('tax-federal-est', {
     ]},
   ],
   formula: '<p>Uses simplified 2024 federal tax brackets. Does not account for deductions, credits, or other adjustments.</p>',
+  background: '<p>Applies the 2024 US federal brackets progressively, so each slice of income is taxed at its own rate. That is why the marginal rate is higher than the effective rate, and why a raise never reduces after-tax income. The estimate ignores the standard deduction, credits, pre-tax contributions and state tax, so it overstates tax for most filers.</p>',
   calculate: function(v) {
     const income = v.income;
     const status = v.filing || 'single';

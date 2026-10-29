@@ -13,6 +13,7 @@ R('aspect-ratio', {
     { id: 'height', label: 'Height (pixels)', type: 'number', step: 1, min: 1, placeholder: 'e.g. 1080', half: true },
   ],
   formula: '<p><code>Aspect Ratio = Width : Height</code> simplified by dividing by GCD.</p>',
+  background: '<p>Aspect ratio compares width to height and is normally reduced to the smallest whole numbers, so 1920 by 1080 becomes 16:9. Reducing by the greatest common divisor preserves the proportion while making ratios easy to compare across displays, cameras and video formats. Common standards such as 4:3, 16:9 and 21:9 exist because content, sensors and screens are manufactured to matching shapes.</p>',
   calculate: function(v) {
     const g = core.gcd(v.width, v.height);
     const rw = v.width / g, rh = v.height / g;
@@ -40,6 +41,7 @@ R('ppi', {
     { id: 'diagonal', label: 'Diagonal Size (inches)', type: 'number', step: 0.1, min: 0.1, placeholder: 'e.g. 24', half: true },
   ],
   formula: '<p><code>PPI = √(W² + H²) / Diagonal</code></p>',
+  background: '<p>Pixels per inch measures how densely a screen packs pixels, found by taking the pixel diagonal from the resolution and dividing by the physical diagonal. It differs from dots per inch, which describes printer output, although the two are often confused. Higher pixel density means individual pixels are harder to see at normal viewing distance, which is the idea behind high-density and retina displays.</p>',
   calculate: function(v) {
     const diagPx = Math.sqrt(v.width * v.width + v.height * v.height);
     const ppi = diagPx / v.diagonal;
@@ -66,6 +68,7 @@ R('image-resize', {
     { id: 'newH', label: 'New Height (px)', type: 'number', step: 1, min: 1, placeholder: 'e.g. 540', half: true },
   ],
   formula: '<p>Enter original dimensions and either the new width or new height. The other is calculated to maintain the aspect ratio.</p>',
+  background: '<p>Resizing an image while preserving its aspect ratio keeps the proportions intact so the picture is not stretched or squashed. Only one new dimension needs to be chosen, because the other follows from the original ratio. Area changes with the square of the linear scale factor, so halving both dimensions leaves a quarter of the original pixels, which is why downscaling saves file size so quickly.</p>',
   calculate: function(v) {
     const ratio = v.origW / v.origH;
     let newW, newH;
@@ -104,6 +107,7 @@ R('aspect-ratio-calculator', {
     { id: 'height', label: 'Height (pixels)', type: 'number', step: 1, min: 1, placeholder: 'e.g. 1080', half: true },
   ],
   formula: '<p><code>Aspect Ratio = Width : Height</code> simplified by dividing by GCD.</p>',
+  background: '<p>This is the same width-to-height comparison used for screens, prints and video, reduced to lowest terms. Knowing the ratio lets a designer pick a new size that fits a frame without distorting the content, which is why it is quoted on camera and monitor specifications. The decimal form is handy for quick comparisons, while the colon form matches how standards are named.</p>',
   calculate: function(v) {
     const g = core.gcd(v.width, v.height);
     const rw = v.width / g, rh = v.height / g;
@@ -131,6 +135,7 @@ R('ppi-calculator', {
     { id: 'diagonal', label: 'Diagonal Size (inches)', type: 'number', step: 0.1, min: 0.1, placeholder: 'e.g. 24', half: true },
   ],
   formula: '<p><code>PPI = √(W² + H²) / Diagonal</code></p>',
+  background: '<p>Pixel density is derived from the resolution and the advertised diagonal, the two numbers printed on nearly every monitor and phone specification sheet. Because the diagonal appears in pixels and in inches, the units cancel into pixels per inch. The figure is a useful sanity check when comparing displays of different sizes that carry the same resolution.</p>',
   calculate: function(v) {
     const diagPx = Math.sqrt(v.width * v.width + v.height * v.height);
     const ppi = diagPx / v.diagonal;
@@ -157,6 +162,7 @@ R('resize-calculator', {
     { id: 'newH', label: 'New Height (px)', type: 'number', step: 1, min: 1, placeholder: 'e.g. 540', half: true },
   ],
   formula: '<p>Enter original dimensions and either the new width or new height. The other is calculated to maintain the aspect ratio.</p>',
+  background: '<p>Proportional resizing is the default for photographs and video frames, because a non-proportional stretch is obvious to the eye. Supplying either the target width or height is enough, since the original ratio determines the other dimension. The area figures show how much pixel data is being kept, which matters for print quality and for how aggressively an image can be compressed.</p>',
   calculate: function(v) {
     const ratio = v.origW / v.origH;
     let newW, newH;

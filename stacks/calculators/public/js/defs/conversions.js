@@ -4,7 +4,7 @@ const R = reg.register.bind(reg, 'conversions');
 
 // === GENERIC CONVERSION HELPER ===
 // Returns a calculator definition object for a standard factor-based converter
-function C(units, title, desc, tags, formula) {
+function C(units, title, desc, tags, formula, extra) {
   var opts = Object.keys(units).map(function(k) {
     return { value: k, label: units[k].label || k };
   });
@@ -13,6 +13,7 @@ function C(units, title, desc, tags, formula) {
     description: desc,
     tags: tags || [],
     formula: formula || '<p>Converts between units through a common base unit.</p>',
+    background: extra && extra.background,
     fields: [
       { id: 'value', label: 'Value', type: 'number', step: 0.001, placeholder: 'e.g. 100' },
       { id: 'fromUnit', label: 'From', type: 'select', half: true, options: opts },
@@ -49,7 +50,8 @@ R('distance', C({
   nauticalMile: { label: 'Nautical Miles (nmi)', factor: 1852 },
 }, 'Distance Converter', 'Convert between distance and length units.',
   ['distance', 'length', 'convert'],
-  '<p>Converts between metric and imperial length units through the base unit of meters.</p>'));
+  '<p>Converts between metric and imperial length units through the base unit of meters.</p>',
+  { background: '<p>Length is the oldest measured quantity: the metre began as one ten-millionth of the distance from the equator to the pole and since 1983 is defined by the speed of light. The inch was fixed at exactly 25.4 mm by the 1959 international yard and pound agreement, which is why the foot is 0.3048 m and the mile 1609.344 m. A nautical mile is one minute of latitude, settled at 1852 m in 1929 because it maps directly onto chart coordinates.</p>' }));
 
 // === 2. WEIGHT / MASS ===
 R('weight', C({
@@ -64,7 +66,8 @@ R('weight', C({
   longTon: { label: 'Long Tons (UK)', factor: 1016.05 },
 }, 'Weight (Mass) Converter', 'Convert between weight and mass units.',
   ['weight', 'mass', 'convert'],
-  '<p>Converts between metric and imperial mass units through the base unit of kilograms.</p>'));
+  '<p>Converts between metric and imperial mass units through the base unit of kilograms.</p>',
+  { background: '<p>Mass is measured in kilograms, the last SI base unit still defined by an artefact until 2019, when it was redefined through the Planck constant. Imperial weights come from the avoirdupois system: 16 ounces to a pound, 14 pounds to a stone, 2000 pounds to a US short ton and 2240 to a UK long ton. The international pound has been exactly 0.45359237 kg since 1959.</p>' }));
 
 // === 3. TEMPERATURE ===
 R('temperature', {
@@ -72,6 +75,7 @@ R('temperature', {
   description: 'Convert between Celsius, Fahrenheit, Kelvin, and Rankine.',
   tags: ['temperature', 'celsius', 'fahrenheit', 'kelvin'],
   formula: '<p>Temperature conversions use offset-based formulas rather than simple multiplication.</p>',
+  background: '<p>Celsius and Fahrenheit are both relative scales tied to the freezing and boiling points of water. Anders Celsius defined 0 and 100 in 1742 and Carl Linnaeus reversed them to the orientation used today, while Daniel Fahrenheit built his 1724 scale around a brine-ice mixture and body temperature, leaving 180 degrees between freezing and boiling. Kelvin shifts the Celsius scale so zero is absolute zero, and Rankine does the same for Fahrenheit degrees.</p>',
   fields: [
     { id: 'value', label: 'Value', type: 'number', step: 0.01, placeholder: 'e.g. 100' },
     { id: 'fromUnit', label: 'From', type: 'select', half: true, options: [
@@ -121,7 +125,8 @@ R('area', C({
   hectare: { label: 'Hectares (ha)', factor: 10000 },
 }, 'Area Converter', 'Convert between area units.',
   ['area', 'square', 'convert'],
-  '<p>Converts between metric and imperial area units through the base unit of square meters.</p>'));
+  '<p>Converts between metric and imperial area units through the base unit of square meters.</p>',
+  { background: '<p>Area multiplies length by length, so a factor that holds for feet does not hold for square feet — one square foot is 0.092903 m², not 0.3048. The acre is 43,560 square feet, historically the strip a team of oxen could plough in a day, and the hectare is a square 100 m on a side. Land registries still use acres and square miles, while science and most of the world use m² and km².</p>' }));
 
 // === 5. VOLUME ===
 R('volume', C({
@@ -139,7 +144,8 @@ R('volume', C({
   imperialGallon: { label: 'Imperial Gallons (gal)', factor: 4.54609 },
 }, 'Volume Converter', 'Convert between volume units.',
   ['volume', 'liters', 'gallons', 'convert'],
-  '<p>Converts between metric and imperial volume units through the base unit of liters.</p>'));
+  '<p>Converts between metric and imperial volume units through the base unit of liters.</p>',
+  { background: '<p>Volume units diverge because liquid measures were standardised locally long before they were standardised nationally. The US gallon descends from the 1707 Queen Anne wine gallon of 231 cubic inches (3.785411784 L), while the imperial gallon of 1824 was defined as the volume of 10 pounds of water (4.54609 L), about 20 percent larger. The US fluid ounce is 1/128 of its gallon and the imperial fluid ounce 1/160 of its, so they differ even more than the gallons do.</p>' }));
 
 // === 6. COOKING ===
 R('cooking', C({
@@ -156,7 +162,8 @@ R('cooking', C({
   gram: { label: 'Grams (water equiv.)', factor: 236.588 },
 }, 'Cooking Measurement Converter', 'Convert between cooking measurement units.',
   ['cooking', 'recipe', 'cups', 'tablespoons'],
-  '<p>Converts between common cooking measurements used in recipes.</p>'));
+  '<p>Converts between common cooking measurements used in recipes.</p>',
+  { background: '<p>Recipe measures are volume measures, and the US cup is 8 US fluid ounces (236.588 mL) while the metric cup used in Australia and much of Europe is 250 mL. Converting a volume to grams only works when you know the density: the gram figure here assumes water, so flour, sugar and rice all weigh noticeably less per cup. Older British recipes may use imperial pints and gills, which are larger than their US namesakes.</p>' }));
 
 // === 7. COMPUTER STORAGE ===
 R('computerstorage', C({
@@ -168,7 +175,8 @@ R('computerstorage', C({
   petabyte: { label: 'Petabytes (PB)', factor: 1e15 },
 }, 'Computer Storage Converter', 'Convert between computer storage units.',
   ['computer', 'storage', 'bytes', 'convert'],
-  '<p>Converts between decimal (SI) storage units: 1 KB = 1000 B, 1 MB = 1000 KB, etc.</p>'));
+  '<p>Converts between decimal (SI) storage units: 1 KB = 1000 B, 1 MB = 1000 KB, etc.</p>',
+  { background: '<p>Storage is quoted with decimal SI prefixes: 1 KB is 1000 bytes and 1 GB is 10⁹ bytes, which is how drive manufacturers and the SI standard define them. Operating systems often divide by 1024 instead, so a 1 TB drive shows as roughly 931 GB in Windows. The gap grows with each prefix because it is a ratio of 1000/1024 raised to the power of the prefix.</p>' }));
 
 // === 8. DENSITY ===
 R('density', C({
@@ -182,7 +190,8 @@ R('density', C({
   slugPerFt3: { label: 'slug/ft3', factor: 515.379 },
 }, 'Density Converter', 'Convert between density units.',
   ['density', 'mass', 'volume', 'convert'],
-  '<p>Converts between density units through the base unit of kg/m3.</p>'));
+  '<p>Converts between density units through the base unit of kg/m3.</p>',
+  { background: '<p>Density is mass per unit volume, with kg/m³ as the SI unit and water near 1000 kg/m³ at room temperature, a handy reference for judging a material. Imperial density units combine avoirdupois mass with imperial volume, so lb/ft³ mixes a 0.4536 kg pound with a 0.02832 m³ cubic foot. The slug is the coherent mass unit of the foot-pound-second system, equal to about 14.59 kg.</p>' }));
 
 // === 9. SPEED ===
 R('speed', C({
@@ -195,7 +204,8 @@ R('speed', C({
   c: { label: 'Speed of Light (c)', factor: 299792458 },
 }, 'Speed Converter', 'Convert between speed units.',
   ['speed', 'velocity', 'convert'],
-  '<p>Converts between speed units through the base unit of meters per second.</p>'));
+  '<p>Converts between speed units through the base unit of meters per second.</p>',
+  { background: '<p>Speed is distance per time, and m/s is the SI expression of it. Road speeds use km/h almost everywhere and mph in the US and UK, where the mile is the 1609.344 m statute mile. A knot is one nautical mile per hour, convenient at sea because it matches minutes of latitude, and Mach is a ratio to the local speed of sound, about 340.3 m/s in 15 °C air at sea level but lower at altitude.</p>' }));
 
 // === 10. TIME ===
 R('time', C({
@@ -211,7 +221,8 @@ R('time', C({
   nanosecond: { label: 'Nanoseconds (ns)', factor: 1e-9 },
 }, 'Time Converter', 'Convert between time units.',
   ['time', 'seconds', 'minutes', 'hours', 'convert'],
-  '<p>Converts between time units through the base unit of seconds.</p>'));
+  '<p>Converts between time units through the base unit of seconds.</p>',
+  { background: '<p>The second is the SI base unit of time, defined since 1967 by the caesium-133 hyperfine transition and refined in 2019. Days, hours and minutes come from Babylonian sexagesimal counting and the 24-hour Egyptian day, and none of them divide the second evenly beyond 60. The month and year used here are averages — 30.44 days and the Julian 365.25-day year — so calendar dates will not line up exactly.</p>' }));
 
 // === 11. PRESSURE ===
 R('pressure', C({
@@ -227,7 +238,8 @@ R('pressure', C({
   psf: { label: 'PSF (lb/ft2)', factor: 47.8803 },
 }, 'Pressure Converter', 'Convert between pressure units.',
   ['pressure', 'pascal', 'psi', 'convert'],
-  '<p>Converts between pressure units through the base unit of pascals.</p>'));
+  '<p>Converts between pressure units through the base unit of pascals.</p>',
+  { background: '<p>Pressure is force per area, so the pascal is one newton per square metre, a very small unit that makes hectopascals and kilopascals convenient for weather and engineering. The atmosphere was defined as 101,325 Pa, exactly 760 mmHg, and the bar as 100,000 Pa, a difference of about 1.3 percent that matters in calibration. PSI is pounds-force per square inch and remains standard for tyres, hydraulics and gas lines in the US.</p>' }));
 
 // === 12. ENERGY ===
 R('energy', C({
@@ -244,7 +256,8 @@ R('energy', C({
   therm: { label: 'Therms', factor: 105506e3 },
 }, 'Energy Converter', 'Convert between energy units.',
   ['energy', 'joules', 'calories', 'convert'],
-  '<p>Converts between energy units through the base unit of joules.</p>'));
+  '<p>Converts between energy units through the base unit of joules.</p>',
+  { background: '<p>Energy is force times distance, so the joule is one newton-metre, and every other unit here is a legacy measure of heat or work. The calorie is the heat needed to raise one gram of water by one degree Celsius (4.184 J thermochemical), the BTU does the same for one pound of water by one degree Fahrenheit, and the kilowatt-hour is simply 3.6 megajoules, which is why electricity bills use it. The electron volt is the energy gained by one electron across one volt, about 1.602 × 10⁻¹⁹ J, and is used at atomic and particle scales.</p>' }));
 
 // === 13. POWER ===
 R('power', C({
@@ -259,7 +272,8 @@ R('power', C({
   calPerSec: { label: 'Calories/second', factor: 4.184 },
 }, 'Power Converter', 'Convert between power units.',
   ['power', 'watts', 'horsepower', 'convert'],
-  '<p>Converts between power units through the base unit of watts.</p>'));
+  '<p>Converts between power units through the base unit of watts.</p>',
+  { background: '<p>Power is energy per unit time, so the watt is one joule per second and the kilowatt-hour is power sustained for an hour. James Watt defined horsepower as 550 foot-pounds per second, about 745.7 W, to compare steam engines with draft horses; the metric horsepower is 75 kgf·m/s, or 735.5 W, and continental car specs usually mean the smaller metric figure. Electrical horsepower is a rounded 746 W.</p>' }));
 
 // === 14. FREQUENCY ===
 R('frequency', C({
@@ -270,7 +284,8 @@ R('frequency', C({
   rpm: { label: 'Revolutions/min (RPM)', factor: 1 / 60 },
 }, 'Frequency Converter', 'Convert between frequency units.',
   ['frequency', 'hertz', 'convert'],
-  '<p>Converts between frequency units through the base unit of hertz.</p>'));
+  '<p>Converts between frequency units through the base unit of hertz.</p>',
+  { background: '<p>Frequency counts repetitions per second, and the hertz — one cycle per second, named after Heinrich Hertz — replaced cycles per second in 1960. Radio, clocks and processors use kHz, MHz and GHz in decimal steps of 1000. RPM is a rotational rate rather than an oscillation, and one revolution per minute is 1/60 Hz, so it only behaves like a frequency when one rotating feature passes a sensor per turn.</p>' }));
 
 // === 15. ANGLE ===
 R('angle', C({
@@ -283,7 +298,8 @@ R('angle', C({
   mil: { label: 'Mils (NATO)', factor: 360 / 6400 },
 }, 'Angle Converter', 'Convert between angle units.',
   ['angle', 'degrees', 'radians', 'convert'],
-  '<p>Converts between angle units through the base unit of degrees.</p>'));
+  '<p>Converts between angle units through the base unit of degrees.</p>',
+  { background: '<p>Angles are dimensionless ratios, so the units are conventions. The degree splits a turn into 360 parts, a Babylonian base-60 habit, while the radian is the natural measure — the arc length equal to the radius — and there are 2π radians in a turn, which is why calculus and physics prefer it. The gradian divides a right angle into 100 parts for decimal surveying, and the NATO mil divides a turn into 6400 for artillery sighting.</p>' }));
 
 // === 16. FUEL ECONOMY ===
 R('fuel-economy', {
@@ -291,6 +307,7 @@ R('fuel-economy', {
   description: 'Convert between fuel economy units (MPG, L/100km).',
   tags: ['fuel', 'economy', 'mpg', 'liters'],
   formula: '<p>Converts between miles per gallon and liters per 100 km. Note: higher MPG = better, higher L/100km = worse.</p>',
+  background: '<p>Fuel economy is distance per volume, which makes it inversely proportional to consumption: 30 mpg is about 7.84 L/100 km, and improving a low figure saves far more fuel than improving a high one. US and imperial MPG differ by about 20 percent because the gallons differ — 3.785 L against 4.546 L — so the conversion constants 235.215 and 282.481 encode that gap. L/100km is the European convention and km/L is common in Asia and Latin America.</p>',
   fields: [
     { id: 'value', label: 'Value', type: 'number', step: 0.01, placeholder: 'e.g. 30' },
     { id: 'fromUnit', label: 'From', type: 'select', half: true, options: [
@@ -338,7 +355,8 @@ R('data-transfer', C({
   GBps: { label: 'GB/second', factor: 8e9 },
 }, 'Data Transfer Rate Converter', 'Convert between data transfer rate units.',
   ['data', 'transfer', 'bandwidth', 'convert'],
-  '<p>Converts between data transfer rate units through the base unit of bits per second.</p>'));
+  '<p>Converts between data transfer rate units through the base unit of bits per second.</p>',
+  { background: '<p>Network rates are quoted in bits per second while files are sized in bytes, and one byte is eight bits, so a 100 Mbps link carries at most 12.5 MB/s of payload. Prefixes here are decimal (1 Mbps = 10⁶ bps) because that is how link standards are written. Real throughput is lower still once packet headers, framing and protocol overhead are counted, so treat byte-per-second results as an upper bound.</p>' }));
 
 // === 18. LENGTH CHAIN / SURVEYING ===
 R('length-chain', C({
@@ -353,7 +371,8 @@ R('length-chain', C({
   astronomicalUnit: { label: 'Astronomical Units (AU)', factor: 1.496e11 },
 }, 'Length (Surveying) Converter', 'Convert between surveying and historical length units.',
   ['length', 'chain', 'surveying', 'furlong'],
-  '<p>Converts between surveying units like chains, furlongs, rods, and links through meters.</p>'));
+  '<p>Converts between surveying units like chains, furlongs, rods, and links through meters.</p>',
+  { background: '<p>These are the units of the Gunter chain, a 66-foot surveyor tool of 1620 made of 100 links, which is why a chain, a furlong of 10 chains and an acre of one chain by one furlong fit together so neatly. A fathom of six feet measured depth on sounding lines, and a league was roughly an hour of walking. The parsec and light-year belong to astronomy: a parsec is the distance at which one astronomical unit subtends one arcsecond, about 3.26 light-years, and the light-year is the distance light covers in a Julian year.</p>' }));
 
 // === 19. APOTHECARY MASS ===
 R('mass-apothecary', C({
@@ -364,7 +383,8 @@ R('mass-apothecary', C({
   pound: { label: 'Apothecary Pounds (lb ap)', factor: 5760 },
 }, 'Apothecary Mass Converter', 'Convert between apothecary weight units.',
   ['apothecary', 'mass', 'weight', 'historical'],
-  '<p>Converts between historical apothecary weight units through grains.</p>'));
+  '<p>Converts between historical apothecary weight units through grains.</p>',
+  { background: '<p>The apothecary system was the pharmacists\' counterpart to troy weight, used in Britain and the US into the twentieth century and now almost entirely replaced by metric doses. It shares the 64.79891 mg grain with troy weight, then counts 20 grains to a scruple, 60 to a dram, 480 to an apothecary ounce and 5760 to a pound. The symbols oz ap and lb ap distinguish it from the heavier avoirdupois ounce and pound.</p>' }));
 
 // === 20. IMPERIAL VOLUME ===
 R('volume-imperial', C({
@@ -377,7 +397,8 @@ R('volume-imperial', C({
   bushel: { label: 'Bushels (imp)', factor: 9216 },
 }, 'Imperial Volume Converter', 'Convert between British Imperial volume units.',
   ['imperial', 'volume', 'british', 'convert'],
-  '<p>Converts between British Imperial volume units through fluid ounces.</p>'));
+  '<p>Converts between British Imperial volume units through fluid ounces.</p>',
+  { background: '<p>Imperial volume was fixed by the 1824 Weights and Measures Act, which defined the gallon as the volume of ten pounds of distilled water at 62 °F — 4.54609 litres. The imperial fluid ounce is 1/160 of that gallon (28.413 mL) rather than the US 1/128, so a British pint is 20 fluid ounces and a US pint 16. The gill, peck and bushel are subdivisions and multiples of the same gallon and survive mainly in pub measures and grain trading.</p>' }));
 
 // === 21. IMPERIAL AREA ===
 R('area-imperial', C({
@@ -391,7 +412,8 @@ R('area-imperial', C({
   township: { label: 'Townships', factor: 1139967600 },
 }, 'Imperial Area Converter', 'Convert between British Imperial area units.',
   ['imperial', 'area', 'british', 'convert'],
-  '<p>Converts between British Imperial area units through square feet.</p>'));
+  '<p>Converts between British Imperial area units through square feet.</p>',
+  { background: '<p>Imperial area is built from the square foot: 144 square inches, 9 square feet to the square yard and 43,560 square feet to the acre. A rood is a quarter acre and a perch is a square rod, so 160 perches make an acre — the units are designed around the chain and rod for field measurement. The township of 36 square miles comes from the US Public Land Survey System, which laid out the Midwest in six-mile squares.</p>' }));
 
 // === 22. ABSOLUTE TEMPERATURE ===
 R('temperature-absolute', {
@@ -399,6 +421,7 @@ R('temperature-absolute', {
   description: 'Convert between absolute temperature scales including Delisle, Reaumur, and Newton.',
   tags: ['temperature', 'absolute', 'historical', 'convert'],
   formula: '<p>Converts between absolute and historical temperature scales.</p>',
+  background: '<p>Absolute scales start at absolute zero, the point where molecular motion cannot be removed further. Kelvin keeps the Celsius degree size but shifts zero to −273.15 °C, and since 2019 it is defined through the Boltzmann constant; Rankine does the same for the Fahrenheit degree, so 0 °R is −459.67 °F. The others are eighteenth-century rivals: Réaumur put 80 degrees between freezing and boiling, Delisle counted downward from boiling to freezing, Newton proposed 33 degrees and Rømer used a 60-degree scale offset by 7.5 degrees.</p>',
   fields: [
     { id: 'value', label: 'Value', type: 'number', step: 0.01, placeholder: 'e.g. 300' },
     { id: 'fromUnit', label: 'From', type: 'select', half: true, options: [
@@ -450,7 +473,8 @@ R('force', C({
   poundal: { label: 'Poundals (pdl)', factor: 0.138255 },
 }, 'Force Converter', 'Convert between force units.',
   ['force', 'newton', 'convert'],
-  '<p>Converts between force units through the base unit of newtons.</p>'));
+  '<p>Converts between force units through the base unit of newtons.</p>',
+  { background: '<p>Force is mass times acceleration, so the newton is one kilogram-metre per second squared. The pound-force is the weight of one avoirdupois pound under standard gravity, 9.80665 m/s², which is why 1 lbf is 4.44822 N and not simply the mass conversion. The dyne and the kilogram-force are CGS and gravitational-system holdovers, and the poundal is the force that accelerates one pound at one foot per second squared.</p>' }));
 
 // === 24. TORQUE ===
 R('torque', C({
@@ -461,7 +485,8 @@ R('torque', C({
   kgfM: { label: 'kgf-m', factor: 9.80665 },
 }, 'Torque Converter', 'Convert between torque units.',
   ['torque', 'moment', 'convert'],
-  '<p>Converts between torque units through the base unit of newton-meters.</p>'));
+  '<p>Converts between torque units through the base unit of newton-meters.</p>',
+  { background: '<p>Torque is force applied at a distance from an axis, so its units are force times length and share dimensions with energy even though the two are not interchangeable — a newton-metre of torque does no work unless something rotates. Foot-pounds and inch-pounds are standard on US fasteners and engine specs, while kgf·cm and kgf·m appear in Japanese and older European service manuals. Always check whether a published figure is a peak or a sustained rating before comparing engines or bolts.</p>' }));
 
 // === 25. ACCELERATION ===
 R('acceleration', C({
@@ -471,7 +496,8 @@ R('acceleration', C({
   gal: { label: 'Gal (cm/s2)', factor: 0.01 },
 }, 'Acceleration Converter', 'Convert between acceleration units.',
   ['acceleration', 'convert'],
-  '<p>Converts between acceleration units through the base unit of m/s2.</p>'));
+  '<p>Converts between acceleration units through the base unit of m/s2.</p>',
+  { background: '<p>Acceleration is the rate of change of velocity, measured in metres per second squared. The g used in engineering and physiology is standard gravity, fixed at 9.80665 m/s² by the 1901 CGPM, not the local value, which varies by a few tenths of a percent with latitude and altitude. The gal, one centimetre per second squared, is the CGS unit used in gravimetry and geodesy and is unrelated to the gallon.</p>' }));
 
 // === 26. FLOW RATE ===
 R('flow-rate', C({
@@ -486,7 +512,8 @@ R('flow-rate', C({
   cfs: { label: 'Cubic feet/second (cfs)', factor: 28.3168 },
 }, 'Flow Rate Converter', 'Convert between volumetric flow rate units.',
   ['flow', 'rate', 'volumetric', 'convert'],
-  '<p>Converts between volumetric flow rate units through liters per second.</p>'));
+  '<p>Converts between volumetric flow rate units through liters per second.</p>',
+  { background: '<p>Volumetric flow is volume per time, and the litre per second is the metric baseline. Gallons per minute is the US plumbing, pump and irrigation unit, derived from the 3.785 L US gallon, while cubic feet per second is used in hydrology and water rights because it suits open channels and rivers. UK practice may still quote imperial gallons per minute, which are about 20 percent larger.</p>' }));
 
 // === 27. RADIATION ===
 R('radiation', C({
@@ -498,7 +525,8 @@ R('radiation', C({
   rem: { label: 'REMs', factor: 0.01 },
 }, 'Radiation Converter', 'Convert between radiation dose and activity units.',
   ['radiation', 'dose', 'activity', 'convert'],
-  '<p>Converts between radiation absorbed dose units through grays.</p>'));
+  '<p>Converts between radiation absorbed dose units through grays.</p>',
+  { background: '<p>The gray measures absorbed dose — energy deposited per kilogram of tissue — and replaced the rad, with 1 Gy equal to 100 rad. The sievert measures equivalent dose, applying radiation and tissue weighting factors so different radiation types can be compared for harm, and it replaced the rem at the same 100:1 ratio. This converter scales both families by the same factors, which is numerically valid but only meaningful when comparing like with like.</p>' }));
 
 // === 28. ILLUMINATION ===
 R('illumination', C({
@@ -508,7 +536,8 @@ R('illumination', C({
   photocandle: { label: 'Phot (ph)', factor: 10000 },
 }, 'Illumination Converter', 'Convert between illumination and luminance units.',
   ['illumination', 'lux', 'footcandle', 'convert'],
-  '<p>Converts between illumination units through lux.</p>'));
+  '<p>Converts between illumination units through lux.</p>',
+  { background: '<p>Illuminance is luminous flux falling on a surface, so the lux is one lumen per square metre. The foot-candle is one lumen per square foot, about 10.764 lux, and remains common in US lighting codes and photography. For scale, an office is typically 300–500 lux, overcast daylight around 10,000 lux and direct sun over 100,000 lux; the phot is the CGS unit of 10,000 lux.</p>' }));
 
 // === 29. DIGITAL STORAGE (BITS) ===
 R('digital-storage', C({
@@ -524,7 +553,8 @@ R('digital-storage', C({
   terabyte: { label: 'Terabytes (TB)', factor: 8e12 },
 }, 'Digital Storage Converter', 'Convert between digital storage units including bits and bytes.',
   ['digital', 'storage', 'bits', 'bytes', 'convert'],
-  '<p>Converts between digital storage units. 1 byte = 8 bits.</p>'));
+  '<p>Converts between digital storage units. 1 byte = 8 bits.</p>',
+  { background: '<p>Digital storage counts bits and bytes, with one byte conventionally eight bits since the 1960s and the bit as the smallest distinguishable state. Decimal prefixes are used for capacity and link rates, so 1 KB here is 1000 bytes and 1 MB is 10⁶ bytes, matching the SI definitions that drive makers and network standards follow. Software that reports 1024-based sizes will therefore show smaller numbers for the same file or disk.</p>' }));
 
 // === 30. TYPOGRAPHY ===
 R('typography', C({
@@ -536,7 +566,8 @@ R('typography', C({
   em: { label: 'EM (at 12pt base)', factor: 1 / 12 },
 }, 'Typography Converter', 'Convert between typography measurement units.',
   ['typography', 'points', 'picas', 'convert'],
-  '<p>Converts between typography units through points. 1 pt = 1/72 inch.</p>'));
+  '<p>Converts between typography units through points. 1 pt = 1/72 inch.</p>',
+  { background: '<p>The desktop publishing point is exactly 1/72 inch, a convention fixed by PostScript in 1985 and inherited from the earlier Anglo-American point of about 0.01383 inch. Twelve points make a pica and six picas make an inch, so picas and points are a base-12 subdivision of the inch. An em is not a fixed length at all — it is the width of the font at its current size — so the 12-point assumption here only holds at that size.</p>' }));
 
 // === 31. TEXTILE ===
 R('textile', C({
@@ -548,7 +579,8 @@ R('textile', C({
   dtex: { label: 'Decitex (dg/km)', factor: 0.9 },
 }, 'Textile Measurement Converter', 'Convert between textile and fabric measurement units.',
   ['textile', 'fabric', 'yarn', 'convert'],
-  '<p>Converts between textile measurement units through meters.</p>'));
+  '<p>Converts between textile measurement units through meters.</p>',
+  { background: '<p>Textile measurement mixes two different things: lengths such as metres and yards, and yarn counts such as denier and tex, which describe linear density rather than length. Denier is the mass in grams of 9000 metres of yarn, so a finer silk or hosiery yarn has a lower number, while tex is grams per 1000 metres and dtex a tenth of that. Converting between the two families is not physically meaningful, even though this tool scales every entry the same way.</p>' }));
 
 // === 32. NAUTICAL ===
 R('nautical', C({
@@ -560,7 +592,8 @@ R('nautical', C({
   degreeOfArc: { label: 'Degrees of Arc (lat)', factor: 1 / 60 },
 }, 'Nautical Measurement Converter', 'Convert between nautical and maritime measurement units.',
   ['nautical', 'maritime', 'sea', 'convert'],
-  '<p>Converts between nautical measurement units through nautical miles.</p>'));
+  '<p>Converts between nautical measurement units through nautical miles.</p>',
+  { background: '<p>Maritime units are tied to the globe: one nautical mile is one minute of latitude, fixed at 1852 m by the 1929 International Hydrographic Conference, which makes chart distances and coordinates directly comparable. A cable is a tenth of a nautical mile, roughly 185 m, and a fathom of six feet measures depth. A knot is one nautical mile per hour, so it is a speed rather than a length and only shares the factor here because the converter lists it alongside nautical miles.</p>' }));
 
 // === 33. AGRICULTURAL ===
 R('agricultural', C({
@@ -571,7 +604,8 @@ R('agricultural', C({
   tonAcre: { label: 'short tons/acre', factor: 0.0892176 },
 }, 'Agricultural Measurement Converter', 'Convert between agricultural measurement units.',
   ['agricultural', 'farming', 'yield', 'convert'],
-  '<p>Converts between agricultural measurement units through kg/hectare.</p>'));
+  '<p>Converts between agricultural measurement units through kg/hectare.</p>',
+  { background: '<p>Agricultural yields are mass per area, so the numbers depend on both the mass unit and the land unit. Metric agronomy reports kilograms or tonnes per hectare, while US extension services use pounds or bushels per acre, and one hectare is 2.471 acres. Bushels are a volume measure whose weight varies by crop and moisture — wheat is about 60 lb per bushel, corn 56 lb and soybeans 60 lb — so bushel-per-acre figures embed an assumed test weight.</p>' }));
 
 // === 34. CONSTRUCTION MEASUREMENTS ===
 R('construction-measurements', C({
@@ -582,7 +616,8 @@ R('construction-measurements', C({
   cubicCentimeter: { label: 'Cubic Centimeters (cm3)', factor: 545.4 },
 }, 'Construction Measurement Converter', 'Convert between construction and building measurement units.',
   ['construction', 'building', 'lumber', 'convert'],
-  '<p>Converts between construction measurement units through board feet.</p>'));
+  '<p>Converts between construction measurement units through board feet.</p>',
+  { background: '<p>Lumber in North America is priced by the board foot, a nominal volume of one square foot one inch thick, or 144 cubic inches. Bulk materials such as concrete, gravel and mulch are sold by the cubic yard, and framing and sheet goods by the square foot, so construction estimates routinely mix all three. A cubic metre is about 35.3 cubic feet or 424 board feet, which is why imported timber quotes look very different from domestic ones.</p>' }));
 
 // === 35. CURRENCY APPROXIMATE ===
 R('currency-approximate', C({
@@ -600,7 +635,8 @@ R('currency-approximate', C({
   brl: { label: 'Brazilian Real (BRL)', factor: 4.97 },
 }, 'Approximate Currency Converter', 'Convert between currencies using approximate fixed rates (as of 2024).',
   ['currency', 'money', 'exchange', 'approximate'],
-  '<p>Uses approximate fixed exchange rates as of 2024. For real-time rates, use a financial API.</p>'));
+  '<p>Uses approximate fixed exchange rates as of 2024. For real-time rates, use a financial API.</p>',
+  { background: '<p>This converter uses fixed rates captured around 2024, not a live feed, so it is meant for rough budgeting and sanity checks rather than transactions. Exchange rates float continuously and diverge between interbank, card and cash rates, with spreads and fees often costing one to three percent. For anything involving real money, use a dated rate from a bank or a financial API.</p>' }));
 
 // === 36. METRIC PREFIX ===
 R('prefix', C({
@@ -617,7 +653,8 @@ R('prefix', C({
   femto: { label: 'Femto- (f)', factor: 1e-15 },
 }, 'Metric Prefix Converter', 'Convert between metric prefixes.',
   ['metric', 'prefix', 'kilo', 'convert'],
-  '<p>Converts between metric prefixes: kilo, mega, giga, etc.</p>'));
+  '<p>Converts between metric prefixes: kilo, mega, giga, etc.</p>',
+  { background: '<p>SI prefixes are powers of ten adopted with the metric system in 1795 and extended by the CGPM — kilo in 1795, mega and micro in 1873, giga and nano in 1960, pico and femto in 1964. Case matters: M is mega and m is milli, which is why MB and Mb mean different things. The 2022 additions ronna, quetta, ronto and quecto extend the range beyond this table.</p>' }));
 
 // === 37. BINARY PREFIX ===
 R('binary-prefix', C({
@@ -629,7 +666,8 @@ R('binary-prefix', C({
   byte: { label: 'Bytes (B)', factor: 1 },
 }, 'Binary Prefix Converter', 'Convert between binary prefixes (IEC standard).',
   ['binary', 'prefix', 'kibibyte', 'mebibyte', 'convert'],
-  '<p>Converts between binary prefixes: 1 KiB = 1024 B, 1 MiB = 1024 KiB, etc.</p>'));
+  '<p>Converts between binary prefixes: 1 KiB = 1024 B, 1 MiB = 1024 KiB, etc.</p>',
+  { background: '<p>Binary prefixes were introduced by the IEC in 1998 to end the ambiguity between 1000 and 1024. Memory and filesystem sizes are naturally powers of two, so 1 KiB is exactly 1024 bytes, 1 MiB is 1024 KiB, and so on. Windows still labels 1024-based sizes with the decimal names, so a file shown as 1 GB there is really about 0.93 GiB.</p>' }));
 
 // === 38. ARC MINUTES/SECONDS ===
 R('angle-arc', C({
@@ -640,7 +678,8 @@ R('angle-arc', C({
   mil: { label: 'Mils', factor: 360 / 6400 },
 }, 'Arc Minutes and Seconds Converter', 'Convert between arc minutes, arc seconds, and decimal degrees.',
   ['angle', 'arc', 'minutes', 'seconds', 'convert'],
-  '<p>Converts between arc-based angle units. 1 degree = 60 arc minutes = 3600 arc seconds.</p>'));
+  '<p>Converts between arc-based angle units. 1 degree = 60 arc minutes = 3600 arc seconds.</p>',
+  { background: '<p>Arc minutes and arc seconds are the sexagesimal subdivisions of a degree: 60 minutes to a degree and 60 seconds to a minute, inherited from Babylonian astronomy. A minute of arc is one nautical mile of latitude, which is why navigation and charts use them, and an arcsecond is about 30 metres on the Earth surface. Astronomy and optics work in arcseconds because they need to express very small angles, such as stellar parallax or telescope resolution.</p>' }));
 
 // === 39. US CUSTOMARY VOLUME ===
 R('volume-us', C({
@@ -654,7 +693,8 @@ R('volume-us', C({
   gill: { label: 'Gills (US)', factor: 4 },
 }, 'US Customary Volume Converter', 'Convert between US customary volume units.',
   ['volume', 'US', 'customary', 'convert'],
-  '<p>Converts between US customary volume units through fluid ounces.</p>'));
+  '<p>Converts between US customary volume units through fluid ounces.</p>',
+  { background: '<p>US customary volume descends from pre-1824 English measures, before the imperial reform, so its names match British ones but its sizes do not. The fluid ounce is 1/128 of the 231-cubic-inch US gallon, about 29.5735 mL, and the cup, pint, quart and gallon are 8, 16, 32 and 128 fluid ounces. The gill, four fluid ounces or half a cup, is obsolete but still appears in older cocktail and recipe books.</p>' }));
 
 // === 40. US CUSTOMARY WEIGHT ===
 R('weight-us', C({
@@ -666,7 +706,8 @@ R('weight-us', C({
   ton: { label: 'Long Tons', factor: 35840 },
 }, 'US Customary Weight Converter', 'Convert between US customary weight units.',
   ['weight', 'US', 'customary', 'convert'],
-  '<p>Converts between US customary weight units through ounces.</p>'));
+  '<p>Converts between US customary weight units through ounces.</p>',
+  { background: '<p>US customary weight is the avoirdupois system, named from the Old French for goods of weight, and it fixes 7000 grains to the pound and 16 ounces to the pound. A stone is 14 pounds, a short hundredweight 100 pounds and a short ton 2000 pounds, while British practice uses the 112-pound long hundredweight and the 2240-pound long ton. The pound has been exactly 0.45359237 kg since the 1959 agreement.</p>' }));
 
 // === 41. US CUSTOMARY DISTANCE ===
 R('distance-us', C({
@@ -679,7 +720,8 @@ R('distance-us', C({
   mile: { label: 'Miles (mi)', factor: 63360 },
 }, 'US Customary Distance Converter', 'Convert between US customary distance units.',
   ['distance', 'US', 'customary', 'convert'],
-  '<p>Converts between US customary distance units through inches.</p>'));
+  '<p>Converts between US customary distance units through inches.</p>',
+  { background: '<p>US customary distance runs on the 1959 international yard, which fixed the inch at exactly 25.4 mm and the mile at 5280 feet, or 63,360 inches. The rod, chain and furlong are surveyor units — 16.5 feet, 66 feet and 660 feet — that survive in land descriptions and horse racing. The slightly longer US survey foot was retired at the end of 2022 in favour of the international foot.</p>' }));
 
 // === 42. US CUSTOMARY AREA ===
 R('area-us', C({
@@ -692,7 +734,8 @@ R('area-us', C({
   township: { label: 'Townships (36 sections)', factor: 1003622400 },
 }, 'US Customary Area Converter', 'Convert between US customary area units.',
   ['area', 'US', 'customary', 'convert'],
-  '<p>Converts between US customary area units through square feet.</p>'));
+  '<p>Converts between US customary area units through square feet.</p>',
+  { background: '<p>US customary area starts from the square foot: 144 square inches, 9 square feet to the square yard and 43,560 square feet to the acre. The section and township come from the Public Land Survey System set up in 1785, which divided the western territories into six-mile-square townships of 36 one-mile sections. That grid is why so many US state and county boundaries run in straight lines.</p>' }));
 
 // === 43. SCIENTIFIC SPEED ===
 R('speed-scientific', C({
@@ -706,7 +749,8 @@ R('speed-scientific', C({
   fpm: { label: 'Feet/minute (ft/min)', factor: 0.00508 },
 }, 'Scientific Speed Converter', 'Convert between scientific and specialized speed units.',
   ['speed', 'scientific', 'mach', 'convert'],
-  '<p>Converts between scientific speed units through meters per second.</p>'));
+  '<p>Converts between scientific speed units through meters per second.</p>',
+  { background: '<p>Scientific speeds are quoted in metres per second, with kilometres per second for orbital and interplanetary motion. The speed of light is exactly 299,792,458 m/s by definition since 1983, and it now defines the metre rather than the other way round. Mach numbers are ratios to the local speed of sound, which depends on temperature: about 340.3 m/s in 15 °C sea-level air but roughly 295 m/s near the tropopause, so a Mach figure means little without stating the atmosphere.</p>' }));
 
 // === 44. THERMAL ENERGY ===
 R('energy-thermal', C({
@@ -721,7 +765,8 @@ R('energy-thermal', C({
   quad: { label: 'Quads (10^15 BTU)', factor: 1.055e18 },
 }, 'Thermal Energy Converter', 'Convert between thermal energy units.',
   ['thermal', 'energy', 'heat', 'convert'],
-  '<p>Converts between thermal energy units through joules.</p>'));
+  '<p>Converts between thermal energy units through joules.</p>',
+  { background: '<p>Thermal units all measure heat, but each was defined against a different reference. The International Table BTU is 1055.056 J, the US therm is 105.4804 MJ (100,000 BTU of the 59 °F definition), and the EC and UK therm is 105.506 MJ. The quad, 10¹⁵ BTU or about 1.055 exajoules, is the unit US energy statistics use for national consumption.</p>' }));
 
 // === 45. ELECTRICAL POWER ===
 R('power-electrical', C({
@@ -734,7 +779,8 @@ R('power-electrical', C({
   hp: { label: 'Horsepower (electrical)', factor: 746 },
 }, 'Electrical Power Converter', 'Convert between electrical power units.',
   ['electrical', 'power', 'watts', 'convert'],
-  '<p>Converts between electrical power units through watts.</p>'));
+  '<p>Converts between electrical power units through watts.</p>',
+  { background: '<p>Electrical power is voltage times current, and the watt is the SI unit for it. Milliwatts suit small electronics and gigawatts suit power stations, with the kilowatt-hour remaining the billing unit for energy rather than power. dBm is logarithmic — ten times the base-10 logarithm of power relative to 1 mW — so it cannot be converted by simple multiplication, and the linear factor listed here is only an approximation at the 1 mW reference.</p>' }));
 
 // === 46. VOLTAGE ===
 R('voltage', C({
@@ -747,7 +793,8 @@ R('voltage', C({
   statvolt: { label: 'Statvolts (CGS)', factor: 299.792 },
 }, 'Voltage Converter', 'Convert between voltage units.',
   ['voltage', 'electric', 'potential', 'convert'],
-  '<p>Converts between voltage units through volts.</p>'));
+  '<p>Converts between voltage units through volts.</p>',
+  { background: '<p>Voltage is electric potential difference, one joule per coulomb, and the volt is named after Alessandro Volta. Millivolts and microvolts appear in sensor and audio signals, kilovolts in distribution and transmission lines, and megavolts in particle accelerators and HVDC links. The abvolt and statvolt belong to the CGS electromagnetic and electrostatic systems, which were largely replaced by SI; one statvolt is about 299.79 V.</p>' }));
 
 // === 47. CURRENT ===
 R('current', C({
@@ -760,7 +807,8 @@ R('current', C({
   statampere: { label: 'Statamperes (CGS)', factor: 3.3356e-10 },
 }, 'Current Converter', 'Convert between electric current units.',
   ['current', 'amperes', 'electric', 'convert'],
-  '<p>Converts between electric current units through amperes.</p>'));
+  '<p>Converts between electric current units through amperes.</p>',
+  { background: '<p>Current is charge flow per second, and the ampere became an SI base unit defined by the force between parallel wires, then redefined in 2019 in terms of the elementary charge. Milliamps and microamps are the everyday electronics units, nanoamps matter for leakage and sensor bias, and kiloamps appear in welding, traction and fault currents. The abampere, or biot, is 10 A in the CGS electromagnetic system, and the statampere is about 3.336 × 10⁻¹⁰ A.</p>' }));
 
 // === 48. RESISTANCE ===
 R('resistance', C({
@@ -774,7 +822,8 @@ R('resistance', C({
   statohm: { label: 'Statohms (CGS)', factor: 8.9876e11 },
 }, 'Resistance Converter', 'Convert between electrical resistance units.',
   ['resistance', 'ohms', 'electric', 'convert'],
-  '<p>Converts between electrical resistance units through ohms.</p>'));
+  '<p>Converts between electrical resistance units through ohms.</p>',
+  { background: '<p>Resistance is voltage divided by current, so the ohm is one volt per ampere and is named after Georg Ohm. Practical resistors span milliohms for shunts and current-sense paths up to gigohms for insulation and feedback networks. The abohm and statohm are CGS counterparts: one abohm is 10⁻⁹ ohm and one statohm is roughly 8.988 × 10¹¹ ohm.</p>' }));
 
 // === 49. CAPACITANCE ===
 R('capacitance', C({
@@ -786,7 +835,8 @@ R('capacitance', C({
   femtofarad: { label: 'Femtofarads (fF)', factor: 1e-15 },
 }, 'Capacitance Converter', 'Convert between electrical capacitance units.',
   ['capacitance', 'farads', 'electric', 'convert'],
-  '<p>Converts between electrical capacitance units through farads.</p>'));
+  '<p>Converts between electrical capacitance units through farads.</p>',
+  { background: '<p>Capacitance is stored charge per volt, and one farad holds one coulomb at one volt — a very large unit, so real components are rated in microfarads, nanofarads and picofarads. The unit honours Michael Faraday, and the 1000-step prefixes match how capacitor values are marked and stocked. Femtofarads appear in RF work and stray capacitance, where circuit layout dominates the value.</p>' }));
 
 // === 50. INDUCTANCE ===
 R('inductance', C({
@@ -797,7 +847,8 @@ R('inductance', C({
   picohenry: { label: 'Picohenries (pH)', factor: 1e-12 },
 }, 'Inductance Converter', 'Convert between electrical inductance units.',
   ['inductance', 'henries', 'electric', 'convert'],
-  '<p>Converts between electrical inductance units through henries.</p>'));
+  '<p>Converts between electrical inductance units through henries.</p>',
+  { background: '<p>Inductance relates changing current to induced voltage, and one henry produces one volt per ampere per second; it is named after Joseph Henry, who discovered self-induction at the same time as Faraday. Practical inductors and transformer windings run from nanohenries in RF work to millihenries in filters and chokes. A one-henry component is large, which is why most datasheets use mH and µH.</p>' }));
 
 // === SPECIFIC CONVERSIONS FROM CATALOG ===
 
@@ -807,6 +858,7 @@ R('kilograms-to-pounds', {
   description: 'Convert kilograms to pounds.',
   tags: ['weight', 'kg', 'lb', 'convert'],
   formula: '<p>1 kilogram = 2.20462 pounds</p>',
+  background: '<p>The kilogram is the SI base unit of mass and the pound the avoirdupois unit used in the US and, informally, the UK. Since the 1959 international yard and pound agreement the pound is exactly 0.45359237 kg, making one kilogram 2.20462262 pounds. Body weight, shipping and grocery labels are the usual places this conversion comes up.</p>',
   fields: [
     { id: 'value', label: 'Kilograms', type: 'number', step: 0.01, placeholder: 'e.g. 70' },
   ],
@@ -823,6 +875,7 @@ R('pounds-to-kilograms', {
   description: 'Convert pounds to kilograms.',
   tags: ['weight', 'lb', 'kg', 'convert'],
   formula: '<p>1 pound = 0.453592 kilograms</p>',
+  background: '<p>This is the inverse of the exact 1959 definition, where one international avoirdupois pound equals 0.45359237 kilograms. The pound is still the everyday weight unit in the US and is used for body weight in Britain alongside stones. Because the factor is exact, the only rounding comes from the display precision.</p>',
   fields: [
     { id: 'value', label: 'Pounds', type: 'number', step: 0.01, placeholder: 'e.g. 150' },
   ],
@@ -839,6 +892,7 @@ R('acres-to-square-feet', {
   description: 'Convert acres to square feet.',
   tags: ['area', 'acres', 'square feet', 'convert'],
   formula: '<p>1 acre = 43,560 square feet</p>',
+  background: '<p>An acre is 43,560 square feet, the area of a rectangle one chain by one furlong (66 by 660 feet). It originated as the amount of land a yoke of oxen could plough in a day, which is why it is a strip rather than a square. US real estate, agriculture and forestry still quote land in acres.</p>',
   fields: [
     { id: 'value', label: 'Acres', type: 'number', step: 0.01, placeholder: 'e.g. 5' },
   ],
@@ -855,6 +909,7 @@ R('square-feet-to-acres', {
   description: 'Convert square feet to acres.',
   tags: ['area', 'square feet', 'acres', 'convert'],
   formula: '<p>1 acre = 43,560 square feet</p>',
+  background: '<p>Dividing square footage by 43,560 gives acres, the traditional English land unit of one chain by one furlong. The acre is not a square — its shape was fixed by ploughing geometry — but it is exactly 4046.8564224 m². It remains the standard unit for US property, farmland and timber tracts.</p>',
   fields: [
     { id: 'value', label: 'Square Feet', type: 'number', step: 0.01, placeholder: 'e.g. 43560' },
   ],
@@ -871,6 +926,7 @@ R('square-feet-to-square-meters', {
   description: 'Convert square feet to square meters.',
   tags: ['area', 'square feet', 'square meters', 'convert'],
   formula: '<p>1 square foot = 0.092903 square meters</p>',
+  background: '<p>One foot is exactly 0.3048 m under the 1959 agreement, so a square foot is 0.3048², or 0.09290304 m². Floor areas are quoted in square feet in the US and in square metres nearly everywhere else, which makes this one of the most common real estate conversions. Do not confuse it with the linear foot-to-metre factor, which is only about a third as large.</p>',
   fields: [
     { id: 'value', label: 'Square Feet', type: 'number', step: 0.01, placeholder: 'e.g. 1000' },
   ],
@@ -887,6 +943,7 @@ R('square-meters-to-square-feet', {
   description: 'Convert square meters to square feet.',
   tags: ['area', 'square meters', 'square feet', 'convert'],
   formula: '<p>1 square meter = 10.7639 square feet</p>',
+  background: '<p>This is the inverse of the exact square-foot definition: one square metre is 1/0.09290304, or about 10.7639 square feet. Metric building plans and product datasheets use m², while US listings, carpets and paint coverage often use square feet. The ratio is the square of the 3.28084 feet-per-metre factor, not the factor itself.</p>',
   fields: [
     { id: 'value', label: 'Square Meters', type: 'number', step: 0.01, placeholder: 'e.g. 100' },
   ],
@@ -903,6 +960,7 @@ R('celsius-to-fahrenheit', {
   description: 'Convert Celsius to Fahrenheit.',
   tags: ['temperature', 'celsius', 'fahrenheit', 'convert'],
   formula: '<p>F = C x 9/5 + 32</p>',
+  background: '<p>Both scales pin water at the same two points but divide the interval differently: 100 Celsius degrees against 180 Fahrenheit degrees, a ratio of 9/5. The 32-degree offset exists because Fahrenheit put the freezing point of water at 32 rather than zero. The Fahrenheit scale is still used for weather, cooking and medicine in the US and a few other countries.</p>',
   fields: [
     { id: 'value', label: 'Celsius', type: 'number', step: 0.01, placeholder: 'e.g. 100' },
   ],
@@ -919,6 +977,7 @@ R('fahrenheit-to-celsius', {
   description: 'Convert Fahrenheit to Celsius.',
   tags: ['temperature', 'fahrenheit', 'celsius', 'convert'],
   formula: '<p>C = (F - 32) x 5/9</p>',
+  background: '<p>Subtracting the 32-degree offset first and then multiplying by 5/9 reverses the Fahrenheit definition, where water freezes at 32 °F and boils at 212 °F. The 5/9 factor reflects that 180 Fahrenheit degrees span the same interval as 100 Celsius degrees. The scales cross at −40, the one temperature where both read the same.</p>',
   fields: [
     { id: 'value', label: 'Fahrenheit', type: 'number', step: 0.01, placeholder: 'e.g. 212' },
   ],
@@ -935,6 +994,7 @@ R('celsius-to-kelvin', {
   description: 'Convert Celsius to Kelvin.',
   tags: ['temperature', 'celsius', 'kelvin', 'convert'],
   formula: '<p>K = C + 273.15</p>',
+  background: '<p>Kelvin is the SI base unit of temperature and starts at absolute zero, the point where no more thermal energy can be extracted. Its degree size is identical to the Celsius degree, so the only change is the 273.15 offset — 0 °C is 273.15 K. Since 2019 the kelvin is defined through the Boltzmann constant rather than the triple point of water.</p>',
   fields: [
     { id: 'value', label: 'Celsius', type: 'number', step: 0.01, placeholder: 'e.g. 100' },
   ],
@@ -951,6 +1011,7 @@ R('kelvin-to-celsius', {
   description: 'Convert Kelvin to Celsius.',
   tags: ['temperature', 'kelvin', 'celsius', 'convert'],
   formula: '<p>C = K - 273.15</p>',
+  background: '<p>Subtracting 273.15 converts an absolute temperature to the Celsius scale used in everyday life and most laboratories. The offset comes from water freezing at 273.15 K, fixed by the pre-2019 triple-point definition and retained for continuity after the 2019 redefinition. A negative result means the input was below the freezing point of water, not an error, unless it falls below 0 K.</p>',
   fields: [
     { id: 'value', label: 'Kelvin', type: 'number', step: 0.01, placeholder: 'e.g. 373.15' },
   ],
@@ -967,6 +1028,7 @@ R('fahrenheit-to-kelvin', {
   description: 'Convert Fahrenheit to Kelvin.',
   tags: ['temperature', 'fahrenheit', 'kelvin', 'convert'],
   formula: '<p>K = (F - 32) x 5/9 + 273.15</p>',
+  background: '<p>This combines both steps: remove the 32-degree Fahrenheit offset, scale by 5/9 to Celsius degrees, then add 273.15 to reach absolute zero. The result is absolute, so values below 0 K are physically impossible and indicate a bad input. Kelvin is used in physics and chemistry because ratios of temperatures are meaningful only on an absolute scale.</p>',
   fields: [
     { id: 'value', label: 'Fahrenheit', type: 'number', step: 0.01, placeholder: 'e.g. 212' },
   ],
@@ -983,6 +1045,7 @@ R('kelvin-to-fahrenheit', {
   description: 'Convert Kelvin to Fahrenheit.',
   tags: ['temperature', 'kelvin', 'fahrenheit', 'convert'],
   formula: '<p>F = (K - 273.15) x 9/5 + 32</p>',
+  background: '<p>Absolute temperatures in kelvin are converted to Celsius degrees by subtracting 273.15, then to Fahrenheit by scaling 9/5 and adding 32. Rankine is the shortcut for this direction, since a Rankine degree equals a Fahrenheit degree and 0 °R is absolute zero. Cryogenics and aerospace often use kelvin, while US engineering datasheets may use Rankine or Fahrenheit.</p>',
   fields: [
     { id: 'value', label: 'Kelvin', type: 'number', step: 0.01, placeholder: 'e.g. 373.15' },
   ],
@@ -999,6 +1062,7 @@ R('celsius-to-rankine', {
   description: 'Convert Celsius to Rankine.',
   tags: ['temperature', 'celsius', 'rankine', 'convert'],
   formula: '<p>R = (C + 273.15) x 9/5</p>',
+  background: '<p>Rankine is the absolute version of the Fahrenheit scale, proposed by William Rankine in 1859: the degree size matches Fahrenheit and zero sits at absolute zero. Converting from Celsius therefore adds 273.15 and then scales by 9/5, giving 491.67 °R at the freezing point of water. It survives in US steam and power engineering, where tables are still published in °R.</p>',
   fields: [
     { id: 'value', label: 'Celsius', type: 'number', step: 0.01, placeholder: 'e.g. 100' },
   ],
@@ -1015,6 +1079,7 @@ R('fahrenheit-to-rankine', {
   description: 'Convert Fahrenheit to Rankine.',
   tags: ['temperature', 'fahrenheit', 'rankine', 'convert'],
   formula: '<p>R = F + 459.67</p>',
+  background: '<p>Because both scales use the same degree size, converting Fahrenheit to Rankine is a pure offset of 459.67 degrees. Rankine is the absolute Fahrenheit scale, so 0 °R is absolute zero and water freezes at 491.67 °R. It is used in US thermodynamics and power plant work where Fahrenheit-based tables are traditional.</p>',
   fields: [
     { id: 'value', label: 'Fahrenheit', type: 'number', step: 0.01, placeholder: 'e.g. 212' },
   ],
@@ -1031,6 +1096,7 @@ R('kelvin-to-rankine', {
   description: 'Convert Kelvin to Rankine.',
   tags: ['temperature', 'kelvin', 'rankine', 'convert'],
   formula: '<p>R = K x 9/5</p>',
+  background: '<p>Kelvin and Rankine are both absolute scales, so the conversion is purely a degree-size ratio of 9/5. Absolute zero is zero on both, which makes the relationship a simple multiplication with no offset. Rankine is used mainly in US engineering, while kelvin is the SI standard everywhere else.</p>',
   fields: [
     { id: 'value', label: 'Kelvin', type: 'number', step: 0.01, placeholder: 'e.g. 373.15' },
   ],
@@ -1047,6 +1113,7 @@ R('cm-to-inches', {
   description: 'Convert centimeters to inches.',
   tags: ['length', 'cm', 'inches', 'convert'],
   formula: '<p>1 inch = 2.54 centimeters</p>',
+  background: '<p>The centimetre is a metric length unit, and the inch has been exactly 2.54 cm since the 1959 international yard and pound agreement. Before that the inch varied slightly between countries and even between trades. Screen sizes, clothing, tools and paper formats are the usual places this conversion is needed.</p>',
   fields: [
     { id: 'value', label: 'Centimeters', type: 'number', step: 0.01, placeholder: 'e.g. 30' },
   ],
@@ -1063,6 +1130,7 @@ R('inches-to-cm', {
   description: 'Convert inches to centimeters.',
   tags: ['length', 'inches', 'cm', 'convert'],
   formula: '<p>1 inch = 2.54 centimeters</p>',
+  background: '<p>Multiplying inches by exactly 2.54 gives centimetres, a definition fixed by the 1959 agreement that reconciled the British and American inch. The inch itself descends from the Roman uncia, one twelfth of a foot, though its length drifted for centuries. Product dimensions and body measurements are the common use cases.</p>',
   fields: [
     { id: 'value', label: 'Inches', type: 'number', step: 0.01, placeholder: 'e.g. 12' },
   ],
@@ -1079,6 +1147,7 @@ R('hours-to-minutes', {
   description: 'Convert hours to minutes.',
   tags: ['time', 'hours', 'minutes', 'convert'],
   formula: '<p>1 hour = 60 minutes</p>',
+  background: '<p>Time is counted in base 60 from Babylonian astronomy, which is why an hour has 60 minutes and a minute 60 seconds rather than following the decimal system. The 24-hour day comes from Egyptian convention. Minutes are used for scheduling, billing and travel times, where decimal fractions of an hour can be confusing.</p>',
   fields: [
     { id: 'value', label: 'Hours', type: 'number', step: 0.01, placeholder: 'e.g. 2.5' },
   ],
@@ -1095,6 +1164,7 @@ R('minutes-to-hours', {
   description: 'Convert minutes to hours.',
   tags: ['time', 'minutes', 'hours', 'convert'],
   formula: '<p>1 hour = 60 minutes</p>',
+  background: '<p>Dividing minutes by 60 gives decimal hours, and the whole-and-remainder form is what people usually want for scheduling. Decimal hours matter for timesheets and payroll, where rates are applied per hour, and rounding rules can change what a worker is paid. The underlying 60-minute hour is a Babylonian convention that has outlasted every attempt to decimalise time.</p>',
   fields: [
     { id: 'value', label: 'Minutes', type: 'number', step: 0.01, placeholder: 'e.g. 90' },
   ],
@@ -1117,6 +1187,7 @@ R('hours-to-days', {
   description: 'Convert hours to days.',
   tags: ['time', 'hours', 'days', 'convert'],
   formula: '<p>1 day = 24 hours</p>',
+  background: '<p>A civil day is 24 hours, a convention inherited from Egyptian and Babylonian timekeeping that ignores the slightly shorter sidereal day of about 23 hours 56 minutes. Dividing by 24 gives a decimal day count, while the remainder form suits shift planning and elapsed-time descriptions. Daylight saving shifts the local wall-clock day by an hour but not its length.</p>',
   fields: [
     { id: 'value', label: 'Hours', type: 'number', step: 0.01, placeholder: 'e.g. 48' },
   ],
@@ -1142,7 +1213,8 @@ R('momentum', C({
   poundalSec: { label: 'poundal-s', factor: 0.138255 },
 }, 'Momentum Converter', 'Convert between momentum units.',
   ['momentum', 'physics', 'convert'],
-  '<p>Converts between momentum units through kg-m/s.</p>'));
+  '<p>Converts between momentum units through kg-m/s.</p>',
+  { background: '<p>Momentum is mass times velocity, so the SI unit is the kilogram-metre per second, which is dimensionally identical to the newton-second used for impulse. The CGS equivalent, the gram-centimetre per second, is 10⁻⁵ of it, and pound-foot per second belongs to the foot-pound-second system. Momentum is conserved in collisions, which is why it often matters more than kinetic energy when working out what happens after an impact.</p>' }));
 
 // Decimal Degrees to DMS
 R('convert-decimal-degrees-to-degrees-minutes-seconds', {
@@ -1150,6 +1222,7 @@ R('convert-decimal-degrees-to-degrees-minutes-seconds', {
   description: 'Convert decimal degrees to degrees, minutes, seconds.',
   tags: ['angle', 'degrees', 'DMS', 'convert'],
   formula: '<p>Converts decimal degrees to degrees-minutes-seconds format.</p>',
+  background: '<p>Decimal degrees and degrees-minutes-seconds encode the same angle in different bases: the first is convenient for software and GIS, the second for charts, navigation and astronomy. One degree is 60 minutes and one minute 60 seconds, a Babylonian inheritance, and one minute of latitude is one nautical mile. The sign convention here maps negative values to south and west, the usual GPS convention.</p>',
   fields: [
     { id: 'value', label: 'Decimal Degrees', type: 'number', step: 0.0001, placeholder: 'e.g. 40.7128' },
   ],
@@ -1177,6 +1250,7 @@ R('height-cm-to-in-and-ft', {
   description: 'Convert height from centimeters to feet and inches.',
   tags: ['height', 'cm', 'feet', 'inches', 'convert'],
   formula: '<p>1 inch = 2.54 cm, 1 foot = 12 inches</p>',
+  background: '<p>Human height is metric almost everywhere but is still given in feet and inches in the US and, conversationally, the UK. The conversion rests on the exact 2.54 cm inch and the 12-inch foot, so 175 cm is 5 ft 8.9 in. Medical charts in the US often record both, which is why the total-inches figure is also useful.</p>',
   fields: [
     { id: 'value', label: 'Centimeters', type: 'number', step: 0.1, placeholder: 'e.g. 175' },
   ],
@@ -1201,6 +1275,7 @@ R('height-ft-and-in-to-cm', {
   description: 'Convert height from feet and inches to centimeters.',
   tags: ['height', 'feet', 'inches', 'cm', 'convert'],
   formula: '<p>1 inch = 2.54 cm</p>',
+  background: '<p>Feet and inches are converted by turning the height into total inches and multiplying by 2.54, the exact post-1959 inch. The metric result is what most of the world uses for passports, medical records and clothing sizes. Note that the inches field accepts fractions up to 11.9, so 5 ft 12 in should be entered as 6 ft 0 in.</p>',
   fields: [
     { id: 'feet', label: 'Feet', type: 'number', step: 1, min: 0, placeholder: 'e.g. 5', half: true },
     { id: 'inches', label: 'Inches', type: 'number', step: 0.1, min: 0, max: 11.9, placeholder: 'e.g. 9', half: true },
@@ -1222,6 +1297,7 @@ R('heightftcm', {
   description: 'Convert height between feet/inches and centimeters.',
   tags: ['height', 'feet', 'cm', 'convert'],
   formula: '<p>1 inch = 2.54 cm</p>',
+  background: '<p>This is the same conversion as the feet-and-inches height tool, presented for the combined height entry used in forms. The arithmetic is total inches times 2.54 cm, with the inch fixed by the 1959 international agreement. Results are shown in both centimetres and metres because metric forms vary in which they ask for.</p>',
   fields: [
     { id: 'feet', label: 'Feet', type: 'number', step: 1, min: 0, placeholder: 'e.g. 5', half: true },
     { id: 'inches', label: 'Inches', type: 'number', step: 0.1, min: 0, max: 11.9, placeholder: 'e.g. 9', half: true },
@@ -1243,6 +1319,7 @@ R('meters-to-feet', {
   description: 'Convert meters to feet and inches.',
   tags: ['length', 'meters', 'feet', 'convert'],
   formula: '<p>1 meter = 3.28084 feet</p>',
+  background: '<p>The metre is the SI base unit of length, originally a fraction of the Earth meridian and now defined by the distance light travels in a fraction of a second. One metre is exactly 1/0.3048 feet, or about 3.28084 ft, since the 1959 agreement fixed the foot at 0.3048 m. Splitting the remainder into inches is useful because US plans and heights rarely use decimal feet.</p>',
   fields: [
     { id: 'value', label: 'Meters', type: 'number', step: 0.01, placeholder: 'e.g. 1.8' },
   ],
@@ -1270,7 +1347,8 @@ R('metricunits', C({
   nm: { label: 'Nanometers (nm)', factor: 1e-9 },
 }, 'Metric Units Converter', 'Convert between metric units across different dimensions.',
   ['metric', 'units', 'convert'],
-  '<p>Converts between metric units using standard SI prefixes.</p>'));
+  '<p>Converts between metric units using standard SI prefixes.</p>',
+  { background: '<p>This converter covers length only, despite the description mentioning dimensions: kilometres down to nanometres, all linked by powers of ten. SI prefixes date from the metric system of 1795 and were extended by the CGPM through giga, nano, pico and femto in the 1960s. Nanometres are the working unit for semiconductors and light wavelengths, while micrometres suit cells, fibres and precision machining.</p>' }));
 
 // Troy Weight
 R('weighttroy', C({
@@ -1280,7 +1358,8 @@ R('weighttroy', C({
   troyPound: { label: 'Troy Pounds (lb t)', factor: 5760 },
 }, 'Troy Weight Converter', 'Convert between troy weight units used for precious metals.',
   ['troy', 'weight', 'precious metals', 'convert'],
-  '<p>Converts between troy weight units through grains. 1 troy oz = 480 grains.</p>'));
+  '<p>Converts between troy weight units through grains. 1 troy oz = 480 grains.</p>',
+  { background: '<p>Troy weight is the system for precious metals, gemstones and, historically, coinage; the troy ounce of 31.1034768 g is the quote unit for gold and silver. It shares the 64.79891 mg grain with avoirdupois but counts 480 grains to the ounce and 12 ounces to the pound, against 437.5 grains and 16 ounces. The pennyweight of 24 grains is a medieval relic, once literally the weight of a silver penny.</p>' }));
 
 // Avoirdupois Weight
 R('weightavoirdupois', C({
@@ -1294,7 +1373,8 @@ R('weightavoirdupois', C({
   longTon: { label: 'Long Tons', factor: 16800000 },
 }, 'Avoirdupois Weight Converter', 'Convert between avoirdupois weight units.',
   ['avoirdupois', 'weight', 'convert'],
-  '<p>Converts between avoirdupois weight units through grains.</p>'));
+  '<p>Converts between avoirdupois weight units through grains.</p>',
+  { background: '<p>Avoirdupois is the everyday weight system of the English-speaking world, from the Old French for goods of weight, standardised in the thirteenth century. Its pound is 7000 grains, against 5760 for the troy pound, and it divides into 16 ounces of 437.5 grains. The dram, stone and hundredweight are traditional subdivisions; the 100-pound short hundredweight here differs from the British 112-pound long hundredweight.</p>' }));
 
 // Cubic Feet to Cubic Yards
 R('cubic-feet-to-cubic-yards', {
@@ -1302,6 +1382,7 @@ R('cubic-feet-to-cubic-yards', {
   description: 'Convert cubic feet to cubic yards.',
   tags: ['volume', 'cubic feet', 'cubic yards', 'convert'],
   formula: '<p>1 cubic yard = 27 cubic feet</p>',
+  background: '<p>A cubic yard is 3 × 3 × 3, or 27 cubic feet, because the yard is three feet and volume scales with the cube of the length ratio. Concrete, topsoil, mulch and gravel are sold by the cubic yard in the US, while appliance and shipping volumes are often given in cubic feet. Ordering slightly more than the calculated figure is normal practice to allow for settling and spillage.</p>',
   fields: [
     { id: 'value', label: 'Cubic Feet', type: 'number', step: 0.01, placeholder: 'e.g. 54' },
   ],
@@ -1318,6 +1399,7 @@ R('cubic-yards-to-cubic-feet', {
   description: 'Convert cubic yards to cubic feet.',
   tags: ['volume', 'cubic yards', 'cubic feet', 'convert'],
   formula: '<p>1 cubic yard = 27 cubic feet</p>',
+  background: '<p>Multiplying by 27 converts cubic yards to cubic feet, since each yard is three feet in every dimension. Bulk landscaping and construction materials are quoted in cubic yards, but bagged products and equipment capacities often use cubic feet. The same cube relationship explains why a cubic metre is 35.3 cubic feet.</p>',
   fields: [
     { id: 'value', label: 'Cubic Yards', type: 'number', step: 0.01, placeholder: 'e.g. 2' },
   ],
@@ -1334,6 +1416,7 @@ R('numberstowords', {
   description: 'Convert numbers to their English word representation.',
   tags: ['numbers', 'words', 'convert'],
   formula: '<p>Converts a number into its English word representation.</p>',
+  background: '<p>Spelling out numbers is a legal safeguard: amounts written in words on cheques, contracts and invoices are much harder to alter than digits. English uses the short scale, where a billion is 10⁹ and a trillion 10¹², a convention the US adopted early and Britain followed in 1974. Hyphenation and the use of and vary by style guide, so word output is approximate rather than definitive.</p>',
   fields: [
     { id: 'value', label: 'Number', type: 'number', step: 1, min: 0, max: 999999999999, placeholder: 'e.g. 12345' },
   ],
@@ -1367,6 +1450,7 @@ R('digits-to-words', {
   description: 'Convert a string of digits into individual word representations.',
   tags: ['digits', 'words', 'convert'],
   formula: '<p>Converts each digit in a number string to its word form.</p>',
+  background: '<p>Reading digits individually avoids the ambiguity of spoken numbers, where fifteen and fifty or thirteen and thirty are easily confused. Phone numbers, serial numbers, account references and error codes are therefore dictated digit by digit. The tool strips punctuation, so separators in the input do not appear in the output.</p>',
   fields: [
     { id: 'value', label: 'Digits', type: 'text', placeholder: 'e.g. 12345' },
   ],
@@ -1386,6 +1470,7 @@ R('minutes-to-decimal', {
   description: 'Convert minutes to decimal hours.',
   tags: ['time', 'minutes', 'decimal', 'convert'],
   formula: '<p>Divides minutes by 60 to get decimal hours.</p>',
+  background: '<p>Decimal hours are used in payroll, timesheets and project billing because multiplying a decimal fraction by an hourly rate is simple arithmetic. Forty-five minutes is 0.75 hours, and 8 hours 20 minutes is 8.33, which is not the same as 8.20. Some payroll systems round to the nearest quarter hour, which can shift pay noticeably over a pay period.</p>',
   fields: [
     { id: 'value', label: 'Minutes', type: 'number', step: 0.01, placeholder: 'e.g. 45' },
   ],

@@ -13,6 +13,7 @@ R('combinations', {
     { id: 'r', label: 'r (items to choose)', type: 'number', step: 1, min: 0, max: 1000, placeholder: 'e.g. 3', half: true },
   ],
   formula: '<p><code>C(n,r) = n! / (r! × (n−r)!) = nCr</code></p>',
+  background: '<p>A combination is a selection where the order of the chosen items does not matter, so the same committee or lottery ticket is counted once however it is listed. That is the difference from a permutation, which treats different orderings as different outcomes. The count appears throughout combinatorics, probability and computer science whenever a problem asks how many distinct groups can be formed from a larger pool.</p>',
   calculate: function(v) {
     if (v.r > v.n) return { error: 'r cannot be greater than n.' };
     const result = core.combinations(v.n, v.r);
@@ -34,6 +35,7 @@ R('permutations', {
     { id: 'r', label: 'r (items to arrange)', type: 'number', step: 1, min: 0, max: 1000, placeholder: 'e.g. 3', half: true },
   ],
   formula: '<p><code>P(n,r) = n! / (n−r)! = nPr</code></p>',
+  background: '<p>A permutation is an arrangement in which order matters, so the sequence ABC is distinct from CBA. It arises in rankings, seating plans, scheduling orders and password or key space estimates, where the position of each chosen item carries meaning. The count is always at least as large as the corresponding combination, because every unordered selection can be arranged in several ways.</p>',
   calculate: function(v) {
     if (v.r > v.n) return { error: 'r cannot be greater than n.' };
     const result = core.permutations(v.n, v.r);
@@ -54,6 +56,7 @@ R('factorial', {
     { id: 'n', label: 'n', type: 'number', step: 1, min: 0, max: 170, placeholder: 'e.g. 10' },
   ],
   formula: '<p><code>n! = n × (n−1) × (n−2) × ... × 2 × 1</code> and <code>0! = 1</code></p>',
+  background: '<p>A factorial counts the number of ways to arrange a set of distinct objects in a line, since the first position has n choices, the next n−1, and so on down to one. The empty product is defined as 1 so that formulas for permutations and binomial coefficients work without special cases. Factorials grow extremely quickly, which is why they show up in complexity analysis and why practical computation switches to logarithms or Stirling\'s approximation beyond moderate sizes.</p>',
   calculate: function(v) {
     const result = core.factorial(v.n);
     var out = {};
@@ -73,6 +76,7 @@ R('pascal-triangle', {
     { id: 'rows', label: 'Number of Rows', type: 'number', step: 1, min: 1, max: 20, placeholder: 'e.g. 10' },
   ],
   formula: '<p>Each entry is the sum of the two entries above it. Row n gives coefficients of (a+b)^n.</p>',
+  background: '<p>Pascal\'s triangle is a triangular array in which every interior entry is the sum of the two above it, and each row lists the binomial coefficients of an expansion. It is the classic way to see combinations without factorials, since an entry counts the ways to choose that many items from the row\'s index. The same numbers appear in probability, in the coefficients of polynomial expansions and in the analysis of random walks.</p>',
   calculate: function(v) {
     const n = Math.min(v.rows, 20);
     let html = '<table style="margin:0 auto">';
@@ -99,6 +103,7 @@ R('partition', {
     { id: 'n', label: 'Integer n', type: 'number', step: 1, min: 1, max: 50, placeholder: 'e.g. 10' },
   ],
   formula: '<p><code>p(n)</code> is the number of ways to write n as a sum of positive integers, disregarding order.</p>',
+  background: '<p>An integer partition writes a whole number as a sum of positive integers where order is ignored, so 3+1 and 1+3 are the same partition of four. Partition numbers come up in number theory, in counting the ways to make change and in statistical mechanics when energy is distributed among identical states. The count grows quickly with n even though the individual partitions are simple to list for small values.</p>',
   calculate: function(v) {
     const n = Math.min(v.n, 50);
     const p = new Array(n + 1).fill(0);
@@ -140,6 +145,7 @@ R('subset', {
     { id: 'n', label: 'Number of Elements', type: 'number', step: 1, min: 1, max: 20, placeholder: 'e.g. 5' },
   ],
   formula: '<p><code>|P(S)| = 2^n</code> where P(S) is the power set of S.</p>',
+  background: '<p>A subset is any selection of elements taken from a set, including the empty set and the set itself, and the collection of all of them is called the power set. Each element is independently either in or out, so the total doubles with every element added. The idea underpins set theory, boolean logic and the bitmask technique used to enumerate combinations in programming.</p>',
   calculate: function(v) {
     const n = Math.min(v.n, 20);
     const totalSubsets = Math.pow(2, n);
@@ -181,6 +187,7 @@ R('venn-diagram', {
     { id: 'universe', label: 'Universe U (comma-separated)', type: 'textarea', placeholder: 'e.g. 1, 2, 3, 4, 5, 6, 7, 8', hint: 'Universal set' },
   ],
   formula: '<p>Union: A &#8743; B. Intersection: A &#8745; B. Difference: A &#8723; B. Complement: A\'. Symmetric Difference: A &#9651; B.</p>',
+  background: '<p>Set operations describe how collections combine: union gathers everything in either set, intersection keeps only shared members, and difference removes one set from another. Venn diagrams make those relationships visual, and the same rules govern database queries, search filters and probability events. Inclusion–exclusion is the practical consequence, since adding the sizes of two sets double-counts their overlap unless it is subtracted.</p>',
   calculate: function(v) {
     var Aarr = v.setA.split(/[\s,;]+/).filter(function(x) { return x; });
     var Barr = v.setB.split(/[\s,;]+/).filter(function(x) { return x; });
@@ -235,6 +242,7 @@ R('truth-table', {
     ]},
   ],
   formula: '<p>Truth table shows all possible input combinations and the result of the logical operation.</p>',
+  background: '<p>A truth table lists every possible assignment of true and false to the variables and the resulting value of a compound expression. With n variables there are exactly 2^n rows, which is why tables become unwieldy beyond a handful of inputs. The method is central to propositional logic, digital circuit design and formal verification, where it provides an exhaustive specification of behaviour.</p>',
   calculate: function(v) {
     const n = Math.min(v.vars, 4);
     const rows = Math.pow(2, n);
@@ -283,6 +291,7 @@ R('logical-operations', {
     ]},
   ],
   formula: '<p>AND, OR, NOT, NAND, NOR, XOR, IMPLIES, IFF</p>',
+  background: '<p>Boolean connectives combine truth values: conjunction is true only when both inputs are true, disjunction when at least one is, and negation flips a single value. Derived operators such as NAND, NOR and XOR are common in digital electronics because they map directly onto logic gates and can express any other connective. The same rules describe conditions in programming languages and filters in database systems.</p>',
   calculate: function(v) {
     const p = !!Number(v.p), q = !!Number(v.q);
     return {
@@ -310,6 +319,7 @@ R('relation-matrix', {
     { id: 'matrix', label: 'Matrix Entries (row by row, 0/1, comma-separated)', type: 'textarea', placeholder: 'e.g. 1,0,1, 0,1,0, 1,0,1', hint: 'n rows of n entries each, separated by commas or spaces' },
   ],
   formula: '<p>Reflexive: all diagonal = 1. Symmetric: M[i][j] = M[j][i]. Transitive: if M[i][j] and M[j][k] then M[i][k].</p>',
+  background: '<p>A binary relation on a finite set can be written as a square matrix of zeros and ones, with a one marking each related pair. Properties such as reflexivity, symmetry and transitivity then become patterns in the matrix: a full diagonal, mirror symmetry, or closure under composition. Equivalence relations and partial orders built this way are the foundation of type systems, scheduling dependencies and database normalisation.</p>',
   calculate: function(v) {
     const n = Math.min(v.size, 6);
     const entries = v.matrix.split(/[\s,;]+/).map(Number).filter(function(x) { return x === 0 || x === 1; });
@@ -352,6 +362,7 @@ R('graph-theory', {
     { id: 'matrix', label: 'Adjacency Matrix (0/1, row by row)', type: 'textarea', placeholder: 'e.g. 0,1,1,0, 1,0,0,1, 1,0,0,1, 0,1,1,0', hint: 'n rows of n entries' },
   ],
   formula: '<p>Counts vertices, edges, degrees, and checks connectivity properties.</p>',
+  background: '<p>A graph is a set of vertices joined by edges, usually stored as an adjacency matrix in which a one records a connection between two vertices. Degrees count the edges touching each vertex, and in an undirected graph they must sum to twice the number of edges, which is the handshake lemma. Graphs model networks, road maps, dependency graphs and social connections, so properties such as regular or connected are the first things checked.</p>',
   calculate: function(v) {
     const n = Math.min(v.vertices, 8);
     const directed = !!Number(v.directed);
@@ -410,6 +421,7 @@ R('combinationsreplacement', {
     { id: 'r', label: 'r (items to choose)', type: 'number', step: 1, min: 0, max: 1000, placeholder: 'e.g. 3', half: true },
   ],
   formula: '<p><code>C(n+r−1, r) = (n+r−1)! / (r! × (n−1)!) = C(n+r−1, n−1)</code></p>',
+  background: '<p>Combinations with replacement count selections where the same item may be chosen more than once and order is still irrelevant, such as scooping several flavours of ice cream. The standard trick, often called stars and bars, turns the problem into arranging dividers among the chosen items. It appears in combinatorics, in counting non-negative integer solutions to equations and in allocating identical resources among distinct recipients.</p>',
   calculate: function(v) {
     if (v.n < 1) return { error: 'n must be at least 1.' };
     const result = core.combinations(v.n + v.r - 1, v.r);
@@ -430,6 +442,7 @@ R('evenpermutations', {
     { id: 'n', label: 'n (elements)', type: 'number', step: 1, min: 1, max: 20, placeholder: 'e.g. 5' },
   ],
   formula: '<p><code>Even Permutations = n! / 2</code> for n ≥ 2. The even permutations form the alternating group A_n.</p>',
+  background: '<p>Every permutation of n distinct items can be built from swaps, and its parity is whether that number of swaps is even or odd. For any n of two or more, exactly half of the n! permutations are even, and those even ones form the alternating group. Parity matters in linear algebra through the determinant, and in puzzles such as the fifteen-puzzle, where only positions of matching parity are reachable.</p>',
   calculate: function(v) {
     if (v.n === 1) return { 'Even Permutations': 1, 'Description': 'Only the identity permutation' };
     const nf = core.factorial(v.n);
@@ -452,6 +465,7 @@ R('factorials', {
     { id: 'n', label: 'n', type: 'number', step: 1, min: 0, max: 170, placeholder: 'e.g. 10' },
   ],
   formula: '<p><code>n! = n × (n−1) × (n−2) × ... × 2 × 1</code> and <code>0! = 1</code></p>',
+  background: '<p>This is the same factorial used throughout combinatorics, counting the orderings of n distinct objects and forming the building block of permutations and binomial coefficients. The definition extends to zero as 1, the empty product, so formulas need no separate case. Values exceed the exact range of ordinary floating point around 170!, which is why calculators cap input there.</p>',
   calculate: function(v) {
     const result = core.factorial(v.n);
     var out = {};
@@ -471,6 +485,7 @@ R('fibonacci-calculator', {
     { id: 'n', label: 'Number of Terms', type: 'number', step: 1, min: 1, max: 80, placeholder: 'e.g. 15' },
   ],
   formula: '<p><code>F(0) = 0, F(1) = 1, F(n) = F(n−1) + F(n−2)</code></p>',
+  background: '<p>The Fibonacci sequence starts with 0 and 1 and adds the two previous terms, producing 0, 1, 1, 2, 3, 5 and so on. It appears in models of population growth, in the branching of plants, and in computer science as the worst case for the Euclidean algorithm and as a source of test data. The ratio of successive terms converges on the golden ratio, which is why the sequence is often introduced alongside it.</p>',
   calculate: function(v) {
     const n = Math.min(v.n, 80);
     var fib = [0, 1];
@@ -501,6 +516,7 @@ R('multifactorials', {
     { id: 'k', label: 'k (order)', type: 'number', step: 1, min: 1, max: 10, placeholder: 'e.g. 2', half: true },
   ],
   formula: '<p><code>n!_k = n × (n−k) × (n−2k) × ... </code> stopping before reaching ≤ 0. For k=1 it is the ordinary factorial.</p>',
+  background: '<p>A multifactorial steps down by a fixed interval instead of by one, so the double factorial takes every second term and the triple factorial every third. These products appear in combinatorics when counting pairings and in calculus when integrating powers of sine and cosine. The ordinary factorial is the special case where the step is one.</p>',
   calculate: function(v) {
     var result = 1;
     for (var i = v.n; i > 0; i -= v.k) {
@@ -523,6 +539,7 @@ R('oddpermutations', {
     { id: 'n', label: 'n (elements)', type: 'number', step: 1, min: 1, max: 20, placeholder: 'e.g. 5' },
   ],
   formula: '<p><code>Odd Permutations = n! / 2</code> for n ≥ 2. The odd permutations are those not in the alternating group A_n.</p>',
+  background: '<p>An odd permutation needs an odd number of swaps to reach the identity, which makes it the complement of the even permutations within the symmetric group. For n of two or more the two classes are equal in size, and there is no odd permutation of a single element. Swapping any two items flips parity, a fact used in proofs about reachable configurations in sliding puzzles and in the theory of the determinant.</p>',
   calculate: function(v) {
     if (v.n === 1) return { 'Odd Permutations': 0, 'Description': 'No odd permutations for a single element' };
     const nf = core.factorial(v.n);
@@ -545,6 +562,7 @@ R('pascals-triangle', {
     { id: 'rows', label: 'Number of Rows', type: 'number', step: 1, min: 1, max: 20, placeholder: 'e.g. 10' },
   ],
   formula: '<p>Each entry is the sum of the two entries above it. Row n gives coefficients of (a+b)^n.</p>',
+  background: '<p>Rows of Pascal\'s triangle give the binomial coefficients, so the array is a compact table of combination counts for small n. Each entry is formed by adding the two above it, a recurrence that mirrors the identity relating consecutive binomial coefficients. The triangle is used in probability, algebra and the study of fractals, where its pattern of odd entries produces the Sierpinski triangle.</p>',
   calculate: function(v) {
     const n = Math.min(v.rows, 20);
     let html = '<table style="margin:0 auto">';
@@ -571,6 +589,7 @@ R('permutationscircular', {
     { id: 'n', label: 'n (items)', type: 'number', step: 1, min: 1, max: 170, placeholder: 'e.g. 6' },
   ],
   formula: '<p><code>Circular Permutations = (n − 1)!</code></p>',
+  background: '<p>A circular permutation arranges items around a ring, where rotating the whole arrangement does not create a new one. Fixing one item in place removes that rotational symmetry and reduces the count to the factorial of one less than the number of items. Seating plans, round-table schedules and necklace or bracelet patterns are the usual examples.</p>',
   calculate: function(v) {
     const result = core.factorial(v.n - 1);
     return {
@@ -591,6 +610,7 @@ R('permutationsreplacement', {
     { id: 'r', label: 'r (positions)', type: 'number', step: 1, min: 1, max: 100, placeholder: 'e.g. 3', half: true },
   ],
   formula: '<p><code>P = n^r</code></p>',
+  background: '<p>Permutations with replacement allow the same item to be used more than once in each position, so every slot has the full set of choices independently. Passwords, PIN codes and strings over a fixed alphabet are the standard examples, and the result grows exponentially with the number of positions. It is the ordered counterpart of combinations with replacement.</p>',
   calculate: function(v) {
     const result = Math.pow(v.n, v.r);
     return {

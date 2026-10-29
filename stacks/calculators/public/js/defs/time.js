@@ -13,6 +13,7 @@ R('age-calculator', {
     { id: 'asOf', label: 'Calculate Age As Of (leave blank for today)', type: 'date' },
   ],
   formula: '<p>Calculates the exact age in years, months, and days between two dates.</p>',
+  background: '<p>Age in years, months and days follows the calendar rather than a fixed number of days, because months have 28 to 31 days and leap years add one more. The usual convention borrows from the previous month when the day of the month has not yet been reached. Totals in days differ slightly from the calendar figure depending on whether an endpoint is counted.</p>',
   calculate: function(v) {
     if (!v.birthdate) return { error: 'Enter a birth date' };
     const asOf = v.asOf || new Date().toISOString().slice(0, 10);
@@ -38,6 +39,7 @@ R('age-checker', {
     { id: 'targetDate', label: 'Target Date', type: 'date', placeholder: 'e.g. 2025-12-31' },
   ],
   formula: '<p>Calculates the exact age between a birth date and any target date.</p>',
+  background: '<p>This finds the age on an arbitrary date, past or future, which is useful for eligibility cut-offs such as school entry or retirement. The calendar convention counts whole years first, then months, then remaining days, so the result respects unequal month lengths and leap days. Whether the birth date itself counts as day zero is the main source of off-by-one differences between tools.</p>',
   calculate: function(v) {
     if (!v.birthdate || !v.targetDate) return { error: 'Enter both dates' };
     const comp = core.ageComponents(v.birthdate, v.targetDate);
@@ -58,6 +60,7 @@ R('how-old-am-i', {
     { id: 'birthTime', label: 'Birth Time (HH:MM)', type: 'time', placeholder: 'e.g. 14:30' },
   ],
   formula: '<p>Calculates your precise age including hours, minutes, and seconds from birth to now.</p>',
+  background: '<p>Down to the second, age is simply the elapsed time since the birth timestamp, so the answer depends on the time of birth and on the clock, including any daylight saving changes in between. Calendar ages in years and months are derived from that span with the usual borrowing rule. An hour of time zone difference shifts the exact second count.</p>',
   calculate: function(v) {
     if (!v.birthdate) return { error: 'Enter a birth date' };
     let birthStr = v.birthdate;
@@ -96,6 +99,7 @@ R('date-difference-calculator', {
     { id: 'date2', label: 'End Date', type: 'date', placeholder: 'e.g. 2025-06-15' },
   ],
   formula: '<p>Calculates the elapsed time between two dates in various units.</p>',
+  background: '<p>Date differences can be reported in several units that do not convert cleanly, because months vary in length and years include leap days. The difference in Julian day numbers gives an unambiguous total in days once the endpoint convention is fixed, while the years-months-days breakdown follows calendar borrowing. Treating a month as 30 days, as many shortcuts do, produces approximate figures.</p>',
   calculate: function(v) {
     if (!v.date1 || !v.date2) return { error: 'Enter both dates' };
     const days = core.daysBetween(v.date1, v.date2);
@@ -123,6 +127,7 @@ R('days-between-dates', {
     { id: 'date2', label: 'End Date', type: 'date', placeholder: 'e.g. 2024-12-31' },
   ],
   formula: '<p>Simple calculation of the total number of calendar days between two dates.</p>',
+  background: '<p>Counting days between dates depends on whether the start or the end is included; the difference in day numbers is the usual answer and excludes the start day. Leap days are included automatically because the Gregorian calendar inserts 29 February in years divisible by 4, except centuries not divisible by 400. A daylight saving change does not alter the count, because calendar days are not 24-hour durations.</p>',
   calculate: function(v) {
     if (!v.date1 || !v.date2) return { error: 'Enter both dates' };
     const days = core.daysBetween(v.date1, v.date2);
@@ -144,6 +149,7 @@ R('months-between-dates', {
     { id: 'date2', label: 'End Date', type: 'date', placeholder: 'e.g. 2025-06-15' },
   ],
   formula: '<p>Calculates the difference in months between two dates, including partial months.</p>',
+  background: '<p>Months are not a fixed length, so a month difference is counted on the calendar: from 15 January to 15 March is two months, while 31 January to 28 February is usually treated as one. Partial months are often expressed as a fraction based on the days elapsed in the final month. Libraries differ on end-of-month handling, which is why results can vary by a day or a fraction.</p>',
   calculate: function(v) {
     if (!v.date1 || !v.date2) return { error: 'Enter both dates' };
     const d1 = new Date(v.date1), d2 = new Date(v.date2);
@@ -168,6 +174,7 @@ R('years-between-dates', {
     { id: 'date2', label: 'End Date', type: 'date', placeholder: 'e.g. 2025-06-15' },
   ],
   formula: '<p>Calculates the difference in years between two dates, including fractional years.</p>',
+  background: '<p>Year differences follow the anniversary rule: a person born on 29 February reaches the next age on 1 March in common years under most conventions, though some jurisdictions legislate 28 February. Fractional years are an approximation because a year is 365 or 366 days. For legal or financial purposes the exact day-count convention should be stated.</p>',
   calculate: function(v) {
     if (!v.date1 || !v.date2) return { error: 'Enter both dates' };
     const d1 = new Date(v.date1), d2 = new Date(v.date2);
@@ -195,6 +202,7 @@ R('time-date-difference-calculator', {
     { id: 'time2', label: 'End Time', type: 'time', placeholder: 'e.g. 17:30', half: true },
   ],
   formula: '<p>Calculates the exact difference between two date-time pairs including hours and minutes.</p>',
+  background: '<p>This treats each date and time as a single instant and reports the gap in days, hours and minutes. If the inputs are local times, a daylight saving change can make the elapsed duration an hour longer or shorter than the calendar arithmetic suggests. Working in UTC avoids that ambiguity.</p>',
   calculate: function(v) {
     if (!v.date1 || !v.date2) return { error: 'Enter both dates' };
     const t1 = v.time1 || '00:00';
@@ -228,6 +236,7 @@ R('day-of-week', {
     { id: 'date', label: 'Date', type: 'date', placeholder: 'e.g. 2025-01-01' },
   ],
   formula: '<p>Uses the Zeller-like algorithm to determine the day of the week for any given date.</p>',
+  background: '<p>The day of the week follows from the date through the Gregorian calendar rules, with each common year shifting the pattern by one day and a leap year by two. Dates before the Gregorian reform of 1582 are ambiguous, because countries switched calendars at different times and skipped days in the process. Time zones do not affect the weekday of a calendar date, only the instant at which it begins.</p>',
   calculate: function(v) {
     if (!v.date) return { error: 'Enter a date' };
     const d = new Date(v.date);
@@ -256,6 +265,7 @@ R('countdown', {
     { id: 'targetTime', label: 'Target Time (optional)', type: 'time', placeholder: 'e.g. 00:00' },
   ],
   formula: '<p>Calculates the remaining time from now until the specified target date and time.</p>',
+  background: '<p>A countdown measures the interval from now to a target instant, so it changes as the current time advances and depends on the time zone attached to the target. Days here are 24-hour periods of elapsed time, not calendar dates, so a daylight saving change can make a calendar day count differently. For event planning, state the target zone explicitly.</p>',
   calculate: function(v) {
     if (!v.targetDate) return { error: 'Enter a target date' };
     const t = v.targetTime || '00:00';
@@ -299,6 +309,7 @@ R('date-calculator', {
     ]},
   ],
   formula: '<p>Adds or subtracts the specified number of time units from the start date.</p>',
+  background: '<p>Adding months or years is not the same as adding 30 or 365 days: the calendar result keeps the same day of the month where possible and clamps to the last valid day otherwise, so 31 January plus one month becomes 28 or 29 February. Days and weeks are exact durations. Leap years and unequal month lengths are handled by the calendar itself, not by a fixed conversion factor.</p>',
   calculate: function(v) {
     if (!v.startDate || !v.amount) return { error: 'Enter a date and amount' };
     const amt = v.direction === 'subtract' ? -v.amount : v.amount;
@@ -339,6 +350,7 @@ R('time-calculator', {
     { id: 'seconds', label: 'Seconds', type: 'number', step: 1, min: 0, placeholder: 'e.g. 0', half: true },
   ],
   formula: '<p>Adds or subtracts the specified hours, minutes, and seconds from the start time.</p>',
+  background: '<p>Clock arithmetic wraps at 24 hours, so adding 10 hours to 20:00 lands at 06:00 the next day. Durations are exact, but a local wall-clock result can be off by an hour around a daylight saving transition if no date is supplied. Converting to 24-hour notation avoids confusion between midnight and noon.</p>',
   calculate: function(v) {
     if (!v.startTime) return { error: 'Enter a start time' };
     const [sh, sm] = v.startTime.split(':').map(Number);
@@ -371,6 +383,7 @@ R('decimal-to-time', {
     { id: 'decimalHours', label: 'Decimal Hours', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 8.75' },
   ],
   formula: '<p>Converts a decimal hour value into hours:minutes:seconds format. Useful for payroll and time tracking.</p>',
+  background: '<p>Decimal hours are used in payroll and time tracking because they multiply easily by an hourly rate: 7.5 means seven and a half hours. The conversion is exact only to the precision given, since 0.01 hour is 36 seconds. Rounding should happen after totalling, not per entry, to avoid accumulated error.</p>',
   calculate: function(v) {
     if (v.decimalHours == null) return { error: 'Enter decimal hours' };
     const h = Math.floor(v.decimalHours);
@@ -397,6 +410,7 @@ R('time-to-decimal', {
     { id: 'seconds', label: 'Seconds', type: 'number', step: 1, min: 0, max: 59, placeholder: 'e.g. 0', half: true },
   ],
   formula: '<p>Converts hours:minutes:seconds into a decimal hour value. Useful for payroll calculations.</p>',
+  background: '<p>Converting clock time to decimal hours makes timesheet arithmetic straightforward, since 1 hour 30 minutes becomes 1.5 hours. Minutes and seconds are fractions of 60, so 45 minutes is 0.75 hour and 20 minutes is a repeating 0.333… hour. Employers often round punch times to the nearest quarter hour, which changes totals independently of this conversion.</p>',
   calculate: function(v) {
     const h = v.hours || 0, m = v.minutes || 0, s = v.seconds || 0;
     const decimal = h + m / 60 + s / 3600;
@@ -423,6 +437,7 @@ R('time-zone-converter', {
     { id: 'toOffset', label: 'To UTC Offset (hours)', type: 'number', step: 0.5, placeholder: 'e.g. 1', half: true },
   ],
   formula: '<p>Converts a local time to another time zone using UTC offsets.</p>',
+  background: '<p>Time zone offsets are not fixed: most places shift by an hour for daylight saving on dates set locally, and some zones use half-hour or 45-minute offsets. Converting correctly therefore needs the date as well as the time, because the offset in force depends on both. Historical offsets also changed, so very old dates may not match current rules.</p>',
   calculate: function(v) {
     if (!v.date || !v.time) return { error: 'Enter date and time' };
     const [h, m] = v.time.split(':').map(Number);
@@ -458,6 +473,7 @@ R('work-day-calculator', {
     ]},
   ],
   formula: '<p>Counts only Monday-Friday work days, skipping weekends. Useful for project planning.</p>',
+  background: '<p>Business day counting usually skips Saturdays and Sundays and may also skip public holidays, which vary by country and even by region. The result depends on whether the start date counts as day one. Five working days per week assumes a Monday-to-Friday convention; many services and factories use different rotas.</p>',
   calculate: function(v) {
     if (!v.startDate || !v.workDays) return { error: 'Enter a start date and work days' };
     const d = new Date(v.startDate);
@@ -497,6 +513,7 @@ R('due-date-calculator', {
     ]},
   ],
   formula: '<p>Adds the specified duration to the start date to find the due date.</p>',
+  background: '<p>Adding a duration to a date follows the calendar for months and years and exact days for day-based terms, so a 90-day term and a three-month term rarely end on the same date. Legal and contractual deadlines often specify the counting convention, including whether the start day counts and what happens when the date falls on a weekend. Public holidays can push an effective deadline further.</p>',
   calculate: function(v) {
     if (!v.startDate || !v.amount) return { error: 'Enter a start date and duration' };
     let result;
@@ -533,6 +550,7 @@ R('elapsed-time', {
     { id: 'days', label: 'Number of Days Spanned (0 = same day)', type: 'number', step: 1, min: 0, max: 365, placeholder: 'e.g. 0', half: true },
   ],
   formula: '<p>Calculates the total elapsed time between two clock times, optionally spanning multiple days.</p>',
+  background: '<p>Elapsed time measures the interval between two clock times, and when the end is earlier than the start it is treated as crossing midnight. When a date is supplied, daylight saving transitions can make the real duration an hour different from the clock arithmetic. Times without a zone are treated as local wall-clock times.</p>',
   calculate: function(v) {
     const startSec = (v.startHour || 0) * 3600 + (v.startMin || 0) * 60;
     const endSec = (v.endHour || 0) * 3600 + (v.endMin || 0) * 60;
@@ -561,6 +579,7 @@ R('stopwatch-conversion', {
     { id: 'seconds', label: 'Total Seconds', type: 'number', step: 1, min: 0, placeholder: 'e.g. 3661' },
   ],
   formula: '<p>Breaks down a total number of seconds into hours, minutes, and seconds.</p>',
+  background: '<p>A stopwatch total in seconds converts to hours, minutes and seconds by integer division by 3600 and then 60. This is pure duration arithmetic, so it never needs calendar rules or time zones. Long totals still convert cleanly, unlike clock times, which wrap at 24 hours.</p>',
   calculate: function(v) {
     if (v.seconds == null) return { error: 'Enter total seconds' };
     const total = Math.floor(v.seconds);
@@ -592,6 +611,7 @@ R('military-time', {
     ]},
   ],
   formula: '<p>Converts between 12-hour clock (with AM/PM) and 24-hour military time format.</p>',
+  background: '<p>Military, or 24-hour, time removes the ambiguity of AM and PM by counting hours from 00:00 at midnight to 23:59 just before the next midnight. Midnight is written 0000, while the 12-hour clock calls it 12:00 AM, and noon is 1200 rather than 12:00 PM. The conversion involves no calendar or time zone information, only the clock convention.</p>',
   calculate: function(v) {
     if (v.hour == null) return { error: 'Enter an hour' };
     let h12 = v.hour, h24;
@@ -625,6 +645,7 @@ R('leap-year', {
     { id: 'year', label: 'Year', type: 'number', step: 1, min: 1, max: 9999, placeholder: 'e.g. 2024' },
   ],
   formula: '<p>A year is a leap year if it is divisible by 4, except for century years which must be divisible by 400.</p>',
+  background: '<p>The Gregorian rule keeps the calendar aligned with the seasons: a year divisible by 4 is a leap year, except century years, which must be divisible by 400. That gives 97 leap years in 400 years and an average year of 365.2425 days, close to the tropical year of about 365.2422. The older Julian calendar used the simpler divisible-by-4 rule and drifted by roughly three days every four centuries.</p>',
   calculate: function(v) {
     if (v.year == null) return { error: 'Enter a year' };
     const y = v.year;
@@ -654,6 +675,7 @@ R('week-number', {
     { id: 'date', label: 'Date', type: 'date', placeholder: 'e.g. 2025-01-15' },
   ],
   formula: '<p>Calculates the ISO 8601 week number. Week 1 is the week containing the first Thursday of the year.</p>',
+  background: '<p>ISO 8601 weeks start on Monday, and week 1 is the week containing the first Thursday of the year, which is also the week containing 4 January. A year therefore has 52 or 53 ISO weeks, and dates in late December or early January can belong to the neighbouring year. This differs from systems such as the US convention, where weeks start on Sunday.</p>',
   calculate: function(v) {
     if (!v.date) return { error: 'Enter a date' };
     const d = new Date(v.date);
@@ -686,6 +708,7 @@ R('time-duration', {
     { id: 'durations', label: 'Durations (one per line, format: H:M:S or M:S)', type: 'textarea', placeholder: 'e.g.\n8:30\n1:00\n7:45\n0:30', hint: 'Enter each duration on a new line as hours:minutes:seconds or minutes:seconds' },
   ],
   formula: '<p>Adds multiple time durations together to find the total elapsed time.</p>',
+  background: '<p>Durations add in base 60 with carries, which is why three 50-minute sessions total 2 hours 30 minutes in clock form rather than 150 minutes. Totals beyond 24 hours are durations, not times of day, so they should not wrap around midnight. Only wall-clock conversions near a daylight saving change need calendar correction.</p>',
   calculate: function(v) {
     if (!v.durations || !v.durations.trim()) return { error: 'Enter at least one duration' };
     const lines = v.durations.trim().split(/\n/).map(l => l.trim()).filter(l => l);
@@ -731,6 +754,7 @@ R('solar-time', {
     { id: 'longitude', label: 'Longitude (degrees)', type: 'number', step: 0.1, min: -180, max: 180, placeholder: 'e.g. -74.0', half: true },
   ],
   formula: '<p>Estimates sunrise and sunset using the solar position algorithm. Accuracy is approximate (\u00b1 few minutes).</p>',
+  background: '<p>Sunrise and sunset depend on latitude, date and the solar declination, and the estimate ignores local terrain, non-standard refraction and observer elevation. Times are given in local clock time, so daylight saving shifts them by an hour without changing the underlying solar geometry. Near the poles the sun may not rise or set at all, and the approximation degrades.</p>',
   calculate: function(v) {
     if (!v.date || v.latitude == null) return { error: 'Enter a date and latitude' };
     const d = new Date(v.date);
@@ -786,6 +810,7 @@ R('countdown-timer', {
     { id: 'targetTime', label: 'Target Time (optional)', type: 'time', placeholder: 'e.g. 00:00' },
   ],
   formula: '<p>Calculates the remaining time from now until the specified target date and time.</p>',
+  background: '<p>A countdown is a difference between two instants, so it depends on the accuracy of the system clock and on the time zone of the target. Days shown are elapsed 24-hour periods; across a daylight saving change a calendar day can be 23 or 25 hours. Timers running in a browser tab may also be throttled when the tab is in the background.</p>',
   calculate: function(v) {
     if (!v.targetDate) return { error: 'Enter a target date' };
     const t = v.targetTime || '00:00';
@@ -827,6 +852,7 @@ R('date-calendar', {
     ]},
   ],
   formula: '<p>Adds or subtracts the specified number of calendar units from the start date.</p>',
+  background: '<p>Calendar arithmetic adds units to a date and keeps the result valid: adding a month to 31 January clamps to the end of February. Day and week additions are exact, while month and year additions follow the pattern of unequal month lengths and leap days. The order of operations matters when several units are combined.</p>',
   calculate: function(v) {
     if (!v.startDate || !v.amount) return { error: 'Enter a date and amount' };
     const amt = v.direction === 'subtract' ? -v.amount : v.amount;
@@ -860,6 +886,7 @@ R('date-day', {
     { id: 'days', label: 'Number of Days', type: 'number', step: 1, min: 0, placeholder: 'e.g. 90' },
   ],
   formula: '<p>Adds the specified number of days to the start date.</p>',
+  background: '<p>Adding days moves along the Gregorian calendar, so the result automatically accounts for months of 28 to 31 days and for leap days. Whether the start date counts as day zero or day one changes the answer by one, and that convention should be stated. Calendar date arithmetic is unaffected by time zones because dates carry no clock component.</p>',
   calculate: function(v) {
     if (!v.startDate || v.days == null) return { error: 'Enter a start date and number of days' };
     const d = new Date(v.startDate);
@@ -882,6 +909,7 @@ R('day-of-the-week', {
     { id: 'date', label: 'Date', type: 'date', placeholder: 'e.g. 2025-01-01' },
   ],
   formula: '<p>Determines the day of the week for any given date.</p>',
+  background: '<p>Weekdays repeat on a seven-day cycle, with the Gregorian leap rule inserting an extra shift every four years and correcting at century boundaries. Because 1 January 1 CE was a Monday in the proleptic Gregorian calendar, any date can be reduced to a weekday by counting days since then. Dates before the 1582 reform only match if the proleptic Gregorian calendar is intended.</p>',
   calculate: function(v) {
     if (!v.date) return { error: 'Enter a date' };
     const d = new Date(v.date);
@@ -907,6 +935,7 @@ R('decimal-to-time-calculator', {
     { id: 'decimalHours', label: 'Decimal Hours', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 8.75' },
   ],
   formula: '<p>Converts a decimal hour value into hours:minutes:seconds format.</p>',
+  background: '<p>Decimal time expresses hours as a single number with a fractional part, which payroll software multiplies directly by an hourly rate. The fraction is base 10 while the clock is base 60, so 0.25 hour is 15 minutes and 0.1 hour is 6 minutes. Rounding a decimal too early can shift a weekly total by minutes.</p>',
   calculate: function(v) {
     if (v.decimalHours == null) return { error: 'Enter decimal hours' };
     const h = Math.floor(v.decimalHours);
@@ -935,6 +964,7 @@ R('hours', {
     { id: 'hours', label: 'Hours', type: 'number', step: 0.25, min: 0, placeholder: 'e.g. 2.5', half: true },
   ],
   formula: '<p>Adds or subtracts hours from the start time.</p>',
+  background: '<p>Adding hours to a clock time wraps around midnight, so a result may fall on the next or previous day. This is simple modular arithmetic on a 24-hour clock and needs no calendar knowledge. Local wall-clock results can differ by an hour around daylight saving transitions.</p>',
   calculate: function(v) {
     if (!v.startTime || !v.hours) return { error: 'Enter a start time and hours' };
     const [sh, sm] = v.startTime.split(':').map(Number);
@@ -964,6 +994,7 @@ R('hours-and-minutes-calculator', {
     { id: 'minutes', label: 'Minutes', type: 'number', step: 1, min: 0, placeholder: 'e.g. 30', half: true },
   ],
   formula: '<p>Adds or subtracts hours and minutes from the start time.</p>',
+  background: '<p>Hours and minutes add in base 60, carrying 60 minutes into the next hour, which is why 50 plus 40 minutes gives 1 hour 30 minutes in clock form rather than 90. Negative results are handled by borrowing an hour, or by crossing back over midnight. Totals beyond a day should be read as durations.</p>',
   calculate: function(v) {
     if (!v.startTime) return { error: 'Enter a start time' };
     const [sh, sm] = v.startTime.split(':').map(Number);
@@ -994,6 +1025,7 @@ R('hours-minutes-seconds', {
     { id: 'seconds', label: 'Seconds', type: 'number', step: 1, min: 0, placeholder: 'e.g. 0', half: true },
   ],
   formula: '<p>Adds or subtracts hours, minutes, and seconds from the start time.</p>',
+  background: '<p>Clock arithmetic carries at 60 seconds and 60 minutes, so the seconds field never exceeds 59 in the result. Borrowing works the same way when subtracting, taking 60 seconds from the minutes column. Results that cross midnight are still valid times but may represent the previous or next day.</p>',
   calculate: function(v) {
     if (!v.startTime) return { error: 'Enter a start time' };
     const [sh, sm] = v.startTime.split(':').map(Number);
@@ -1023,6 +1055,7 @@ R('military-time-converter', {
     ]},
   ],
   formula: '<p>Converts between 12-hour clock (with AM/PM) and 24-hour military time format.</p>',
+  background: '<p>The 24-hour clock avoids AM and PM ambiguity and is standard in aviation, the military and much of the world. Hours 00 to 11 map directly to AM except that 00 is midnight, and hours 12 to 23 map to PM after subtracting 12, with 12 meaning noon. Some conventions write 2400 for end of day, though 0000 is more common.</p>',
   calculate: function(v) {
     if (v.hour == null) return { error: 'Enter an hour' };
     let h12 = v.hour, h24;
@@ -1052,6 +1085,7 @@ R('stopwatchtimer', {
     { id: 'seconds', label: 'Total Seconds', type: 'number', step: 1, min: 0, placeholder: 'e.g. 3661' },
   ],
   formula: '<p>Breaks down a total number of seconds into hours, minutes, and seconds.</p>',
+  background: '<p>Stopwatch totals are pure durations and can exceed 24 hours without wrapping, unlike times of day. Conversion to hours, minutes and seconds is exact integer arithmetic, with any leftover fraction representing part of a second. When lap times are summed after rounding, the total can drift from the true elapsed time.</p>',
   calculate: function(v) {
     if (v.seconds == null) return { error: 'Enter total seconds' };
     const total = Math.floor(v.seconds);
@@ -1079,6 +1113,7 @@ R('sunrise_sunset', {
     { id: 'longitude', label: 'Longitude (degrees)', type: 'number', step: 0.1, min: -180, max: 180, placeholder: 'e.g. -74.0', half: true },
   ],
   formula: '<p>Estimates sunrise and sunset using the solar position algorithm. Accuracy is approximate.</p>',
+  background: '<p>The calculation uses the standard solar position approximation for the given date and latitude, which is accurate to a few minutes at mid-latitudes. It ignores observer elevation, the local horizon and refraction beyond the standard correction, so mountains and tall buildings shift real times. Daylight saving and the chosen time zone change the clock reading, not the solar event.</p>',
   calculate: function(v) {
     if (!v.date || v.latitude == null) return { error: 'Enter a date and latitude' };
     const d = new Date(v.date);
@@ -1123,6 +1158,7 @@ R('time-clock-calculator', {
     { id: 'entries', label: 'Time Entries (one per line, format: IN OUT)', type: 'textarea', placeholder: 'e.g.\n09:00 17:30\n08:30 12:00\n13:00 17:00', hint: 'Enter each pair as "IN OUT" on a separate line' },
   ],
   formula: '<p>Calculates total hours worked from time clock in/out pairs.</p>',
+  background: '<p>Time clock totals subtract the in time from the out time for each shift and add the results, so an overnight shift needs midnight crossing handled. Unpaid breaks are usually deducted separately, and employers may round punches to the nearest five or fifteen minutes. Overtime rules are a payroll question rather than a duration question.</p>',
   calculate: function(v) {
     if (!v.entries || !v.entries.trim()) return { error: 'Enter at least one time entry' };
     const lines = v.entries.trim().split(/\n/).map(l => l.trim()).filter(l => l);
@@ -1159,6 +1195,7 @@ R('time-to-decimal-calculator', {
     { id: 'seconds', label: 'Seconds', type: 'number', step: 1, min: 0, max: 59, placeholder: 'e.g. 0', half: true },
   ],
   formula: '<p>Converts hours:minutes:seconds into a decimal hour value.</p>',
+  background: '<p>This converts clock durations to decimal hours, the form most payroll systems use. The arithmetic is exact, but rounding rules matter: a shift of 7 hours 50 minutes is 7.8333 hours, which becomes 7.83 or 7.84 depending on the policy. Totals should be rounded after summing rather than per entry.</p>',
   calculate: function(v) {
     const h = v.hours || 0, m = v.minutes || 0, s = v.seconds || 0;
     const decimal = h + m / 60 + s / 3600;
@@ -1190,6 +1227,7 @@ R('work-hours-calculator', {
     { id: 'breakMin', label: 'Daily Break (minutes)', type: 'number', step: 5, min: 0, placeholder: 'e.g. 30', half: true },
   ],
   formula: '<p>Calculates total work hours for the week, subtracting daily break time for each day worked.</p>',
+  background: '<p>Weekly hours are the sum of daily shifts with unpaid breaks deducted, so the result reflects hours paid rather than hours present. Overtime thresholds such as 40 hours in a week or 8 in a day are policy choices applied after the total is known. Shifts that cross midnight or a daylight saving change need careful handling of their start and end instants.</p>',
   calculate: function(v) {
     const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
     let totalMin = 0;

@@ -14,6 +14,7 @@ R('quadratic-formula-calculator', {
     { id: 'c', label: 'Coefficient c', type: 'number', step: 0.01, placeholder: 'e.g. 6' },
   ],
   formula: '<p><code>x = (−b ± √(b² − 4ac)) / 2a</code> where the discriminant <code>D = b² − 4ac</code> determines the nature of the roots.</p>',
+  background: '<p>The quadratic formula solves any second-degree equation in one variable, giving both roots at once and revealing through the discriminant whether they are real, repeated or complex. It appears throughout school algebra, projectile motion and optimisation, and it works because completing the square on the general equation produces a perfect square whose root isolates the unknown. A negative discriminant means the parabola never crosses the axis, so the roots are complex conjugates.</p>',
   calculate: function(v) {
     const a = v.a, b = v.b, c = v.c;
     if (!a) return { error: 'Coefficient a cannot be zero for a quadratic equation.' };
@@ -51,6 +52,7 @@ R('cubicequation', {
     { id: 'd', label: 'Coefficient d', type: 'number', step: 0.01, placeholder: 'e.g. -6' },
   ],
   formula: '<p>Solves <code>ax³ + bx² + cx + d = 0</code> using Cardano\'s method. Returns up to three real roots.</p>',
+  background: '<p>A cubic equation has a highest power of three and, over the real numbers, always has at least one real root because its curve must cross the horizontal axis. Cubic models appear in volume problems, beam deflection and animation easing, and Cardano\'s method reduces the equation to a simpler depressed cubic before extracting roots. Every real cubic factors into a linear term and a quadratic, which is why up to three real roots are possible.</p>',
   calculate: function(v) {
     const a = v.a, b = v.b, c = v.c, d = v.d;
     if (!a) return { error: 'Coefficient a cannot be zero for a cubic equation.' };
@@ -78,6 +80,7 @@ R('completing-the-square-calculator', {
     { id: 'c', label: 'Coefficient c', type: 'number', step: 0.01, placeholder: 'e.g. 2' },
   ],
   formula: '<p>Transforms <code>ax² + bx + c</code> into vertex form <code>a(x − h)² + k</code> where h = −b/(2a) and k = c − b²/(4a).</p>',
+  background: '<p>Completing the square rewrites a quadratic so the variable appears only once, inside a squared bracket, which exposes the vertex of its parabola and makes the equation easy to solve. It is the derivation behind the quadratic formula and is used to convert circle equations into standard form. The method works because adding and subtracting the same square leaves the expression unchanged while creating a perfect square.</p>',
   calculate: function(v) {
     const a = v.a, b = v.b, c = v.c;
     if (!a) return { error: 'Coefficient a cannot be zero.' };
@@ -111,6 +114,7 @@ R('exponent', {
     { id: 'exp', label: 'Exponent', type: 'number', step: 0.01, placeholder: 'e.g. 10' },
   ],
   formula: '<p><code>base^exponent</code> — raises the base to the given power.</p>',
+  background: '<p>An exponent records repeated multiplication, so a power is shorthand for multiplying the base by itself the stated number of times. Powers appear in compound interest, scientific notation, memory sizes and polynomial algebra, and the exponent laws follow from counting factors. Negative and zero exponents extend the pattern consistently: a negative power means a reciprocal, and any nonzero base to the zero power is one.</p>',
   calculate: function(v) {
     const base = v.base, exp = v.exp;
     if (base === 0 && exp <= 0) return { error: '0 raised to a non-positive power is undefined.' };
@@ -132,6 +136,7 @@ R('large-exponent-calculator', {
     { id: 'exp', label: 'Exponent', type: 'number', step: 1, placeholder: 'e.g. 1000' },
   ],
   formula: '<p>Computes <code>base^exponent</code> even for very large values, showing the result in scientific notation.</p>',
+  background: '<p>Very large powers grow explosively and quickly exceed the range where ordinary decimal notation is readable, so scientific notation keeps the leading digits and the scale separate. Such values arise in cryptography, combinatorics and algorithm analysis, where the exponent often dominates the outcome. Floating-point arithmetic rounds the result, so the final digits shown are approximate rather than exact integers.</p>',
   calculate: function(v) {
     const base = v.base, exp = v.exp;
     if (base === 0 && exp <= 0) return { error: '0 raised to a non-positive power is undefined.' };
@@ -162,6 +167,7 @@ R('exponentsolve', {
     { id: 'result', label: 'Result', type: 'number', step: 0.01, min: 0.01, placeholder: 'e.g. 1024' },
   ],
   formula: '<p>Solves <code>base^x = result</code> for x using logarithms: <code>x = log(result) / log(base)</code></p>',
+  background: '<p>Solving for an unknown exponent means asking how many times a base must be multiplied by itself to reach a target, which logarithms answer directly because they undo exponentiation. This appears in compound-interest doubling times, radioactive decay and learning-rate schedules. The base must be positive and different from one, and the target must be positive for a real solution.</p>',
   calculate: function(v) {
     const base = v.base, result = v.result;
     if (base <= 0 || base === 1) return { error: 'Base must be positive and not equal to 1.' };
@@ -185,6 +191,7 @@ R('exponent-fractions', {
     { id: 'den', label: 'Denominator of exponent', type: 'number', step: 1, min: 1, placeholder: 'e.g. 3' },
   ],
   formula: '<p><code>base^(numerator/denominator) = (base^(1/denominator))^numerator</code> — equivalent to taking the denominator-th root, then raising to the numerator power.</p>',
+  background: '<p>A fractional exponent combines a root and a power: the denominator selects which root to take and the numerator says how many times to multiply the result. This notation appears when simplifying radicals and in formulas for area, growth and scaling. It works because raising a power to a power multiplies the exponents, so the root and the power can be applied in a predictable order.</p>',
   calculate: function(v) {
     const base = v.base, num = v.num, den = v.den;
     if (!den) return { error: 'Denominator cannot be zero.' };
@@ -213,6 +220,7 @@ R('squareroots', {
     { id: 'number', label: 'Number', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 144' },
   ],
   formula: '<p><code>√n</code> — the non-negative number which, when squared, gives n.</p>',
+  background: '<p>The square root asks which side length would give a particular area, so it undoes squaring and is defined as the non-negative answer by convention. Roots appear in the Pythagorean theorem, standard deviation and distance formulas, and every positive number has two square roots differing only in sign. Negative numbers have no real square root, which is why complex numbers were introduced.</p>',
   calculate: function(v) {
     const n = v.number;
     if (n < 0) return { error: 'Cannot take the square root of a negative number (in real numbers).' };
@@ -234,6 +242,7 @@ R('cuberoots', {
     { id: 'number', label: 'Number', type: 'number', step: 0.01, placeholder: 'e.g. 27' },
   ],
   formula: '<p><code>∛n</code> — the number which, when cubed, gives n.</p>',
+  background: '<p>A cube root undoes cubing by finding the edge of a cube with a given volume and, unlike a square root, is defined for negative numbers too. Cube roots appear in volume scaling, density problems and the solution of cubic equations. The real cube root is unique, while complex analysis reveals two additional complex roots.</p>',
   calculate: function(v) {
     const n = v.number;
     const r = Math.cbrt(n);
@@ -252,6 +261,7 @@ R('fourthroots', {
     { id: 'number', label: 'Number', type: 'number', step: 0.01, min: 0, placeholder: 'e.g. 81' },
   ],
   formula: '<p><code>n^(1/4)</code> — the number which, when raised to the 4th power, gives n.</p>',
+  background: '<p>A fourth root is the number that produces the original value when multiplied by itself four times, equivalent to taking a square root twice. It appears in fourth-power scaling laws, variance calculations and some geometry problems. Even roots of negative numbers are not real, and positive inputs always have a positive and a negative real fourth root.</p>',
   calculate: function(v) {
     const n = v.number;
     if (n < 0) return { error: 'Cannot take the fourth root of a negative number (in real numbers).' };
@@ -271,6 +281,7 @@ R('fifthroots', {
     { id: 'number', label: 'Number', type: 'number', step: 0.01, placeholder: 'e.g. 32' },
   ],
   formula: '<p><code>n^(1/5)</code> — the number which, when raised to the 5th power, gives n.</p>',
+  background: '<p>A fifth root reverses raising a number to the fifth power and, like other odd roots, is defined for negative inputs as well as positive ones. Odd roots appear in volume and scaling relationships and in solving higher-degree equations. Each real number has exactly one real fifth root, with the remaining roots complex.</p>',
   calculate: function(v) {
     const n = v.number;
     const r = Math.pow(n, 0.2);
@@ -290,6 +301,7 @@ R('radical', {
     { id: 'index', label: 'Root Index', type: 'number', step: 1, min: 2, placeholder: 'e.g. 4' },
   ],
   formula: '<p><code>n^(1/index)</code> — the index-th root of the number.</p>',
+  background: '<p>A radical expression asks for the root indicated by its index, generalising square and cube roots to any degree. Arbitrary roots appear in compound growth, geometry and numerical methods, and they can always be rewritten as fractional powers so the exponent laws apply. Even indices require a non-negative radicand for a real result, while odd indices accept any real number.</p>',
   calculate: function(v) {
     const n = v.number, idx = v.index;
     if (!idx || idx < 2) return { error: 'Root index must be at least 2.' };
@@ -314,6 +326,7 @@ R('square-calculator', {
     { id: 'number', label: 'Number', type: 'number', step: 0.01, placeholder: 'e.g. 12' },
   ],
   formula: '<p><code>n² = n × n</code></p>',
+  background: '<p>Squaring a number means multiplying it by itself, producing the area of a square with that side length. It is one of the most common operations in algebra, statistics and geometry, and it always yields a non-negative result for real inputs. Squaring is not one-to-one, since a number and its negative share the same square, which is why solving by square root requires a plus-or-minus.</p>',
   calculate: function(v) {
     const n = v.number;
     return {
@@ -331,6 +344,7 @@ R('cube-calculator', {
     { id: 'number', label: 'Number', type: 'number', step: 0.01, placeholder: 'e.g. 5' },
   ],
   formula: '<p><code>n³ = n × n × n</code></p>',
+  background: '<p>Cubing multiplies a number by itself three times and gives the volume of a cube with that edge length. It appears in volume problems, polynomial algebra and scaling laws, and unlike squaring it preserves the sign of the input. Cubing is one-to-one over the real numbers, so it can be reversed unambiguously with a cube root.</p>',
   calculate: function(v) {
     const n = v.number;
     return {
@@ -350,6 +364,7 @@ R('absolute-value-calculator', {
     { id: 'number', label: 'Number', type: 'number', step: 0.01, placeholder: 'e.g. -42' },
   ],
   formula: '<p><code>|n|</code> — the non-negative magnitude of n, regardless of sign.</p>',
+  background: '<p>The absolute value strips a number of its sign, reporting its distance from zero on the number line regardless of direction. It is used for error margins, tolerances and distance calculations in algebra and programming, where only magnitude matters. The function is piecewise linear with a sharp corner at zero, which is why it is often rewritten as two separate cases.</p>',
   calculate: function(v) {
     const n = v.number;
     return {
@@ -369,6 +384,7 @@ R('absolute-difference-calculator', {
     { id: 'b', label: 'Second Number', type: 'number', step: 0.01, placeholder: 'e.g. 25' },
   ],
   formula: '<p><code>|a − b|</code> — the non-negative distance between two numbers.</p>',
+  background: '<p>Absolute difference measures how far apart two numbers are on the number line without caring which is larger. It is the natural way to express tolerances, deviations and distances in data analysis and quality control. Because the order of subtraction does not matter, it behaves like a one-dimensional distance, though it is not the same as percentage difference when magnitudes vary.</p>',
   calculate: function(v) {
     const diff = Math.abs(v.a - v.b);
     return {
@@ -390,6 +406,7 @@ R('difference-of-two-squares-calculator', {
     { id: 'b', label: 'Second term (b)', type: 'number', step: 0.01, placeholder: 'e.g. 3' },
   ],
   formula: '<p><code>a² − b² = (a + b)(a − b)</code></p>',
+  background: '<p>The difference of two squares is a factoring pattern that turns a subtraction of perfect squares into a pair of binomials. It appears constantly in school algebra for simplifying expressions and in mental arithmetic shortcuts such as multiplying numbers near a round value. The identity holds because the middle terms of the expansion cancel, exactly as the distributive law predicts.</p>',
   calculate: function(v) {
     const a = v.a, b = v.b;
     const a2 = a * a, b2 = b * b;
@@ -420,6 +437,7 @@ R('foil-calculator', {
     { id: 'b2', label: 'Second binomial, constant term', type: 'number', step: 0.01, placeholder: 'e.g. 5' },
   ],
   formula: '<p>Multiplies <code>(a₁x + b₁)(a₂x + b₂)</code> using FOIL: First, Outer, Inner, Last.</p>',
+  background: '<p>FOIL is a mnemonic for multiplying two binomials by distributing every term of the first across every term of the second. It is standard in school algebra because it makes polynomial multiplication systematic, and the same distributive law underlies spreadsheet formulas and computer algebra systems. The method generalises beyond two terms, where the acronym no longer fits but distribution still applies.</p>',
   calculate: function(v) {
     const a1 = v.a1, b1 = v.b1, a2 = v.a2, b2 = v.b2;
     const first = a1 * a2;
@@ -453,6 +471,7 @@ R('dot-product-calculator', {
     { id: 'v2', label: 'Vector 2 components (comma-separated)', type: 'text', placeholder: 'e.g. 4, 5, 6' },
   ],
   formula: '<p><code>v₁ · v₂ = Σ(v₁[i] × v₂[i])</code> — the sum of component-wise products.</p>',
+  background: '<p>The dot product combines two vectors into a single number measuring how much they point in the same direction. It is used to compute work in physics, similarity in machine learning and lighting in computer graphics, and it relates to the angle between the vectors through the cosine. A zero result means the vectors are perpendicular, which is why the operation is central to projections and orthogonality.</p>',
   calculate: function(v) {
     const a = v.v1.split(/[\s,;]+/).map(Number);
     const b = v.v2.split(/[\s,;]+/).map(Number);
@@ -489,6 +508,7 @@ R('logarithm-equation-calculator', {
     { id: 'y', label: 'Result (y)', type: 'number', step: 0.01, placeholder: 'e.g. 3' },
   ],
   formula: '<p>Solves <code>log_base(x) = y</code> for x: <code>x = base^y</code></p>',
+  background: '<p>A logarithm answers what exponent produces a given value, so solving a logarithmic equation usually means rewriting it in exponential form. Logarithms appear in sound levels, earthquake magnitudes, pH and algorithm complexity, and they turn multiplication into addition. The base must be positive and not one, and the argument must be positive for a real solution.</p>',
   calculate: function(v) {
     const base = v.base, y = v.y;
     if (base <= 0 || base === 1) return { error: 'Base must be positive and not equal to 1.' };
@@ -514,6 +534,7 @@ R('radicals-simplify', {
     { id: 'index', label: 'Root Index', type: 'number', step: 1, min: 2, placeholder: 'e.g. 2', half: true },
   ],
   formula: '<p>Extracts the largest perfect factor from the radical to simplify <code>coeff × ⁿ√number</code>.</p>',
+  background: '<p>Simplifying a radical pulls out the largest perfect-power factor so the expression is easier to compare, combine and compute with. It is standard practice in school algebra and matters in engineering formulas where exact surd forms are preferable to rounded decimals. The process works because the root of a product equals the product of the roots, which follows from the exponent laws.</p>',
   calculate: function(v) {
     var num = Math.round(v.number);
     var coeff = v.coeff || 1;
@@ -564,6 +585,7 @@ R('percent-change-calculator', {
     { id: 'newVal', label: 'New Value', type: 'number', step: 0.01, placeholder: 'e.g. 100' },
   ],
   formula: '<p><code>Change% = (New − Old) / |Old| × 100</code></p>',
+  background: '<p>Percentage change expresses how much a quantity grew or shrank relative to where it started, putting changes of different sizes on a common scale. It is used for prices, populations, test scores and business metrics, and taking the absolute value of the baseline keeps the sign meaningful for negative starting values. A change from zero is undefined in percentage terms, since there is no baseline to compare against.</p>',
   calculate: function(v) {
     if (v.oldVal === 0) return { error: 'Original value cannot be zero.' };
     const change = ((v.newVal - v.oldVal) / Math.abs(v.oldVal)) * 100;
@@ -586,6 +608,7 @@ R('percentage-increase-calculator', {
     { id: 'percent', label: 'Percentage Increase (%)', type: 'number', step: 0.1, min: 0, placeholder: 'e.g. 15' },
   ],
   formula: '<p><code>New = Original × (1 + Percent/100)</code></p>',
+  background: '<p>A percentage increase scales a starting value upward by adding a fraction of that value to itself. It appears in pricing, salary raises, interest and population growth, and the multiplier form makes repeated increases easy to chain. Successive percentage changes do not simply add, because each one applies to an already updated base.</p>',
   calculate: function(v) {
     const increase = v.original * v.percent / 100;
     const newval = v.original + increase;
@@ -606,6 +629,7 @@ R('percentage-decrease-calculator', {
     { id: 'percent', label: 'Percentage Decrease (%)', type: 'number', step: 0.1, min: 0, max: 100, placeholder: 'e.g. 15' },
   ],
   formula: '<p><code>New = Original × (1 − Percent/100)</code></p>',
+  background: '<p>A percentage decrease reduces a value by a fraction of its original size, the everyday language of discounts, depreciation and budget cuts. Writing it as a multiplier makes repeated decreases straightforward, and the result depends on the base each time. A hundred percent decrease removes the entire quantity, and larger decreases would imply a negative amount that may not be meaningful.</p>',
   calculate: function(v) {
     const decrease = v.original * v.percent / 100;
     const newval = v.original - decrease;
@@ -626,6 +650,7 @@ R('percent-difference-calculator', {
     { id: 'v2', label: 'Second Value', type: 'number', step: 0.01, placeholder: 'e.g. 80' },
   ],
   formula: '<p><code>% Difference = |v₁ − v₂| / ((v₁ + v₂)/2) × 100</code></p>',
+  background: '<p>Percentage difference compares two values without treating either as the definitive reference, using their average as the baseline. It is used to compare measurements, prices or results that are equally valid, unlike percentage change which needs a clear starting point. Because the denominator is an average, the measure is symmetric: swapping the two values gives the same answer.</p>',
   calculate: function(v) {
     const avg = (v.v1 + v.v2) / 2;
     if (avg === 0) return { error: 'Both values cannot be zero.' };
@@ -647,6 +672,7 @@ R('percent-error-calculator', {
     { id: 'accepted', label: 'Accepted (True) Value', type: 'number', step: 0.01, placeholder: 'e.g. 9.81' },
   ],
   formula: '<p><code>% Error = |Experimental − Accepted| / |Accepted| × 100</code></p>',
+  background: '<p>Percentage error measures how far a measured or experimental value sits from an accepted reference, scaled by the size of that reference. It is standard in laboratory reports, manufacturing quality control and model validation. The absolute value reports magnitude only; a signed error is sometimes preferred when it matters whether the estimate was high or low.</p>',
   calculate: function(v) {
     if (v.accepted === 0) return { error: 'Accepted value cannot be zero.' };
     const pctErr = (Math.abs(v.experimental - v.accepted) / Math.abs(v.accepted)) * 100;
@@ -667,6 +693,7 @@ R('percent-tolerance-calculator', {
     { id: 'tolerance', label: 'Tolerance (%)', type: 'number', step: 0.1, min: 0, max: 100, placeholder: 'e.g. 5' },
   ],
   formula: '<p><code>Range = Nominal ± (Nominal × Tolerance%)</code></p>',
+  background: '<p>Tolerance defines the acceptable band around a nominal value, usually quoted as a percentage of that value. It is fundamental to manufacturing, electronics and engineering, where components are only guaranteed to fall within a stated range. The band is symmetric in the simple model, though real specifications can be asymmetric or combine several independent tolerances.</p>',
   calculate: function(v) {
     const amount = v.nominal * v.tolerance / 100;
     return {
