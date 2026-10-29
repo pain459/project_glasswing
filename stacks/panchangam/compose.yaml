@@ -1,0 +1,49 @@
+
+name: glasswing-panchangam
+
+services:
+  panchangam:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: glasswing/panchangam:latest
+    container_name: glasswing-panchangam
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3023:80"
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://127.0.0.1:80
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+    environment:
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-panchangam
+
+    labels:
+      com.glasswing.service: panchangam
+      com.glasswing.category: utilities
+      com.glasswing.monitoring: "true"
+
+    read_only: true
+
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
