@@ -322,6 +322,23 @@ make up STACK=flowise
 
 4. Deploy: `make up STACK=<stack>`
 
+### Secrets inside URLs
+
+A password placed in a connection URL (`postgresql://user:pass@host/db`) must be
+percent-encoded: an `@`, `/`, `:`, `#` or `?` otherwise changes the URL. For every
+key ending in `_PASSWORD`, `_SECRET` or `_TOKEN`, `scripts/with-infisical.sh`
+also exports `<KEY>_URLENCODED` and leaves the original untouched. Use the
+encoded form in the URL and the original everywhere else — see
+`DATABASE_URL` in `stacks/langfuse/compose.yaml`:
+
+```yaml
+DATABASE_URL: postgresql://langfuse:${LANGFUSE_POSTGRES_PASSWORD_URLENCODED:?Required}@postgres:5432/langfuse
+```
+
+Bootstrap values that are not fetched by that wrapper (`stacks/infisical/.env`)
+must themselves be URL-safe; use `openssl rand -hex 24` for
+`POSTGRES_PASSWORD`.
+
 ### Changing a secret value
 
 1. Update the value in Infisical (UI, or a local `KEY=value` file passed to
