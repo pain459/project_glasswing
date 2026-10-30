@@ -1,0 +1,45 @@
+name: glasswing-open-notebook-mcp
+
+services:
+  open-notebook-mcp:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: glasswing/open-notebook-mcp:0.3.0
+    container_name: glasswing-open-notebook-mcp
+    init: true
+
+    ports:
+      - "127.0.0.1:8001:8000"
+
+    environment:
+      OPEN_NOTEBOOK_URL: http://open_notebook:5055
+      OPEN_NOTEBOOK_PASSWORD: ${OPEN_NOTEBOOK_PASSWORD:?Required from Infisical}
+      HOST: 0.0.0.0
+      PORT: "8000"
+      MCP_PATH: /mcp
+      STATELESS_HTTP: "1"
+      JSON_RESPONSE: "1"
+      MCP_ALLOWED_HOSTS: 127.0.0.1:8001,localhost:8001,open-notebook-mcp:8000
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+      OTEL_SERVICE_NAME: glasswing-open-notebook-mcp
+
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1.0
+
+    labels:
+      com.glasswing.service: open-notebook-mcp
+      com.glasswing.category: ai
+      com.glasswing.monitoring: "true"
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
