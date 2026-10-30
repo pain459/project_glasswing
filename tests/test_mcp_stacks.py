@@ -40,6 +40,7 @@ class MCPStackTests(unittest.TestCase):
         self.assertEqual(set(config["services"]), {"open-notebook-mcp"})
 
         service = config["services"]["open-notebook-mcp"]
+        self.assertNotIn("container_name", service)
         self.assertEqual(
             service["ports"],
             [
@@ -67,6 +68,7 @@ class MCPStackTests(unittest.TestCase):
         self.assertEqual(set(config["services"]), {"steel-mcp"})
 
         service = config["services"]["steel-mcp"]
+        self.assertNotIn("container_name", service)
         self.assertEqual(
             service["ports"],
             [
