@@ -396,13 +396,32 @@ cd /home/ravik/src_git/project_glasswing
 
 make docker-pool     # only if /etc/docker/daemon.json was not restored
 make network         # shared 'glasswing' bridge with its explicit subnet
-make restart-all     # Infisical, Ollama, then the other 27 stacks JOBS at a time
+make restart-all     # Infisical, Ollama, then the other stacks JOBS at a time
 ```
 
 `make restart-all` encodes the only ordering that matters: Infisical first
-(every other stack needs its secrets), Ollama second (the inference backend that
-`opencode` reconciles), everything else in parallel. `scripts/verify-stacks.sh`
+(every other stack needs its secrets), Ollama second (the native coding agent's
+inference backend), everything else in parallel. `scripts/verify-stacks.sh`
 is the slow alternative — one stack at a time with a health check after each.
+
+OpenCode itself is not restored by Compose. Restore or reinstall
+`/home/ravik/.opencode/bin/opencode`, restore
+`/home/ravik/.config/opencode/opencode.json` with mode `0600` (or seed it from
+`config/opencode/opencode.example.json`), then validate:
+
+```bash
+make up STACK=open-notebook-mcp
+make up STACK=steel-mcp
+make up STACK=serena
+make mcp-preflight
+/home/ravik/.opencode/bin/opencode service restart
+/home/ravik/.opencode/bin/opencode mcp list
+make ai-preflight
+```
+
+All MCP listeners and Serena's dashboard must remain on `127.0.0.1`. For an
+emergency rollback, restore the archived host config before restarting the
+OpenCode service; do not expose the MCP ports on the LAN as a workaround.
 
 ### 6.2 If Infisical was restored from backup
 
@@ -433,6 +452,8 @@ If Infisical secrets were lost and need to be re-entered:
 make doctor              # pool, shared network, ports, hardcoded IPs, restart loops, Infisical
 make certificates-check  # TLS covers the host IP and is not expiring
 make access-check        # ACCESS.md matches the compose files
+make mcp-preflight       # initialize and list tools on all MCP endpoints
+make ai-preflight        # verify native OpenCode and Ollama end to end
 ```
 
 ### 7.2 Containers and secrets

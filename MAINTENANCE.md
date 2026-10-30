@@ -544,8 +544,8 @@ Rules:
 - `extends` merges the service block only. Each compose file still declares its
   own top-level `networks:` block, its ports, and everything stack-specific.
 - A service keeps an explicit `restart`, `logging` or `security_opt` when it needs
-  a different value: `init-permissions` sets `restart: "no"`, opencode and steel
-  rotate at 10 MB × 3.
+  a different value: `init-permissions` sets `restart: "no"`, and Steel rotates
+  at 10 MB × 3.
 - Changing retention or the restart policy is one edit in `stacks/base.yaml` and a
   `make restart-all`; no stack lists it any more.
 - Only the stack's public-facing service joins the shared `glasswing` network.

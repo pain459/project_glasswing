@@ -26,8 +26,8 @@
 
 ### What's already working
 
-29 of 30 stacks have a `secrets.list` and load their variables from Infisical at
-startup. The exception is `infisical` itself, which is configured from the
+Every ordinary stack has a `secrets.list` and loads its variables from Infisical
+at startup. The exception is `infisical` itself, which is configured from the
 gitignored `stacks/infisical/.env` (and its committed `.env.example`) because it
 cannot fetch its own secrets.
 
@@ -75,27 +75,17 @@ in the stack's `secrets.list` / `*.registry`.
 
 ---
 
-### `opencode` — AI Coding Agent
+### Native OpenCode and MCP gateways
 
-**Status:** ✅ Secrets managed. ⚙️ Config still hardcoded.
+**Status:** ✅ Host OpenCode has no Compose secret path. MCP secrets are owned
+by the service they access.
 
-| Variable | Type | Current | Action |
-|----------|------|---------|--------|
-| `OPENCODE_SERVER_PASSWORD` | 🔒 | ✅ Infisical `/opencode` | ✅ Done |
-| `OPEN_NOTEBOOK_PASSWORD` | 🔒 | ✅ Infisical `/opencode` | ✅ Done |
-| `HOME` | ⚙️ | hardcoded `/home/opencode` | ✅ Done |
-| `OPENCODE_DISABLE_AUTOUPDATE` | ⚙️ | hardcoded `"1"` | ✅ Done |
-| `TZ` | ⚙️ | hardcoded `Asia/Kolkata` | 🔁 Global — see §6 |
-| `OPEN_NOTEBOOK_URL` | ⚙️ | hardcoded `http://192.168.68.62:5055` | ✅ Done |
-| `HOST` (MCP) | ⚙️ | hardcoded `0.0.0.0` | ✅ Done |
-| `PORT` (MCP) | ⚙️ | hardcoded `8000` | ✅ Done |
-| `MCP_PATH` | ⚙️ | hardcoded `/mcp` | ✅ Done |
-| `STATELESS_HTTP` | ⚙️ | hardcoded `"1"` | ✅ Done |
-| `JSON_RESPONSE` | ⚙️ | hardcoded `"1"` | ✅ Done |
-| `MCP_ALLOWED_HOSTS` | ⚙️ | hardcoded list | ✅ Done |
-| `STEEL_LOCAL` | ⚙️ | hardcoded `"true"` | ✅ Done |
-| `STEEL_BASE_URL` | ⚙️ | hardcoded `http://192.168.68.62:3100` | ✅ Done |
-| `STEEL_CONNECT_URL` | ⚙️ | hardcoded `ws://192.168.68.62:3100` | ✅ Done |
+| Component | Infisical path | Secret/config use |
+|----------|-----------------|-------------------|
+| Host OpenCode | none | Host-local config at `/home/ravik/.config/opencode/opencode.json` |
+| `open-notebook-mcp` | `/open-notebook` | Reuses `OPEN_NOTEBOOK_PASSWORD`; other values come from `/global` |
+| `steel-mcp` | `/steel` | Uses global values and the internal Steel network endpoint |
+| `serena` | `/serena` | Uses global values; no application secret currently required |
 
 ---
 
@@ -449,14 +439,14 @@ Used by 3 stacks: `openobserve`, `otel-collector`, `vector`.
 
 ### 🔁 Shared Open Notebook Password
 
-Used by 2 stacks: `open-notebook`, `opencode`.
+Used by `open-notebook` and `open-notebook-mcp`.
 
 | Variable | Infisical Path | Stacks |
 |----------|---------------|--------|
-| `OPEN_NOTEBOOK_PASSWORD` | `/open-notebook` and `/opencode` | open-notebook, opencode |
+| `OPEN_NOTEBOOK_PASSWORD` | `/open-notebook` | open-notebook, open-notebook-mcp |
 
-**Issue:** Duplicated across two Infisical paths. The `opencode/secrets.list` comment warns about keeping them in sync.
-**Recommendation:** Consolidate to a single `/open-notebook` path and have opencode reference it via `INFISICAL_PATH=/open-notebook` for this variable, or create a `/shared` path.
+The Makefile routes `open-notebook-mcp` to `/open-notebook`, so there is one
+authoritative value and no duplicated secret to synchronize.
 
 ---
 
@@ -498,7 +488,6 @@ Used by 2 stacks: `open-notebook`, `opencode`.
 
 | Stack | Variables to ADD to existing list |
 |-------|----------------------------------|
-| **opencode** | `HOME`, `OPENCODE_DISABLE_AUTOUPDATE`, `OPEN_NOTEBOOK_URL`, `HOST`, `PORT`, `MCP_PATH`, `STATELESS_HTTP`, `JSON_RESPONSE`, `MCP_ALLOWED_HOSTS`, `STEEL_LOCAL`, `STEEL_BASE_URL`, `STEEL_CONNECT_URL` |
 | **open-notebook** | `SURREAL_EXPERIMENTAL_GRAPHQL`, `SURREAL_URL`, `SURREAL_USER`, `SURREAL_NAMESPACE`, `SURREAL_DATABASE`, `OPEN_NOTEBOOK_WORKER_MAX_TASKS` |
 | **anythingllm** | `STORAGE_DIR`, `LLM_PROVIDER`, `OLLAMA_BASE_PATH`, `EMBEDDING_ENGINE`, `EMBEDDING_BASE_PATH` |
 | **flowise** | `PORT`, `APP_URL`, `DATABASE_TYPE`, `DATABASE_PATH`, `SECRETKEY_PATH`, `LOG_PATH`, `BLOB_STORAGE_PATH`, `DISABLE_FLOWISE_TELEMETRY` |
@@ -551,9 +540,8 @@ only those keys for a single `docker compose` invocation.
 
 ### Shared secrets
 
-`OPEN_NOTEBOOK_PASSWORD` is intentionally listed under both `/open-notebook` and
-`/opencode` and must hold the same value in both. Everything else is scoped to
-one stack path.
+`OPEN_NOTEBOOK_PASSWORD` lives only under `/open-notebook`; both the application
+and its MCP gateway read that path. Everything else is scoped to one stack path.
 
 ### Registration
 
@@ -561,7 +549,7 @@ Committed configuration is upserted from `*.registry` files:
 
 ```bash
 ./scripts/infisical-register.sh /global stacks/global-secrets.registry
-./scripts/infisical-register.sh /opencode stacks/opencode/opencode-config.registry
+./scripts/infisical-register.sh /open-notebook stacks/open-notebook/open-notebook-config.registry
 ```
 
 Operator-supplied secrets are not in Git. `./scripts/secrets-plan.sh --template`

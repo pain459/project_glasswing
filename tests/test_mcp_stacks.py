@@ -158,6 +158,40 @@ class MCPStackTests(unittest.TestCase):
         self.assertNotIn('docker exec "$OPENCODE_CONTAINER"', preflight)
         self.assertIn("OPENCODE_BIN", preflight)
 
+    def test_active_docs_describe_host_opencode(self) -> None:
+        active_docs = [
+            "README.md",
+            "REBUILD.md",
+            "DR_RUNBOOK.md",
+            "MAINTENANCE.md",
+            "stacks/infisical-plan.md",
+            "stacks/ollama/README.md",
+        ]
+        obsolete = (":3019", "STACK=opencode", "stacks/opencode", "glasswing-opencode")
+        failures = []
+        for relative in active_docs:
+            text = (REPO / relative).read_text()
+            for line_number, line in enumerate(text.splitlines(), 1):
+                if any(marker in line for marker in obsolete):
+                    failures.append(f"{relative}:{line_number}: {line.strip()}")
+        self.assertEqual([], failures, "obsolete OpenCode deployment references:\n" + "\n".join(failures))
+
+        readme = (REPO / "README.md").read_text()
+        for endpoint in ("127.0.0.1:8001", "127.0.0.1:8002", "127.0.0.1:9121"):
+            self.assertIn(endpoint, readme)
+        self.assertIn("host-installed OpenCode", readme)
+
+        example = json.loads((REPO / "config" / "opencode" / "opencode.example.json").read_text())
+        self.assertEqual(example["model"], "ollama/qwen3.6-opencode:latest")
+        self.assertEqual(
+            {name: value["url"] for name, value in example["mcp"].items()},
+            {
+                "open-notebook": "http://127.0.0.1:8001/mcp",
+                "steel": "http://127.0.0.1:8002/mcp",
+                "serena": "http://127.0.0.1:9121/mcp",
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

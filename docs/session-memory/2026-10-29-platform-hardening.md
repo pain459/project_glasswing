@@ -1,5 +1,10 @@
 # Glasswing platform memory — 2026-10-29
 
+> Superseded for OpenCode/MCP topology on 2026-10-31 by
+> `docs/session-memory/2026-10-31-host-opencode-mcp-stacks.md`. The `:3019`
+> OpenCode web service and internal sidecars described below are retained only
+> as dated history; native OpenCode now uses three loopback MCP stacks.
+
 Session record for the network/access hardening work on **pathfinder**
 (`192.168.68.62`, Ubuntu, RTX 4090, repo `/home/ravik/src_git/project_glasswing`).
 

@@ -11,9 +11,9 @@ OpenAI-compatible `/v1` endpoint at `http://192.168.68.62:11434/v1`.
 
 ## Runtime settings
 
-The container environment is part of the inference baseline. The matching
-OpenCode settings are documented in
-[`../opencode/README.md#inference-baseline`](../opencode/README.md#inference-baseline).
+The container environment is part of the inference baseline. Matching native
+OpenCode settings live in `/home/ravik/.config/opencode/opencode.json` and are
+validated by `make ai-preflight`.
 
 | Variable | Value | Why |
 | --- | --- | --- |
@@ -98,8 +98,9 @@ without redeploying:
 
 The script is read-only. It verifies container GPU access, the runtime flags
 above, the model's effective parameters, a non-truncated coding response with
-thinking disabled, and the resulting GPU residency. The full Ollama and OpenCode
-path is checked by `make up STACK=opencode` (or `make ai-preflight`).
+thinking disabled, and the resulting GPU residency. `make ai-preflight` also
+checks the host-installed OpenCode configuration and runs a real standalone
+default-model prompt.
 
 ## Data
 
