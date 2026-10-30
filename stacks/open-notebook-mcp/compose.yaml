@@ -9,7 +9,6 @@ services:
       context: .
       dockerfile: Dockerfile
     image: glasswing/open-notebook-mcp:0.3.0
-    container_name: glasswing-open-notebook-mcp
     init: true
 
     ports:
