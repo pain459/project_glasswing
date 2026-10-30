@@ -3,16 +3,18 @@
 #
 # Usage:
 #   ai-preflight.sh --ollama    Ollama only; used by `make up STACK=ollama`
-#   ai-preflight.sh --opencode  Ollama plus OpenCode; used by `make up STACK=opencode`
+#   ai-preflight.sh --opencode  Ollama plus host-installed OpenCode
 #   ai-preflight.sh --all       Same as --opencode (default)
 #
 # Verifies:
-#   - the required containers are running
+#   - the Ollama container is running
 #   - Ollama can see the host GPU
 #   - the agreed runtime flags are set in the Ollama container
 #   - the coding model was built with the agreed context and output limits
 #   - the OpenCode limits, temperature, reasoning and compaction agree with it
-#   - OpenCode can reach Ollama from inside its own container
+#   - host OpenCode can reach Ollama
+#   - the effective host OpenCode configuration selects the expected model
+#   - a real standalone host OpenCode prompt completes with the default model
 #   - a small coding prompt returns a complete answer with thinking disabled
 #   - GPU residency is measured and reported
 #
@@ -35,10 +37,10 @@ WITH_OPENCODE=0
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 OLLAMA_CONTAINER="${OLLAMA_CONTAINER:-glasswing-ollama}"
-OPENCODE_CONTAINER="${OPENCODE_CONTAINER:-glasswing-opencode}"
 OLLAMA_URL="${OLLAMA_URL:-http://192.168.68.62:11434}"
 MODEL="${OLLAMA_MODEL:-qwen3.6-opencode:latest}"
-OPENCODE_CONFIG="${OPENCODE_CONFIG:-$ROOT_DIR/stacks/opencode/config/opencode.jsonc}"
+OPENCODE_BIN="${OPENCODE_BIN:-$HOME/.opencode/bin/opencode}"
+OPENCODE_CONFIG="${OPENCODE_CONFIG:-$HOME/.config/opencode/opencode.json}"
 
 EXPECTED_CONTEXT=131072
 EXPECTED_OUTPUT=32768
@@ -57,27 +59,15 @@ container_running() {
   [ "$(docker inspect -f '{{.State.Running}}' "$1" 2>/dev/null)" = "true" ]
 }
 
-# Run requests from inside OpenCode when the full path is being checked, and
-# from the host for the Ollama-only mode, where OpenCode may not exist yet.
 get_url() {
   local timeout=$1 url=$2
-  if [ "$WITH_OPENCODE" = "1" ]; then
-    docker exec "$OPENCODE_CONTAINER" curl -fsS --max-time "$timeout" "$url"
-  else
-    curl -fsS --max-time "$timeout" "$url"
-  fi
+  curl -fsS --max-time "$timeout" "$url"
 }
 
 post_json_url() {
   local timeout=$1 payload=$2 url=$3
-  if [ "$WITH_OPENCODE" = "1" ]; then
-    printf '%s' "$payload" | docker exec -i "$OPENCODE_CONTAINER" \
-      curl -fsS --max-time "$timeout" -H 'Content-Type: application/json' \
-        --data-binary @- "$url"
-  else
-    printf '%s' "$payload" | curl -fsS --max-time "$timeout" \
-      -H 'Content-Type: application/json' --data-binary @- "$url"
-  fi
+  printf '%s' "$payload" | curl -fsS --max-time "$timeout" \
+    -H 'Content-Type: application/json' --data-binary @- "$url"
 }
 
 printf 'Inference preflight (scope: %s)\n' "$SCOPE"
@@ -87,13 +77,6 @@ if container_running "$OLLAMA_CONTAINER"; then
   pass "$OLLAMA_CONTAINER is running"
 else
   fail "$OLLAMA_CONTAINER is not running (make up STACK=ollama)"
-fi
-if [ "$WITH_OPENCODE" = "1" ]; then
-  if container_running "$OPENCODE_CONTAINER"; then
-    pass "$OPENCODE_CONTAINER is running"
-  else
-    fail "$OPENCODE_CONTAINER is not running (make up STACK=opencode)"
-  fi
 fi
 
 log "GPU access"
@@ -141,7 +124,13 @@ else
 fi
 
 if [ "$WITH_OPENCODE" = "1" ]; then
-  log "OpenCode configuration"
+  log "Host OpenCode configuration"
+  if [ -x "$OPENCODE_BIN" ]; then
+    pass "host OpenCode binary is executable: $OPENCODE_BIN"
+  else
+    fail "host OpenCode binary is missing or not executable: $OPENCODE_BIN"
+  fi
+
   if config_json="$(grep -v '^[[:space:]]*//' "$OPENCODE_CONFIG" 2>/dev/null)" \
       && printf '%s' "$config_json" | jq -e . >/dev/null 2>&1; then
     cfg() { printf '%s' "$config_json" | jq -r --arg m "$MODEL" "$1"; }
@@ -185,18 +174,21 @@ if [ "$WITH_OPENCODE" = "1" ]; then
     fail "cannot parse $OPENCODE_CONFIG"
   fi
 
-  log "OpenCode -> Ollama connectivity"
-  if docker exec "$OPENCODE_CONTAINER" \
-      curl -fsS --max-time 10 "$OLLAMA_URL/v1/models" >/dev/null 2>&1; then
-    pass "$OPENCODE_CONTAINER reaches $OLLAMA_URL"
+  if [ -x "$OPENCODE_BIN" ] \
+      && effective_config="$($OPENCODE_BIN debug config 2>/dev/null)" \
+      && effective_model="$(printf '%s' "$effective_config" | jq -r \
+        '[.[].info.model | select(.providerID != null)][0] | "\(.providerID)/\(.model)"' 2>/dev/null)" \
+      && [ "$effective_model" = "ollama/$MODEL" ]; then
+    pass "effective default model is $effective_model"
   else
-    fail "$OPENCODE_CONTAINER cannot reach $OLLAMA_URL"
+    fail "effective default model is '${effective_model:-unavailable}', expected 'ollama/$MODEL'"
   fi
-  if docker exec "$OPENCODE_CONTAINER" \
-      curl -fsS --max-time 5 "http://$OLLAMA_CONTAINER:11434/v1/models" >/dev/null 2>&1; then
-    info "Docker DNS resolves $OLLAMA_CONTAINER; a shared network can replace the host URL"
+
+  log "Host OpenCode -> Ollama connectivity"
+  if curl -fsS --max-time 10 "$OLLAMA_URL/v1/models" >/dev/null 2>&1; then
+    pass "host OpenCode endpoint is reachable at $OLLAMA_URL"
   else
-    info "Docker DNS does not resolve $OLLAMA_CONTAINER; the stacks use separate networks"
+    fail "host cannot reach $OLLAMA_URL"
   fi
 fi
 
@@ -247,6 +239,19 @@ if response="$(chat_test false 512)"; then
   fi
 else
   fail "chat completion request failed"
+fi
+
+if [ "$WITH_OPENCODE" = "1" ]; then
+  log "Native OpenCode default-model prompt"
+  if [ -x "$OPENCODE_BIN" ] \
+      && opencode_response="$(timeout 600 "$OPENCODE_BIN" --standalone run --auto --format json \
+        'Reply with exactly HOST_OPENCODE_OK and nothing else.' 2>/dev/null)" \
+      && printf '%s\n' "$opencode_response" | jq -Rr 'fromjson? | select(.type == "text") | .part.text' \
+        | grep -Fxq 'HOST_OPENCODE_OK'; then
+    pass "host OpenCode completed a standalone prompt with its default model"
+  else
+    fail "host OpenCode standalone default-model prompt failed"
+  fi
 fi
 
 log "Thinking-on comparison (informational)"
