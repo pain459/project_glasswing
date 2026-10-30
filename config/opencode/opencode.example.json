@@ -13,20 +13,44 @@
         "qwen3.6-opencode:latest": {
           "name": "Qwen 3.6 OpenCode (Ollama, 128k)",
           "limit": { "context": 131072, "output": 32768 },
-          "body": { "reasoning_effort": "none", "temperature": 0.3 }
+          "body": { "reasoning_effort": "none", "temperature": 0.3 },
+          "cost": {
+            "input": 0.0485,
+            "output": 0.2063,
+            "cache_read": 0,
+            "cache_write": 0
+          }
         },
         "qwen3.6-resilient:latest": {
           "name": "Qwen 3.6 Resilient (Ollama, 128k)",
           "limit": { "context": 131072, "output": 32768 },
-          "body": { "reasoning_effort": "none", "temperature": 0.3 }
+          "body": { "reasoning_effort": "none", "temperature": 0.3 },
+          "cost": {
+            "input": 0.0485,
+            "output": 0.2063,
+            "cache_read": 0,
+            "cache_write": 0
+          }
         },
         "qwen3.6:27b": {
           "name": "Qwen 3.6 27B Base (Ollama)",
-          "limit": { "context": 131072, "output": 32768 }
+          "limit": { "context": 131072, "output": 32768 },
+          "cost": {
+            "input": 0.0485,
+            "output": 0.2063,
+            "cache_read": 0,
+            "cache_write": 0
+          }
         },
         "llama3.1:8b": {
           "name": "Llama 3.1 8B Fallback (Ollama)",
-          "limit": { "context": 65536, "output": 8192 }
+          "limit": { "context": 65536, "output": 8192 },
+          "cost": {
+            "input": 0.0434,
+            "output": 0.1104,
+            "cache_read": 0,
+            "cache_write": 0
+          }
         }
       }
     }
