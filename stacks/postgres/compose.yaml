@@ -13,7 +13,7 @@ services:
   postgres:
     extends:
       file: ../base.yaml
-      service: hardened
+      service: base
     image: postgres:17-alpine
     container_name: glasswing-postgres
 
