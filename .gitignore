@@ -6,3 +6,4 @@ stacks/portainer/certs/
 .opencode/task-progress.md
 stacks/panchangam/src/
 stacks/*/compose.override.yaml
+/tests/__pycache__/*

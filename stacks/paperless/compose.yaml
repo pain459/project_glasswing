@@ -1,0 +1,146 @@
+
+name: glasswing-paperless
+
+# Paperless-ngx: document management system.
+#
+# Architecture:
+#   paperless-web  → published on :3025, joins glasswing + internal
+#   paperless-broker (redis) → internal only
+#   paperless-db (postgres) → internal only
+#
+# The web service joins both networks: glasswing for published port bindings,
+# internal for talking to its own postgres/redis backends. This avoids the
+# Docker DNS collision with the standalone glasswing-postgres on the shared
+# bridge (learned from the Langfuse incident).
+
+services:
+  db:
+    extends:
+      file: ../base.yaml
+      service: base
+    image: postgres:17-alpine
+    container_name: glasswing-paperless-db
+
+    environment:
+      POSTGRES_USER: ${PAPERLESS_DB_USER:?Required from Infisical}
+      POSTGRES_PASSWORD: ${PAPERLESS_DB_PASSWORD:?Required}
+      POSTGRES_DB: ${PAPERLESS_DB_NAME:?Required from Infisical}
+
+    volumes:
+      - paperless_pgdata:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PAPERLESS_DB_USER:?Required} -d ${PAPERLESS_DB_NAME:?Required}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+    networks:
+      - internal
+
+  broker:
+    extends:
+      file: ../base.yaml
+      service: base
+    image: valkey/valkey:9-alpine
+    container_name: glasswing-paperless-broker
+
+    volumes:
+      - paperless_redisdata:/data
+
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+    networks:
+      - internal
+
+  webserver:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.4.0
+    container_name: glasswing-paperless
+
+    depends_on:
+      db:
+        condition: service_healthy
+      broker:
+        condition: service_healthy
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3025:8000"
+
+    environment:
+      # Timezone (from global secrets)
+      PAPERLESS_TIME_ZONE: ${GLASSWING_TZ:?Required from Infisical}
+
+      # Authentication
+      PAPERLESS_SECRET_KEY: ${PAPERLESS_SECRET_KEY:?Required}
+
+      # Database
+      # Note: paperless-ngx uses PAPERLESS_DBNAME/DBUSER/DBPASS (no underscores
+      # between DB and the suffix). See docs/configuration.md.
+      PAPERLESS_DBENGINE: postgresql
+      PAPERLESS_DBHOST: db
+      PAPERLESS_DBPORT: "5432"
+      PAPERLESS_DBNAME: ${PAPERLESS_DB_NAME:?Required from Infisical}
+      PAPERLESS_DBUSER: ${PAPERLESS_DB_USER:?Required from Infisical}
+      PAPERLESS_DBPASS: ${PAPERLESS_DB_PASSWORD:?Required}
+
+      # Redis broker
+      PAPERLESS_REDIS: redis://broker:6379
+
+      # Admin user (created on first boot)
+      PAPERLESS_ADMIN_USER: ${PAPERLESS_ADMIN_USER:?Required from Infisical}
+      PAPERLESS_ADMIN_PASSWORD: ${PAPERLESS_ADMIN_PASSWORD:?Required}
+
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-paperless
+
+    volumes:
+      - paperless_data:/usr/src/paperless/data
+      - paperless_media:/usr/src/paperless/media
+      - paperless_consume:/usr/src/paperless/consume
+      - paperless_export:/usr/src/paperless/export
+
+    mem_limit: 2g
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 -O - http://localhost:8000/api/status/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    labels:
+      com.glasswing.service: paperless
+
+    networks:
+      - glasswing
+      - internal
+
+volumes:
+  paperless_data:
+    name: glasswing-paperless-data
+  paperless_media:
+    name: glasswing-paperless-media
+  paperless_consume:
+    name: glasswing-paperless-consume
+  paperless_export:
+    name: glasswing-paperless-export
+  paperless_pgdata:
+    name: glasswing-paperless-pgdata
+  paperless_redisdata:
+    name: glasswing-paperless-redisdata
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
+  internal:
+    driver: bridge
