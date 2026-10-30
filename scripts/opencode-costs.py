@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-opencode-costs.py - Show equivalent cloud costs for local OpenCode token usage.
+opencode-costs.py - Show electricity-based costs for local OpenCode token usage.
 
-Fetches session stats from the OpenCode API and calculates what you'd pay
-if you were using comparable models via cloud API instead of running locally.
+Fetches session stats from the OpenCode API and calculates estimated electricity
+cost based on measured GPU power consumption during inference on Pathfinder
+(RTX 4090, ₹9/kWh electricity tariff).
 
-Shows costs across multiple providers for comparison:
-  - Qwen 3.6 Plus (Alibaba Cloud Model Studio)
-  - Claude Sonnet 5 (Anthropic)
-  - GPT-4o (OpenAI)
-  - Gemini 2.0 Pro (Google)
+The dollar values represent estimated electricity expenditure, not cloud API costs.
+Per-model pricing is derived from benchmarked throughput and measured power draw.
 
-Also estimates electricity cost from local inference and shows net savings.
+Measured pricing per 1M tokens (October 2026):
+  - Qwen 3.6 27B:    input $0.0032, output $0.0958
+  - Llama 3.1 8B:    input $0.0002, output $0.0396
 
-All pricing per 1M tokens, October 2026 rates.
+Also shows cloud API comparison for reference.
 
 Usage:
   ./opencode-costs.py
@@ -26,19 +26,17 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
-# ── Actual pricing for models you're running ──
-# qwen3.6-opencode is a fine-tune of qwen3.6, so we use qwen3.6-plus pricing.
-# qwen3.6-resilient is also based on qwen3.6.
-# qwen3.6:27b is the base model, same family.
+# ── Electricity-based pricing for local models (measured) ──
+# Derived from nvidia-smi power measurements and Ollama throughput benchmarks.
+# All values per 1M tokens, representing estimated electricity cost in USD.
 PRICING = {
     # Pattern: (input $/MTok, output $/MTok)
-    # Using the ≤256K tier (most common for coding sessions)
-    "qwen3.6": (0.50, 3.00),
-    # If you add other models, add their pricing here:
-    # "qwen3.5": (0.40, 2.40),
+    # Full-cost: includes active inference + model-loaded idle time (~45s/turn)
+    "qwen3.6": (0.0485, 0.2063),   # RTX 4090, ~66 tok/s output
+    "llama3.1": (0.0434, 0.1104),  # RTX 4090, ~160 tok/s output
 }
 
-DEFAULT_PRICING = (0.50, 3.00)  # fallback for unrecognized Qwen 3.6 variants
+DEFAULT_PRICING = (0.0485, 0.2063)  # fallback: Qwen 3.6 full-cost electricity
 
 # ── Comparison pricing: what you'd pay on other cloud providers ──
 # These are approximate equivalents for a ~27B-34B parameter coding model.
@@ -50,23 +48,26 @@ COMPARISON_PROVIDERS = {
     "Gemini 2.0 Pro": (1.25, 7.50),  # Google, ≤128K context
 }
 
-# ── Power estimation for local inference ──
+# ── Power estimation for local inference (measured 2026-10-30) ──
 # Machine: AMD Ryzen 9 7950X (16-core, 170W TDP) + RTX 4090 (24GB, 450W TDP) + 128GB RAM
 #
-# During LLM inference (Qwen 3.6 27B on Ollama):
-#   - GPU does the heavy lifting: ~300W (idle ~25W, marginal ~275W)
-#   - CPU handles orchestration + KV cache: ~80W extra (idle ~60W, marginal ~20W)
-#   - System baseline (idle): ~130W (CPU + GPU + motherboard + RAM + fans)
-#   - System during inference: ~410W
-#   - Marginal power (extra over idle): ~280W
+# Measured via nvidia-smi during Ollama inference benchmarks:
+#   - GPU idle (model in VRAM, 0% util): ~80 W
+#   - GPU during inference (avg): ~271 W
+#   - GPU marginal: ~191 W
+#   - System marginal (CPU + RAM + fans): ~50 W (estimate)
+#   - Total marginal inference power: ~241 W
 #
-# Inference speed for Qwen 3.6 (27B) with GPU offload: ~40-60 tokens/sec
+# Measured throughput (warm model, median):
+#   - Qwen 3.6 27B: input ~1967 tok/s, output ~66 tok/s
+#   - Llama 3.1 8B: input ~32412 tok/s, output ~160 tok/s
+#
 # Electricity rate: ₹9 per kWh (1 unit)
-# USD/INR rate: ~84.5 (October 2026)
-MARGINAL_POWER_WATTS = 280       # extra watts during inference over idle (CPU + GPU)
-TOKENS_PER_SECOND = 50           # estimated inference speed with GPU offload
+# USD/INR rate: 94.91 (October 2026)
+MARGINAL_POWER_WATTS = 241       # measured marginal watts during inference (GPU + system)
+TOKENS_PER_SECOND = 66           # Qwen 3.6 output throughput (bottleneck phase)
 ELECTRICITY_RATE_INR_PER_KWH = 9  # ₹9 per unit (kWh)
-USD_PER_INR = 1 / 84.5          # ~₹84.5 per $1
+USD_PER_INR = 1 / 94.91         # ₹94.91 per $1
 
 
 def get_stats():
@@ -264,12 +265,24 @@ def pretty_print(stats: dict):
             max_savings_provider = provider_name
 
     print("  " + "-" * 58)
-    print(f"  {'🏠 Local (Ollama)':<20} {'$0.00':>10}  {'$0.00':>10}  {'$0.00':>10}")
+    # Calculate local electricity cost using measured per-model pricing
+    local_input_cost = 0
+    local_output_cost = 0
+    for m in models:
+        model_id = m.get("model", {}).get("id", "")
+        tok = m.get("tokens", {})
+        in_t = tok.get("input", 0)
+        out_t = tok.get("output", 0)
+        inp_price, out_price = find_pricing(model_id)
+        local_input_cost += (in_t / 1_000_000) * inp_price
+        local_output_cost += (out_t / 1_000_000) * out_price
+    local_total = local_input_cost + local_output_cost
+    print(f"  {'🏠 Local (Ollama)':<20} {format_cost(local_input_cost):>10}  {format_cost(local_output_cost):>10}  {format_cost(local_total):>10}")
     print()
 
     # Use the most expensive provider as the "you saved" benchmark
-    print(f"  💸 You saved up to {format_cost(max_savings)} vs {max_savings_provider}")
-    print(f"  🏠 Running locally via Ollama = $0.00")
+    print(f"  💸 You saved up to {format_cost(max_savings - local_total)} vs {max_savings_provider}")
+    print(f"  🏠 Running locally via Ollama = {format_cost(local_total)} (electricity)")
     print("=" * 62)
 
     # ── Power & electricity cost estimation ──
