@@ -108,13 +108,27 @@ down:
 	@$(call run_compose,down --rmi local)
 
 rebuild:
+	@if [ -x "$(PRE_UP_HOOK)" ]; then \
+	  echo "[INFO] Running $(PRE_UP_HOOK)"; \
+	  "$(PRE_UP_HOOK)"; \
+	fi
 	@$(call run_compose,down --rmi local)
 	@$(call run_compose,build --no-cache)
 	@$(call run_compose,up -d --wait --wait-timeout 180)
+	@if [ -x "$(POST_UP_HOOK)" ]; then \
+	  echo "[INFO] Running $(POST_UP_HOOK)"; \
+	  "$(POST_UP_HOOK)"; \
+	fi
 	@echo "[PASS] Stack $(STACK) rebuilt"
 
 restart:
 	@$(call run_compose,restart)
+	@$(call run_compose,up -d --wait --wait-timeout 180)
+	@if [ -x "$(POST_UP_HOOK)" ]; then \
+	  echo "[INFO] Running $(POST_UP_HOOK)"; \
+	  "$(POST_UP_HOOK)"; \
+	fi
+	@echo "[PASS] Stack $(STACK) restarted"
 
 logs:
 	@$(call run_compose,logs --tail=100 -f)
@@ -277,9 +291,11 @@ ai-preflight:
 	@./scripts/ai-preflight.sh --opencode
 
 mcp-preflight:
-	@python3 scripts/mcp-preflight.py --name open-notebook http://127.0.0.1:8001/mcp
-	@python3 scripts/mcp-preflight.py --name steel http://127.0.0.1:8002/mcp
-	@python3 scripts/mcp-preflight.py --name serena http://127.0.0.1:9121/mcp
+	@status=0; \
+	 python3 scripts/mcp-preflight.py --name open-notebook http://127.0.0.1:8001/mcp || status=1; \
+	 python3 scripts/mcp-preflight.py --name steel http://127.0.0.1:8002/mcp || status=1; \
+	 python3 scripts/mcp-preflight.py --name serena http://127.0.0.1:9121/mcp || status=1; \
+	 exit $$status
 
 
 # --------------------------------------------------
