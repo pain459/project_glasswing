@@ -12,8 +12,11 @@ services:
       - -c
       - |
         mkdir -p /config/memories/global
-        if [ ! -f /config/serena_config.yml ] || ! grep -q '^projects:' /config/serena_config.yml; then
+        if [ ! -f /config/serena_config.yml ]; then
           cp /bootstrap/serena_config.yml /config/serena_config.yml
+        elif ! grep -q '^projects:' /config/serena_config.yml; then
+          cp /config/serena_config.yml /config/serena_config.yml.pre-v2
+          printf '\nprojects: []\n' >> /config/serena_config.yml
         fi
         chown -R 1000:1000 /config
         chmod 600 /config/serena_config.yml
@@ -27,7 +30,10 @@ services:
     extends:
       file: ../base.yaml
       service: hardened
-    image: ghcr.io/oraios/serena@sha256:0b0ff857c2eca5094aa3b4f406e58ba3cacf647b20d237adcfbbeadffc14cd65
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: glasswing/serena:2.1.1-node22
     container_name: glasswing-serena
     init: true
 

@@ -104,6 +104,8 @@ class MCPStackTests(unittest.TestCase):
         init_command = " ".join(init["command"])
         self.assertIn("grep -q '^projects:'", init_command)
         self.assertIn("cp /bootstrap/serena_config.yml", init_command)
+        self.assertIn("serena_config.yml.pre-v2", init_command)
+        self.assertIn("projects: []", init_command)
         self.assertIn("chmod 600", init_command)
         init_volumes = {volume["target"]: volume for volume in init["volumes"]}
         self.assertTrue(init_volumes["/bootstrap/serena_config.yml"]["read_only"])
@@ -111,8 +113,9 @@ class MCPStackTests(unittest.TestCase):
         service = config["services"]["serena"]
         self.assertEqual(
             service["image"],
-            "ghcr.io/oraios/serena@sha256:0b0ff857c2eca5094aa3b4f406e58ba3cacf647b20d237adcfbbeadffc14cd65",
+            "glasswing/serena:2.1.1-node22",
         )
+        self.assertIn("build", service)
         self.assertEqual(service["user"], "1000:1000")
         self.assertEqual(service["depends_on"]["init-permissions"]["condition"], "service_completed_successfully")
         self.assertEqual(
@@ -128,6 +131,24 @@ class MCPStackTests(unittest.TestCase):
         self.assertNotIn("/workspaces/serena/config/serena_config.yml", volumes)
         self.assertNotIn("/workspace/repos/scip", json.dumps(config))
         self.assertNotIn(":latest", service["image"])
+
+        dockerfile = (REPO / "stacks" / "serena" / "Dockerfile").read_text()
+        self.assertIn(
+            "ghcr.io/oraios/serena@sha256:0b0ff857c2eca5094aa3b4f406e58ba3cacf647b20d237adcfbbeadffc14cd65",
+            dockerfile,
+        )
+        self.assertIn("/usr/local/bin/node", dockerfile)
+        self.assertIn("/usr/local/bin/uvx", dockerfile)
+        self.assertIn("useradd --uid 1000", dockerfile)
+        self.assertIn("NPM_CONFIG_CACHE=/tmp/npm-cache", dockerfile)
+        self.assertIn("UV_CACHE_DIR=/tmp/uv-cache", dockerfile)
+        self.assertIn("UV_PYTHON_INSTALL_DIR=/tmp/uv-python", dockerfile)
+        self.assertIn("UV_TOOL_DIR=/tmp/uv-tools", dockerfile)
+
+        project_config = (REPO / ".serena" / "project.yml").read_text()
+        self.assertIn("language_servers:", project_config)
+        self.assertIn("- python", project_config)
+        self.assertIn("- bash", project_config)
 
         serena_config = (stack := REPO / "stacks" / "serena" / "config" / "serena_config.yml").read_text()
         self.assertIn("projects: []", serena_config, f"missing required projects key in {stack}")
@@ -191,6 +212,18 @@ class MCPStackTests(unittest.TestCase):
                 "serena": "http://127.0.0.1:9121/mcp",
             },
         )
+
+    def test_mcp_lifecycle_targets_run_protocol_hooks(self) -> None:
+        makefile = (REPO / "Makefile").read_text()
+        rebuild = makefile.split("rebuild:", 1)[1].split("\nrestart:", 1)[0]
+        restart = makefile.split("restart:", 1)[1].split("\nlogs:", 1)[0]
+        for recipe in (rebuild, restart):
+            self.assertIn("$(POST_UP_HOOK)", recipe)
+            self.assertIn("--wait --wait-timeout 180", recipe)
+
+        aggregate = makefile.split("mcp-preflight:", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("status=0", aggregate)
+        self.assertEqual(aggregate.count("|| status=1"), 3)
 
 
 if __name__ == "__main__":
