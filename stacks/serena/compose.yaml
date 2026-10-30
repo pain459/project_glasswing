@@ -12,9 +12,14 @@ services:
       - -c
       - |
         mkdir -p /config/memories/global
+        if [ ! -f /config/serena_config.yml ] || ! grep -q '^projects:' /config/serena_config.yml; then
+          cp /bootstrap/serena_config.yml /config/serena_config.yml
+        fi
         chown -R 1000:1000 /config
+        chmod 600 /config/serena_config.yml
     volumes:
       - serena_config:/config
+      - ./config/serena_config.yml:/bootstrap/serena_config.yml:ro
     network_mode: none
     restart: "no"
 
@@ -54,7 +59,6 @@ services:
     volumes:
       - /home/ravik/src_git:/workspace/repos
       - serena_config:/workspaces/serena/config
-      - ./config/serena_config.yml:/workspaces/serena/config/serena_config.yml:ro
 
     healthcheck:
       test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 9121), 3).close()"]

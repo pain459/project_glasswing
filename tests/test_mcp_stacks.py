@@ -101,7 +101,12 @@ class MCPStackTests(unittest.TestCase):
 
         init = config["services"]["init-permissions"]
         self.assertEqual(init["user"], "root")
-        self.assertIn("chown -R 1000:1000", " ".join(init["command"]))
+        init_command = " ".join(init["command"])
+        self.assertIn("grep -q '^projects:'", init_command)
+        self.assertIn("cp /bootstrap/serena_config.yml", init_command)
+        self.assertIn("chmod 600", init_command)
+        init_volumes = {volume["target"]: volume for volume in init["volumes"]}
+        self.assertTrue(init_volumes["/bootstrap/serena_config.yml"]["read_only"])
 
         service = config["services"]["serena"]
         self.assertEqual(
@@ -120,11 +125,12 @@ class MCPStackTests(unittest.TestCase):
         self.assertEqual(repos["source"], "/home/ravik/src_git")
         self.assertFalse(repos.get("read_only", False))
         self.assertEqual(volumes["/workspaces/serena/config"]["type"], "volume")
-        config_file = volumes["/workspaces/serena/config/serena_config.yml"]
-        self.assertEqual(config_file["type"], "bind")
-        self.assertTrue(config_file["read_only"])
+        self.assertNotIn("/workspaces/serena/config/serena_config.yml", volumes)
         self.assertNotIn("/workspace/repos/scip", json.dumps(config))
         self.assertNotIn(":latest", service["image"])
+
+        serena_config = (stack := REPO / "stacks" / "serena" / "config" / "serena_config.yml").read_text()
+        self.assertIn("projects: []", serena_config, f"missing required projects key in {stack}")
 
     def test_serena_override(self) -> None:
         stack = REPO / "stacks" / "serena"

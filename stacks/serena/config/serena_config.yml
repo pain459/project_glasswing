@@ -18,4 +18,7 @@ agent_interface: REPL
 
 # Trust all projects under /workspace so Serena can index them.
 trusted_project_path_patterns:
-  - "/workspace/**"
+  - "/workspace/repos/**"
+
+# Serena maintains this registry as projects are activated.
+projects: []
