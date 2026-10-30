@@ -208,6 +208,12 @@
         description: Home Inventory & Organization
         siteMonitor: http://192.168.68.62:3024/api/v1/status
 
+    - Paperless-ngx:
+        icon: mdi-file-document-multiple
+        href: http://192.168.68.62:3025
+        description: Document Management System — Scan, Index & Archive
+        siteMonitor: http://192.168.68.62:3025/api/status/
+
 - Entertainment:
     - Plex:
         icon: plex.png
