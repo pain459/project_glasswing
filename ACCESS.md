@@ -50,7 +50,7 @@ Host IP: `192.168.68.62` (from `GLASSWING_HOST_IP`, else `stacks/infisical/.env`
 | `portainer` | `portainer` | https://192.168.68.62:9443 | 9443/tcp | glasswing | LAN |
 | `ollama` | `ollama` | http://192.168.68.62:11434 | 11434/tcp | glasswing | LAN |
 | `otel-collector` | `otel-collector` | http://192.168.68.62:13133 | 13133/tcp | glasswing | LAN |
-| `serena` | `serena` | http://127.0.0.1:24282 | 24282/tcp | glasswing | host-only |
+| `serena` | `serena` | http://192.168.68.62:24282 | 24282/tcp | glasswing | LAN |
 | `plex` | `plex` | http://192.168.68.62:32400 | 32400/tcp | host | LAN |
 | `glances` | `glances` | http://192.168.68.62:61208 | 61208/tcp | glasswing | LAN |
 
