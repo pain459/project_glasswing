@@ -5,8 +5,8 @@
 # 2. Validates GPU access, runtime flags, effective model parameters and a
 #    non-truncated coding response.
 #
-# `make up STACK=opencode` calls the Ollama stack with SKIP_PREFLIGHT=1 so the
-# full OpenCode preflight is the only validation that runs on that path.
+# Run `make ai-preflight` separately to validate the host-installed OpenCode
+# client against this Ollama service.
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

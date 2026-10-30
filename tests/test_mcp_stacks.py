@@ -141,6 +141,23 @@ class MCPStackTests(unittest.TestCase):
         self.assertIn("/workspace/repos", targets)
         self.assertIn("/workspace/extra/example", targets)
 
+    def test_containerized_opencode_removed(self) -> None:
+        self.assertFalse(
+            (REPO / "stacks" / "opencode" / "compose.yaml").exists(),
+            "the host-installed OpenCode must be the only OpenCode runtime",
+        )
+
+        homepage = (REPO / "stacks" / "homepage" / "config" / "services.yaml").read_text()
+        self.assertNotIn("- OpenCode:", homepage)
+        self.assertNotIn("- Serena:", homepage)
+        self.assertNotIn("192.168.68.62:3019", homepage)
+        self.assertNotIn("192.168.68.62:24282", homepage)
+
+        preflight = (REPO / "scripts" / "ai-preflight.sh").read_text()
+        self.assertNotIn("OPENCODE_CONTAINER", preflight)
+        self.assertNotIn('docker exec "$OPENCODE_CONTAINER"', preflight)
+        self.assertIn("OPENCODE_BIN", preflight)
+
 
 if __name__ == "__main__":
     unittest.main()
