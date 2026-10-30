@@ -166,7 +166,8 @@ for compose in sorted(pathlib.Path("stacks").glob("*/compose.yaml")):
 
             url = f"{scheme}://{host_ip}:{host_port}"
             container = f"{container_port}/{proto}"
-            rows.append((sort_key, proto, stack, name, url, container, network_col))
+            access = "host-only" if host_ip == "127.0.0.1" else "LAN"
+            rows.append((sort_key, proto, stack, name, url, container, network_col, access))
 
 rows.sort(key=lambda r: (r[0], r[1], r[2]))
 
@@ -174,17 +175,18 @@ out = []
 out.append("# Access map")
 out.append("")
 out.append(
-    "Every service is reached as `IP:port`; there is no internal DNS, so these are\n"
-    "the canonical addresses. `make access` regenerates this file from the `ports:`\n"
+    "Every published service is reached as `IP:port`; there is no internal DNS.\n"
+    "LAN services bind the Pathfinder address, while host-only services bind loopback.\n"
+    "These are the canonical addresses. `make access` regenerates this file from the `ports:`\n"
     "entries in `stacks/*/compose.yaml` — change the compose file, not this table."
 )
 out.append("")
 out.append(f"Host IP: `{ip}` (from `GLASSWING_HOST_IP`, else `stacks/infisical/.env`).")
 out.append("")
-out.append("| Stack | Service | URL | Container port | Network |")
-out.append("| --- | --- | --- | --- | --- |")
-for _, _, stack, service, url, container, network in rows:
-    out.append(f"| `{stack}` | `{service}` | {url} | {container} | {network} |")
+out.append("| Stack | Service | URL | Container port | Network | Access |")
+out.append("| --- | --- | --- | --- | --- | --- |")
+for _, _, stack, service, url, container, network, access in rows:
+    out.append(f"| `{stack}` | `{service}` | {url} | {container} | {network} | {access} |")
 out.append("")
 
 non_web = sorted({r[4].split("://")[0] for r in rows if not r[4].startswith("http")})
@@ -224,8 +226,11 @@ case "$MODE" in
     echo "       fix: make access"
     exit 1
     ;;
+  --stdout)
+    generate
+    ;;
   *)
-    echo "usage: $0 [--check]" >&2
+    echo "usage: $0 [--check|--stdout]" >&2
     exit 2
     ;;
 esac
