@@ -1,0 +1,40 @@
+name: glasswing-steel-mcp
+
+services:
+  steel-mcp:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: glasswing/steel-mcp:3.0.0
+    container_name: glasswing-steel-mcp
+    init: true
+
+    ports:
+      - "127.0.0.1:8002:8000"
+
+    environment:
+      STEEL_LOCAL: "true"
+      STEEL_BASE_URL: http://steel:3000
+      STEEL_CONNECT_URL: ws://steel:3000
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+      OTEL_SERVICE_NAME: glasswing-steel-mcp
+
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 1.0
+
+    labels:
+      com.glasswing.service: steel-mcp
+      com.glasswing.category: ai
+      com.glasswing.monitoring: "true"
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

@@ -11,7 +11,7 @@ PRE_UP_HOOK := $(STACK_DIR)/pre-up.sh
 POST_UP_HOOK := $(STACK_DIR)/post-up.sh
 
 # Default secret location: /<stack>. The collector reuses /openobserve.
-INFISICAL_PATH ?= $(if $(filter otel-collector vector,$(STACK)),/openobserve,$(if $(filter open-notebook-mcp,$(STACK)),/open-notebook,/$(STACK)))
+INFISICAL_PATH ?= $(if $(filter otel-collector vector,$(STACK)),/openobserve,$(if $(filter open-notebook-mcp,$(STACK)),/open-notebook,$(if $(filter steel-mcp,$(STACK)),/steel,/$(STACK))))
 
 # One shared bridge for every published service. An explicit subnet does not
 # draw from Docker's address pool, so the platform stops creating one network
