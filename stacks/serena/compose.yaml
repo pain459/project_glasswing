@@ -1,0 +1,85 @@
+name: glasswing-serena
+
+services:
+  init-permissions:
+    extends:
+      file: ../base.yaml
+      service: base
+    image: alpine:3.20
+    user: root
+    command:
+      - sh
+      - -c
+      - |
+        mkdir -p /config/memories/global
+        chown -R 1000:1000 /config
+    volumes:
+      - serena_config:/config
+    network_mode: none
+    restart: "no"
+
+  serena:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: ghcr.io/oraios/serena@sha256:0b0ff857c2eca5094aa3b4f406e58ba3cacf647b20d237adcfbbeadffc14cd65
+    container_name: glasswing-serena
+    init: true
+
+    depends_on:
+      init-permissions:
+        condition: service_completed_successfully
+
+    user: "1000:1000"
+
+    command:
+      - serena
+      - start-mcp-server
+      - --transport
+      - streamable-http
+      - --port
+      - "9121"
+      - --host
+      - 0.0.0.0
+
+    ports:
+      - "127.0.0.1:9121:9121"
+      - "127.0.0.1:24282:24282"
+
+    environment:
+      SERENA_DOCKER: "1"
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+      OTEL_SERVICE_NAME: glasswing-serena
+
+    volumes:
+      - /home/ravik/src_git:/workspace/repos
+      - serena_config:/workspaces/serena/config
+      - ./config/serena_config.yml:/workspaces/serena/config/serena_config.yml:ro
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 9121), 3).close()"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+    pids_limit: 256
+    mem_limit: 2g
+    cpus: 2.0
+
+    labels:
+      com.glasswing.service: serena
+      com.glasswing.category: ai
+      com.glasswing.monitoring: "true"
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
+
+volumes:
+  serena_config:
+    name: glasswing-serena-config

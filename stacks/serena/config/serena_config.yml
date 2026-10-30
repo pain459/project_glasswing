@@ -1,0 +1,21 @@
+# Docker-specific Serena configuration.
+# Overrides the image defaults so the container works headlessly.
+
+# Disable the GUI log window (not available in Docker).
+gui_log_window: False
+
+# Listen on all interfaces so the dashboard is reachable outside the container.
+web_dashboard_listen_address: 0.0.0.0
+
+# Don't try to open a browser tab on launch.
+web_dashboard_open_on_launch: False
+
+# Use LSP (language server protocol) as the code analysis backend.
+language_backend: LSP
+
+# REPL-based agent interface (Serena v2 default).
+agent_interface: REPL
+
+# Trust all projects under /workspace so Serena can index them.
+trusted_project_path_patterns:
+  - "/workspace/**"

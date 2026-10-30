@@ -8,13 +8,14 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 
 
-def compose_config(stack: str, extra_env: dict[str, str]) -> dict:
-    compose = REPO / "stacks" / stack / "compose.yaml"
-    if not compose.exists():
-        raise AssertionError(f"missing Compose stack: {compose}")
+def compose_config_files(files: list[Path], extra_env: dict[str, str]) -> dict:
+    for compose in files:
+        if not compose.exists():
+            raise AssertionError(f"missing Compose file: {compose}")
     env = os.environ | {"GLASSWING_TZ": "Asia/Kolkata"} | extra_env
+    compose_args = [argument for compose in files for argument in ("-f", str(compose))]
     result = subprocess.run(
-        ["docker", "compose", "-f", str(compose), "config", "--format", "json"],
+        ["docker", "compose", *compose_args, "config", "--format", "json"],
         cwd=REPO,
         env=env,
         text=True,
@@ -24,6 +25,10 @@ def compose_config(stack: str, extra_env: dict[str, str]) -> dict:
     if result.returncode != 0:
         raise AssertionError(result.stderr)
     return json.loads(result.stdout)
+
+
+def compose_config(stack: str, extra_env: dict[str, str]) -> dict:
+    return compose_config_files([REPO / "stacks" / stack / "compose.yaml"], extra_env)
 
 
 class MCPStackTests(unittest.TestCase):
@@ -86,6 +91,47 @@ class MCPStackTests(unittest.TestCase):
         self.assertIn("--stateful", dockerfile)
         self.assertIn("--healthEndpoint /healthz", dockerfile)
         self.assertIn("HEALTHCHECK", dockerfile)
+
+    def test_serena_stack(self) -> None:
+        config = compose_config("serena", {})
+        self.assertEqual(config["name"], "glasswing-serena")
+        self.assertEqual(set(config["services"]), {"init-permissions", "serena"})
+
+        init = config["services"]["init-permissions"]
+        self.assertEqual(init["user"], "root")
+        self.assertIn("chown -R 1000:1000", " ".join(init["command"]))
+
+        service = config["services"]["serena"]
+        self.assertEqual(
+            service["image"],
+            "ghcr.io/oraios/serena@sha256:0b0ff857c2eca5094aa3b4f406e58ba3cacf647b20d237adcfbbeadffc14cd65",
+        )
+        self.assertEqual(service["user"], "1000:1000")
+        self.assertEqual(service["depends_on"]["init-permissions"]["condition"], "service_completed_successfully")
+        self.assertEqual(
+            {(port["host_ip"], port["published"], port["target"]) for port in service["ports"]},
+            {("127.0.0.1", "9121", 9121), ("127.0.0.1", "24282", 24282)},
+        )
+
+        volumes = {volume["target"]: volume for volume in service["volumes"]}
+        repos = volumes["/workspace/repos"]
+        self.assertEqual(repos["source"], "/home/ravik/src_git")
+        self.assertFalse(repos.get("read_only", False))
+        self.assertEqual(volumes["/workspaces/serena/config"]["type"], "volume")
+        config_file = volumes["/workspaces/serena/config/serena_config.yml"]
+        self.assertEqual(config_file["type"], "bind")
+        self.assertTrue(config_file["read_only"])
+        self.assertNotIn("/workspace/repos/scip", json.dumps(config))
+        self.assertNotIn(":latest", service["image"])
+
+    def test_serena_override(self) -> None:
+        stack = REPO / "stacks" / "serena"
+        config = compose_config_files(
+            [stack / "compose.yaml", stack / "compose.override.example.yaml"], {}
+        )
+        targets = {volume["target"] for volume in config["services"]["serena"]["volumes"]}
+        self.assertIn("/workspace/repos", targets)
+        self.assertIn("/workspace/extra/example", targets)
 
 
 if __name__ == "__main__":
