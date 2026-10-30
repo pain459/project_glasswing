@@ -38,7 +38,7 @@ export DOCKER_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null)
 
 .PHONY: help up down restart rebuild logs ps check infisical homepage core status \
         secrets-check secrets-injection-check secrets-plan network docker-pool doctor access access-check \
-        certificates certificates-check
+        certificates certificates-check mcp-preflight
 
 help:
 	@echo "Glasswing Stack Manager"
@@ -57,6 +57,7 @@ help:
 	@echo "make status                       Show all Docker containers"
 	@echo "make ollama-model                 Rebuild the coding model from its Modelfile"
 	@echo "make ai-preflight                 Validate the Ollama/OpenCode inference baseline"
+	@echo "make mcp-preflight                Validate all host-only MCP endpoints"
 	@echo "make secrets-check                Verify Infisical integration"
 	@echo "make secrets-plan                 List keys still to supply / emit templates"
 	@echo "make secrets-injection-check      Verify test-secret injection"
@@ -274,6 +275,11 @@ ollama-model:
 
 ai-preflight:
 	@./scripts/ai-preflight.sh --opencode
+
+mcp-preflight:
+	@python3 scripts/mcp-preflight.py --name open-notebook http://127.0.0.1:8001/mcp
+	@python3 scripts/mcp-preflight.py --name steel http://127.0.0.1:8002/mcp
+	@python3 scripts/mcp-preflight.py --name serena http://127.0.0.1:9121/mcp
 
 
 # --------------------------------------------------
