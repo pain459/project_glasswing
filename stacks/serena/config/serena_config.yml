@@ -16,9 +16,17 @@ language_backend: LSP
 # REPL-based agent interface (Serena v2 default).
 agent_interface: REPL
 
+# Trust all hosts for the web dashboard (LAN access).
+# The init service appends the GLASSWING_HOST_IP to this list.
+web_dashboard_trusted_hosts:
+  - 127.0.0.1
+  - localhost
+  - 192.168.68.62
+
 # Trust all projects under /workspace so Serena can index them.
+# Covers any repo mounted via repos.env.
 trusted_project_path_patterns:
-  - "/workspace/repos/**"
+  - "/workspace/**"
 
 # Serena maintains this registry as projects are activated.
 projects: []
