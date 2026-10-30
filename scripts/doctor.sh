@@ -175,41 +175,12 @@ else
 fi
 
 # --- 6. Published host ports -------------------------------------------------
-PORT_REPORT="$(python3 - <<'PY'
-import collections, pathlib, re
-
-# A binding is either "${GLASSWING_HOST_IP:?...}:3006:3000" or "1.2.3.4:3006:3000".
-HOST = r"(?:\$\{[^}]+\}|\d+\.\d+\.\d+\.\d+)"
-pub = collections.defaultdict(set)
-literal = collections.defaultdict(set)
-unbound = []
-
-for f in sorted(pathlib.Path("stacks").glob("*/compose.yaml")):
-    stack = f.parent.name
-    for line in f.read_text().splitlines():
-        m = re.search(r'-\s*"' + HOST + r':(\d+):(\d+)', line)
-        if m:
-            pub[m.group(1)].add(stack)
-            if re.search(r'-\s*"\d+\.\d+\.\d+\.\d+:', line):
-                literal[stack].add(m.group(1))
-            continue
-        m = re.search(r'-\s*"(\d+):(\d+)"\s*(?:/tcp)?\s*$', line.strip())
-        if m:
-            unbound.append(f"{stack}:{m.group(1)}")
-
-for port, stacks in sorted((p, s) for p, s in pub.items() if len(s) > 1):
-    print(f"DUP {port} {' '.join(sorted(stacks))}")
-for stack, ports in sorted(literal.items()):
-    print(f"LITERAL {stack} {','.join(sorted(ports, key=int))}")
-for item in unbound:
-    print(f"UNBOUND {item}")
-print(f"COUNT {len(pub)}")
-PY
-)"
+PORT_REPORT="$(python3 scripts/compose-port-check.py)"
 
 DUPES="$(printf '%s\n' "$PORT_REPORT" | grep '^DUP ' || true)"
 LITERAL="$(printf '%s\n' "$PORT_REPORT" | grep '^LITERAL ' || true)"
 UNBOUND="$(printf '%s\n' "$PORT_REPORT" | grep '^UNBOUND ' || true)"
+LOOPBACK="$(printf '%s\n' "$PORT_REPORT" | grep '^LOOPBACK ' || true)"
 PORT_COUNT="$(printf '%s\n' "$PORT_REPORT" | awk '/^COUNT /{print $2}')"
 
 if [ -n "$LITERAL" ]; then
@@ -224,6 +195,12 @@ fi
 
 if [ -z "$LITERAL" ] && [ -z "$DUPES" ]; then
   pass "${PORT_COUNT} published host ports, no duplicates, no hardcoded IPs"
+fi
+
+if [ -n "$LOOPBACK" ]; then
+  while IFS= read -r line; do
+    pass "Host-only loopback binding: ${line#LOOPBACK }"
+  done <<< "$LOOPBACK"
 fi
 
 if [ -n "$UNBOUND" ]; then

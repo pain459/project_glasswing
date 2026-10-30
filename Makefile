@@ -4,6 +4,8 @@ SHELL := /bin/bash
 STACK ?= infisical
 STACK_DIR := stacks/$(STACK)
 COMPOSE_FILE := $(STACK_DIR)/compose.yaml
+COMPOSE_OVERRIDE := $(STACK_DIR)/compose.override.yaml
+COMPOSE_FILES := -f "$(COMPOSE_FILE)" $(if $(wildcard $(COMPOSE_OVERRIDE)),-f "$(COMPOSE_OVERRIDE)")
 SECRETS_FILE := $(STACK_DIR)/secrets.list
 PRE_UP_HOOK := $(STACK_DIR)/pre-up.sh
 POST_UP_HOOK := $(STACK_DIR)/post-up.sh
@@ -80,9 +82,9 @@ set -eu; \
  if [ -s "$(SECRETS_FILE)" ]; then \
    echo "[INFO] Infisical path: $(INFISICAL_PATH)"; \
    ./scripts/with-infisical.sh "$(INFISICAL_PATH)" "$(SECRETS_FILE)" -- \
-     docker compose -f "$(COMPOSE_FILE)" $(1); \
+     docker compose $(COMPOSE_FILES) $(1); \
  else \
-   docker compose -f "$(COMPOSE_FILE)" $(1); \
+   docker compose $(COMPOSE_FILES) $(1); \
  fi
 endef
 

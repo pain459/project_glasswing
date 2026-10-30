@@ -5,3 +5,4 @@ stacks/homepage/config/logs/
 stacks/portainer/certs/
 .opencode/task-progress.md
 stacks/panchangam/src/
+stacks/*/compose.override.yaml
