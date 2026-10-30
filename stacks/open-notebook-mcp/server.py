@@ -11,8 +11,8 @@ mcp.settings.streamable_http_path = os.getenv("MCP_PATH", "/mcp")
 mcp.settings.stateless_http = os.getenv("STATELESS_HTTP", "1") == "1"
 mcp.settings.json_response = os.getenv("JSON_RESPONSE", "1") == "1"
 
-# FastMCP's DNS-rebinding protection only accepts localhost by default. The
-# OpenCode container reaches this server as http://open-notebook-mcp:8000, so
+# FastMCP's DNS-rebinding protection only accepts localhost by default. Health
+# probes and Docker-network clients can use http://open-notebook-mcp:8000, so
 # allow exactly that host name instead of disabling the check.
 allowed_hosts = [h.strip() for h in os.getenv("MCP_ALLOWED_HOSTS", "").split(",") if h.strip()]
 mcp.settings.transport_security = TransportSecuritySettings(

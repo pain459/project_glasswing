@@ -82,7 +82,7 @@ Run `02` first (it installs the tools the others use), reconnect after the
 
 [REBUILD.md](REBUILD.md) is the complete procedure: host preparation, storage,
 the gitignored bootstrap file and TLS material, the first Infisical start, the
-25 secret values you must supply, the parallel rollout, and a verification
+operator secret values you must supply, the parallel rollout, and a verification
 checklist. Everything below assumes those phases are done.
 
 ### Machine identity
@@ -164,6 +164,7 @@ make restart-all
 | `make list-stacks` | List discovered stacks |
 | `make ollama-model` | Rebuild the coding model from its checked-in Modelfile |
 | `make ai-preflight` | Validate GPU access, Ollama settings, model limits, and OpenCode connectivity |
+| `make mcp-preflight` | Complete an MCP handshake and list tools on all three host-only endpoints |
 | `make doctor` | Preflight host IP, Docker pool headroom, port collisions, hardcoded IPs, orphan networks, restart loops, Infisical |
 | `make network` | Create the shared `glasswing` bridge (explicit subnet, no pool slot) |
 | `make docker-pool` | Widen Docker's address pool to 4096 networks (sudo; restarts Docker) |
@@ -177,7 +178,7 @@ make restart-all
 `make restart-all` uses `docker compose up`, not `docker restart`. Changed environment variables are applied, not ignored.
 
 It starts Infisical first (every other stack needs its secrets), then Ollama
-(the inference backend, which `opencode` reconciles), then deploys the rest
+(the host coding agent's inference backend), then deploys the rest
 `JOBS` at a time (default 4) with per-stack logs. A failing stack prints its log
 and makes the target exit non-zero without stopping the other deploys.
 
@@ -186,7 +187,7 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 `up` also runs optional hooks owned by the stack: `stacks/<name>/pre-up.sh` before the Compose command and `stacks/<name>/post-up.sh` once the stack is healthy. Setup and validation live next to the stack instead of in extra top-level commands:
 
 - `make up STACK=ollama` starts Ollama, pulls the base model if it is missing, applies the checked-in Modelfile, and validates GPU access, runtime flags, model limits, and a non-truncated coding response.
-- `make up STACK=opencode` reconciles the Ollama stack first, starts OpenCode, and validates the full Ollama-to-OpenCode path.
+- `make up STACK=open-notebook-mcp`, `make up STACK=steel-mcp`, and `make up STACK=serena` each start one MCP service and run a protocol-level post-up check.
 
 `make ollama-model` and `make ai-preflight` remain available for re-running one step without a redeploy.
 
@@ -215,7 +216,9 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 | `openobserve` | 3018 | Logs, metrics, traces |
 | `jupyterlab` | 8889 | GPU notebooks |
 | `open-notebook` | 8502, 5055 | Research workflows |
-| `opencode` | 3019 | Web coding agent with Ollama and Open Notebook RAG |
+| `open-notebook-mcp` | 127.0.0.1:8001 | Host-only Open Notebook MCP |
+| `steel-mcp` | 127.0.0.1:8002 | Host-only browser MCP |
+| `serena` | 127.0.0.1:9121, 127.0.0.1:24282 | Host-only code intelligence MCP and dashboard |
 | `beszel` | 8090 | Host health |
 | `glances` | 61208 | Host system monitor (feeds Homepage widgets) |
 | `portainer` | 9443 | Container management |
@@ -227,26 +230,37 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 | `dagu` | 3014 | Workflow orchestrator (scheduled DAGs for updates, health checks) |
 | `postgres` | 5432 | Shared PostgreSQL used by DBGate and ad-hoc tooling |
 
-Every port above binds to `GLASSWING_HOST_IP`, not to `0.0.0.0`, so the platform is
-reachable on the LAN and nowhere else. [ACCESS.md](ACCESS.md) is the generated,
-complete list of URLs: `make access` rebuilds it from the compose files and
-`make access-check` fails when it is stale.
+LAN services bind to `GLASSWING_HOST_IP`, not to `0.0.0.0`. The four MCP-related
+ports shown with `127.0.0.1` are deliberately host-only. [ACCESS.md](ACCESS.md)
+is the generated, complete list of URLs: `make access` rebuilds it from the
+compose files and `make access-check` fails when it is stale.
 
 Shared service defaults — restart policy, log rotation, and the opt-in
 `no-new-privileges` setting — live in `stacks/base.yaml` and reach each service
 through `extends`. See [Compose conventions](MAINTENANCE.md#compose-conventions).
 
-`opencode` uses Open Notebook as a retrieval layer for context beyond the model window. See `stacks/opencode/README.md` for the required secrets, access details, and RAG workflow.
+The host-installed OpenCode binary is `/home/ravik/.opencode/bin/opencode`; there is
+no OpenCode container or web UI. Its global configuration at
+`/home/ravik/.config/opencode/opencode.json` selects the local Ollama model and
+connects to three remote MCP servers on loopback. The non-secret, restorable
+reference is `config/opencode/opencode.example.json`.
 
-That stack also mounts `/home/ravik`, `/mnt/storage` and `/mnt/cold` read-write at their real paths. The container runs as `1000:1000`, the same uid and gid as `ravik` on Pathfinder, so the agent works on the repositories and files in place instead of a copy. Anything `ravik` can change, the agent can change; see the security notes in `stacks/opencode/README.md`.
+| MCP | Endpoint | Lifecycle | Infisical path |
+| --- | --- | --- | --- |
+| Open Notebook | `http://127.0.0.1:8001/mcp` | `make up STACK=open-notebook-mcp` | `/open-notebook` |
+| Steel | `http://127.0.0.1:8002/mcp` | `make up STACK=steel-mcp` | `/steel` (global values only for the gateway) |
+| Serena | `http://127.0.0.1:9121/mcp` | `make up STACK=serena` | `/serena` (global values only) |
 
-`ollama` and `opencode` share one inference baseline: 131k context, 32k
+Serena maps `/home/ravik/src_git` at `/workspace/repos`. Copy
+`stacks/serena/compose.override.example.yaml` to `compose.override.yaml` to add
+other repository roots without editing the base stack. Run `make mcp-preflight`
+after changing any MCP stack and `make ai-preflight` after changing the native
+OpenCode or Ollama configuration.
+
+Ollama and host OpenCode share one inference baseline: 131k context, 32k
 generation, temperature 0.3, thinking disabled, and a `q8_0` KV cache with
-flash attention. The numbers must agree in both stacks; see
-`stacks/ollama/README.md` and
-`stacks/opencode/README.md#inference-baseline`. `make up STACK=opencode`
-reconciles Ollama first and runs the preflight automatically, including GPU
-residency.
+flash attention. `make ai-preflight` validates the container settings, effective
+host OpenCode model configuration, and a real standalone prompt.
 
 ## Image management
 
@@ -323,7 +337,9 @@ Portainer at `:9443` serves as a read-only dashboard. It monitors containers and
 
 ## Secrets and Configuration
 
-Every stack except Infisical (29 of 30) loads its secrets and configuration from Infisical at startup. No hardcoded passwords, API keys, or configuration values remain in compose files.
+Every ordinary stack loads its secrets and configuration from Infisical at
+startup. Infisical itself uses its bootstrap file, and host OpenCode uses the
+non-secret host configuration described above.
 
 ### How secret injection works
 
@@ -442,7 +458,7 @@ curl -s -k -X DELETE "$INFISICAL_URL/api/v4/secrets/my-secret-key" \
 For convenience, `scripts/infisical-register.sh` reads a `.registry` file and upserts all entries:
 
 ```bash
-./scripts/infisical-register.sh /opencode stacks/opencode/opencode-config.registry
+./scripts/infisical-register.sh /open-notebook stacks/open-notebook/open-notebook-config.registry
 ```
 
 The script uses POST to create new secrets and PATCH to update existing ones, so it is safe to re-run.
@@ -498,7 +514,7 @@ A green container is not proof a service works. Check the destination too: telem
 - A full application-state restore has not been attempted end to end. An isolated configuration restore has.
 - Remote access is LAN-only. A VPN or tunnel is not configured.
 - Infisical serves a self-signed certificate, so clients need the CA explicitly (`make certificates` writes it to `.local/ca/`).
-- The hand-entered secret values (25 keys, listed by `make secrets-plan`) exist only in Infisical and your offline record. A rebuild without that record means new passwords.
+- The hand-entered secret values listed by `make secrets-plan` exist only in Infisical and your offline record. A rebuild without that record means new passwords.
 - `steel-browser` has no versioned image tags; it remains on `:latest`. The Dagu update DAG handles rollback for mutable-tag stacks automatically.
 - Some mutable-tag stacks (langfuse, steel) have slow startup times that exceed the 120s healthcheck timeout, causing unnecessary rollbacks. The timeout may need adjustment per-stack.
 

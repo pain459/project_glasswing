@@ -16,7 +16,7 @@ is no internal DNS and no reverse proxy, so access is always `IP:port`.
 | Item | Why | Where it comes from |
 | --- | --- | --- |
 | Git remote access | clone the repository | your forge account |
-| 25 secret values | Infisical has no copy on a fresh host | `make secrets-plan` lists every key; your password manager holds the values |
+| Operator secret values | Infisical has no copy on a fresh host | `make secrets-plan` lists every key; your password manager holds the values |
 | Restic password | only needed on the restore path | `/etc/glasswing/backup/restic-password` offline copy |
 | Glasswing CA key | only needed to keep existing client trust | `.local/ca/glasswing-ca.key` offline copy |
 
@@ -27,8 +27,8 @@ failure.
 
 ## Phase 1 — Host and user
 
-The stacks assume the login user is `ravik` with uid/gid `1000` (OpenCode mounts
-`/home/ravik`, several containers run as `1000:1000`), and several scripts and
+The stacks assume the login user is `ravik` with uid/gid `1000` (Serena maps
+`/home/ravik/src_git`, several containers run as `1000:1000`), and several scripts and
 compose files assume the hostname `pathfinder`.
 
 ```bash
@@ -55,6 +55,33 @@ ask for a reboot if it installed the driver. Rerun it after the reboot.
 
 **Check:** `docker info | grep -i runtime` lists `nvidia`, and
 `docker run --rm --gpus all ubuntu:24.04 nvidia-smi -L` prints the GPU.
+
+### 1.1 Install host OpenCode
+
+Install the upstream OpenCode CLI as `ravik`; the expected binary is
+`/home/ravik/.opencode/bin/opencode`. OpenCode is a host application, not a
+Compose stack. Verify the installation with:
+
+```bash
+/home/ravik/.opencode/bin/opencode --version
+```
+
+Copy `config/opencode/opencode.example.json` to
+`/home/ravik/.config/opencode/opencode.json` with mode `0600`, then adjust only
+host-specific values if the LAN address or model inventory differs. Its MCP
+section is:
+
+```json
+{
+  "mcp": {
+    "open-notebook": { "type": "remote", "url": "http://127.0.0.1:8001/mcp", "oauth": false },
+    "steel": { "type": "remote", "url": "http://127.0.0.1:8002/mcp", "oauth": false },
+    "serena": { "type": "remote", "url": "http://127.0.0.1:9121/mcp", "oauth": false }
+  }
+}
+```
+
+These URLs are intentionally loopback-only. They work only from Pathfinder.
 
 ---
 
@@ -230,7 +257,7 @@ These registries contain non-secret configuration only (timezone, ports, URLs,
 feature flags), which is why they can live in Git. `scripts/infisical-register.sh`
 upserts, so the loop is safe to rerun.
 
-### 6.2 Values only you have (25 keys)
+### 6.2 Values only you have
 
 `make secrets-plan` prints the split: which keys are covered by the registries
 above and which ones you must supply. To turn the second list into fillable
@@ -244,13 +271,12 @@ for f in .local/secrets-templates/*.registry; do
 done
 ```
 
-The 25 keys are credentials for DBGate (2), Flowise (3), AnythingLLM (1),
-JupyterLab (1), Langfuse (7), OpenCode (1), Open Notebook (3, one of them shared
-with OpenCode), OpenObserve (2, shared with the collector and Vector), Postgres
-(3) and Stirling PDF (2). `OPEN_NOTEBOOK_PASSWORD` appears under both
-`/open-notebook` and `/opencode` and **must be the same value** in both. Use
-random values for anything new; reuse your recorded values when restoring an
-existing deployment.
+The report includes credentials for application stacks such as DBGate, Flowise,
+AnythingLLM, JupyterLab, Langfuse, Open Notebook, OpenObserve, Postgres and
+Stirling PDF. `OPEN_NOTEBOOK_PASSWORD` now has one source of truth under
+`/open-notebook`; the independent Open Notebook MCP stack reuses that path.
+Use random values for anything new; reuse your recorded values when restoring
+an existing deployment.
 
 ### 6.3 The injection test secret
 
@@ -274,7 +300,7 @@ make network
 make restart-all JOBS=4
 ```
 
-`restart-all` deploys Infisical first, then Ollama, then the remaining 27 stacks
+`restart-all` deploys Infisical first, then Ollama, then the remaining stacks
 four at a time with per-stack logs. The first Ollama start pulls
 `qwen3.6:27b` (about 17 GB) and builds the checked-in coding model, so allow
 time and disk on `/mnt/storage`; `make up STACK=ollama` reports progress.
@@ -286,6 +312,7 @@ make access           # rewrite ACCESS.md from the compose port bindings
 make access-check
 make doctor
 make ai-preflight
+make mcp-preflight
 ```
 
 **Check:** `make doctor` ends with `No failures, 0 warning(s)`, and every URL in
@@ -304,7 +331,7 @@ hold them after the first run.
 | Forgejo (`:3011`, SSH `:2222`) | complete the installer, create the admin account | repository data lives in the Forgejo volume |
 | AdGuard Home (`:3008` admin UI) | set the admin password | DNS itself listens on `:53` |
 | Homepage (`:3006`) | none; configuration is committed | `HOMEPAGE_ALLOWED_HOSTS` comes from Infisical |
-| Open Notebook (`:8502`) | sign in with `OPEN_NOTEBOOK_PASSWORD` | MCP bridge stays internal to the stack network |
+| Open Notebook (`:8502`) | sign in with `OPEN_NOTEBOOK_PASSWORD` | Host OpenCode reaches its MCP bridge at loopback `:8001` |
 | JupyterLab (`:8889`) | use `JUPYTER_TOKEN` from Infisical | |
 | Dagu (`:3014`) | none | host network; DAGs and run history are bind-mounted from the repo volume |
 
@@ -321,6 +348,7 @@ make certificates-check  # TLS covers the host IP and is current
 make access-check        # ACCESS.md matches the compose files
 make secrets-check       # Infisical auth + injection
 make ai-preflight        # GPU, Ollama flags, model limits, OpenCode path
+make mcp-preflight       # initialize and list tools on all three MCP servers
 make status              # every glasswing-* container Up
 ```
 
@@ -332,6 +360,7 @@ Manual spot checks that automation cannot prove:
 - [ ] Homepage (`:3006`) tiles render and its widget APIs answer
 - [ ] `docker inspect -f '{{json .HostConfig.LogConfig}}' glasswing-homepage` shows `max-size 5m`, `max-file 2`
 - [ ] A note written through the Open Notebook MCP server appears in its UI
+- [ ] `/home/ravik/.opencode/bin/opencode mcp list` shows all three servers connected
 
 ---
 

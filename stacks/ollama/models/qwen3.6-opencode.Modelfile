@@ -2,7 +2,7 @@
 #
 # Build with `make ollama-model`; this is the Pathfinder alias of the earlier
 # qwen3.6-resilient baseline. The two limits below are a contract with
-# stacks/opencode/config/opencode.jsonc:
+# /home/ravik/.config/opencode/opencode.json:
 #
 #   num_ctx      131072  matches OpenCode's context limit
 #   num_predict   32768  matches OpenCode's output limit

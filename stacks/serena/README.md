@@ -3,8 +3,9 @@
 Serena provides code intelligence to host OpenCode over Streamable HTTP MCP.
 
 - MCP: `http://127.0.0.1:9121/mcp`
-- Dashboard: `http://127.0.0.1:24282/dashboard`
+- Dashboard: `http://127.0.0.1:24282/dashboard/index.html`
 - Default repositories: `/home/ravik/src_git` → `/workspace/repos` (read-write)
+- Infisical path: `/serena` (global settings only)
 
 Both published ports are intentionally loopback-only.
 
@@ -25,8 +26,14 @@ Makefile. Prefer read-only mounts unless Serena must use its editing tools.
 ```bash
 make up STACK=serena
 make check STACK=serena
+python3 scripts/mcp-preflight.py --name serena http://127.0.0.1:9121/mcp
 ```
 
 The one-shot init service owns the persistent configuration volume as UID/GID
-1000 before Serena starts. The checked-in configuration is mounted as a nested
-read-only file, so the volume cannot mask it.
+1000 before Serena starts. It seeds a missing config or migrates a pre-v2 config
+that lacks the required `projects` registry, then leaves the writable volume to
+Serena so project registrations and memories persist.
+
+Host OpenCode configures Serena as a remote MCP URL with OAuth disabled. If the
+container logs report a missing `projects` key, redeploy the stack so the init
+service can migrate the volume. Keep both published ports on loopback.

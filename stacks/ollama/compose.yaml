@@ -17,7 +17,7 @@ services:
       OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:?Required from Infisical}
       OLLAMA_MODELS: ${OLLAMA_MODELS:?Required from Infisical}
 
-      # Inference baseline shared with the opencode stack.
+      # Inference baseline shared with host-installed OpenCode.
       # Flash attention plus an 8-bit KV cache keeps more of the 131k context
       # on the 4090. One request and one loaded model prevent a second session
       # from splitting VRAM with the coding model.
