@@ -39,6 +39,7 @@ Host IP: `192.168.68.62` (from `GLASSWING_HOST_IP`, else `stacks/infisical/.env`
 | `postgres` | `postgres` | postgres://192.168.68.62:5432 | 5432/tcp | glasswing | LAN |
 | `open-notebook-mcp` | `open-notebook-mcp` | http://127.0.0.1:8001 | 8000/tcp | glasswing | host-only |
 | `steel-mcp` | `steel-mcp` | http://127.0.0.1:8002 | 8000/tcp | glasswing | host-only |
+| `rea-mcp` | `rea-mcp` | http://127.0.0.1:8003 | 8000/tcp | glasswing | host-only |
 | `beszel` | `beszel` | http://192.168.68.62:8090 | 8090/tcp | glasswing | LAN |
 | `infisical` | `gateway` | https://192.168.68.62:8095 | 443/tcp | internal | LAN |
 | `open-notebook` | `open_notebook` | http://192.168.68.62:8502 | 8502/tcp | internal+glasswing | LAN |
