@@ -2,123 +2,114 @@
 # Glasswing — Homepage services.yaml
 # Base URL: 192.168.68.62
 
-- System Monitoring:
-    - CPU Usage:
-        icon: mdi-speedometer
-        widget:
-            type: glances
-            url: http://192.168.68.62:61208
-            version: 4
-            metric: cpu
-
-    - Memory Usage:
-        icon: mdi-memory
-        widget:
-            type: glances
-            url: http://192.168.68.62:61208
-            version: 4
-            metric: memory
-
-    - Top Processes:
-        icon: mdi-sitemap
-        widget:
-            type: glances
-            url: http://192.168.68.62:61208
-            version: 4
-            metric: process
-
 - Core Infrastructure:
     - Infisical:
         icon: infisical.png
         href: https://192.168.68.62:8095
         description: Secrets & Credentials
+        container: glasswing-infisical-infisical-1
         siteMonitor: https://192.168.68.62:8095/api/status
 
     - Uptime Kuma:
         icon: uptime-kuma.png
         href: http://192.168.68.62:3003
         description: Availability Monitoring
+        container: glasswing-uptime-kuma
         siteMonitor: http://192.168.68.62:3003
 
     - Beszel:
         icon: beszel.png
         href: http://192.168.68.62:8090
         description: Host Telemetry
+        container: glasswing-beszel
         siteMonitor: http://192.168.68.62:8090
 
     - Glances:
         icon: glances.png
         href: http://192.168.68.62:61208
         description: Host System Monitor
+        container: glasswing-glances
         siteMonitor: http://192.168.68.62:61208/api/4/status
 
     - Portainer:
         icon: portainer.png
         href: https://192.168.68.62:9443
         description: Container Dashboard
+        container: glasswing-portainer
         siteMonitor: https://192.168.68.62:9443
 
     - AdGuard Home:
         icon: adguard-home.png
         href: http://192.168.68.62:3007
         description: DNS & Network Security
+        container: glasswing-adguard
         siteMonitor: http://192.168.68.62:3007
 
     - Homepage:
         icon: homepage.png
         href: http://192.168.68.62:3006
         description: Operations Dashboard
+        container: glasswing-homepage-homepage-1
         siteMonitor: http://192.168.68.62:3006
 
     - OpenObserve:
         icon: sh-openobserve
         href: http://192.168.68.62:3018
         description: Centralized Logs, Metrics and Traces
+        container: glasswing-openobserve
         siteMonitor: http://192.168.68.62:3018/healthz
 
     - OpenTelemetry Collector:
         icon: mdi-chart-timeline-variant
         description: Centralized Docker Metrics and Telemetry
+        container: glasswing-otel-collector
         siteMonitor: http://192.168.68.62:13133/
 
     - Vector:
         icon: vector.png
         description: Centralized Docker Log Collector
+        container: glasswing-vector
         siteMonitor: http://192.168.68.62:8686/health
 
     - Dagu:
         icon: mdi-clock-alert
         href: http://192.168.68.62:3014
         description: Workflow Scheduler & Cron Runner
+        container: glasswing-dagu
         siteMonitor: http://192.168.68.62:3014/api/v1/health
 
     - PostgreSQL:
         icon: postgres.png
         description: Shared Database Server
+        container: glasswing-postgres
 
 - AI Platform:
     - Ollama:
         icon: ollama.png
         href: http://192.168.68.62:11434
         description: RTX 4090 · Model Inference
+        container: glasswing-ollama
         siteMonitor: http://192.168.68.62:11434/api/version
 
     - Flowise:
         icon: flowise.png
         href: http://192.168.68.62:3002
         description: Agents & AI Workflows
+        container: glasswing-flowise
         siteMonitor: http://192.168.68.62:3002
 
     - Langfuse:
         icon: sh-langfuse
         href: http://192.168.68.62:3010
         description: LLM Tracing & Analytics
+        container: glasswing-langfuse-langfuse-web-1
         siteMonitor: http://192.168.68.62:3010/api/public/health
 
     - AnythingLLM:
         icon: anything-llm.png
         href: http://192.168.68.62:3012
         description: Local AI Knowledge and Document RAG
+        container: glasswing-anythingllm
         siteMonitor: http://192.168.68.62:3012
 
 - MCP Servers:
@@ -153,48 +144,56 @@
         icon: forgejo.png
         href: http://192.168.68.62:3011
         description: Private Git Hosting
+        container: glasswing-forgejo
         siteMonitor: http://192.168.68.62:3011
 
     - JupyterLab:
         icon: jupyter.png
         href: http://192.168.68.62:8889/lab
         description: Python & Data Science
+        container: glasswing-jupyterlab
         siteMonitor: http://192.168.68.62:8889/login
 
     - DBGate:
         icon: dbgate.png
         href: http://192.168.68.62:3004
         description: Database Administration
+        container: glasswing-dbgate
         siteMonitor: http://192.168.68.62:3004
 
     - Excalidraw:
         icon: excalidraw.png
         href: http://192.168.68.62:3009
         description: Architecture & Whiteboarding
+        container: glasswing-excalidraw
         siteMonitor: http://192.168.68.62:3009
 
     - CyberChef:
         icon: cyberchef.png
         href: http://192.168.68.62:3013
         description: Encoding, Decoding and Data Analysis
+        container: glasswing-cyberchef
         siteMonitor: http://192.168.68.62:3013
 
     - IT-Tools:
         icon: it-tools.png
         href: http://192.168.68.62:3015
         description: Developer Utilities and Converters
+        container: glasswing-it-tools
         siteMonitor: http://192.168.68.62:3015
 
     - Calculators:
         icon: mdi-calculator-variant
         href: http://192.168.68.62:3021
         description: Math, Finance and Conversion Calculators
+        container: glasswing-calculators
         siteMonitor: http://192.168.68.62:3021
 
     - Stirling-PDF:
         icon: stirling-pdf.png
         href: http://192.168.68.62:3016
         description: PDF Processing, OCR and Conversion
+        container: glasswing-stirling-pdf
         siteMonitor: http://192.168.68.62:3016
 
 - World Clock:
@@ -202,12 +201,14 @@
         icon: mdi-clock-outline
         href: http://192.168.68.62:3022
         description: World Clock & Time Zones
+        container: glasswing-datetime
         siteMonitor: http://192.168.68.62:3022
 
     - Panchangam:
         icon: mdi-calendar-month
         href: http://192.168.68.62:3023
         description: Telugu Panchangam — Tithi, Nakshatra, Muhurtam & Festivals
+        container: glasswing-panchangam
         siteMonitor: http://192.168.68.62:3023
 
 - Home Management:
@@ -215,12 +216,14 @@
         icon: mdi-home-analytics
         href: http://192.168.68.62:3024
         description: Home Inventory & Organization
+        container: glasswing-homebox
         siteMonitor: http://192.168.68.62:3024/api/v1/status
 
     - Paperless-ngx:
         icon: mdi-file-document-multiple
         href: http://192.168.68.62:3025
         description: Document Management System — Scan, Index & Archive
+        container: glasswing-paperless
         siteMonitor: http://192.168.68.62:3025/api/status/
 
 - Entertainment:
@@ -228,10 +231,12 @@
         icon: plex.png
         href: http://192.168.68.62:32400/web
         description: Movies, TV, Documentaries and Home Videos
+        container: glasswing-plex
         siteMonitor: http://192.168.68.62:32400/identity
 
     - Kavita:
         icon: kavita.png
         href: http://192.168.68.62:3017
         description: Books, Comics and Digital Reading
+        container: glasswing-kavita
         siteMonitor: http://192.168.68.62:3017

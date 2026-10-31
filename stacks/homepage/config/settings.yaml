@@ -16,9 +16,6 @@ layout:
   Core Infrastructure:
     style: column
     columns: 2
-  System Monitoring:
-    style: column
-    columns: 2
   AI Platform:
     style: column
     columns: 2
