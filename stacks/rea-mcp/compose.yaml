@@ -1,0 +1,36 @@
+name: glasswing-rea-mcp
+
+services:
+  rea-mcp:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: glasswing/rea-mcp:6.8.0
+    init: true
+
+    ports:
+      - "127.0.0.1:8003:8000"
+
+    environment:
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+      OTEL_SERVICE_NAME: glasswing-rea-mcp
+
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 1.0
+
+    labels:
+      com.glasswing.service: rea-mcp
+      com.glasswing.category: ai
+      com.glasswing.monitoring: "true"
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
