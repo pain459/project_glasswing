@@ -139,6 +139,10 @@
         description: Private AI browser automation
         siteMonitor: http://192.168.68.62:3100/v1/health
 
+    - REA:
+        icon: mdi-magnify-scan
+        description: Reverse Engineering MCP Server
+
 - Developer Workbench:
     - Forgejo:
         icon: forgejo.png
