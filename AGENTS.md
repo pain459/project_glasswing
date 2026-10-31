@@ -7,12 +7,36 @@ This document defines how AI agents working in this repository retrieve, capture
 
 ## 1. Session Start: Bootstrap & Resume
 Do this at the start of every session, before substantive work:
-1. **Locate the notebook.** Call `list_notebooks`. If the project notebook (named after the repository) does not exist, create it with `create_notebook(name, description)`.
-2. **Resume prior work.** Search notes for the most recent session and checkpoint notes on the current topic (`search_notes: true`, `search_sources: false`). Read any open **Pending Items** and **Blockers** before starting.
-3. **Pull relevant standing knowledge.** Search for decision records, gotchas, and runbooks related to the files or components you are about to touch.
-4. **State what you found.** Briefly tell the user which prior notes you are building on (by title), or that none matched.
-5. **Check the local fallback buffer.** If `.agent-memory/pending-notes.md` exists (see Section 8), sync its contents to Open Notebook first, then clear the file.
-6. **Activate Serena project.** Call `serena.activate_project(project="project_glasswing")` to load the repository's symbol index and language server context. Read any Serena memories relevant to the current task (`mem.list_memories`, then `mem.read_memory` for matching entries).
+
+### 1a. Determine the project name
+- Derive the project name from the repository name (e.g. `project_glasswing` from `/home/ravik/src_git/project_glasswing`).
+- Use `git remote -v` or the directory name as fallback.
+- Store it as `<project>` for the steps below.
+
+### 1b. Create or locate the project notebook (one per project)
+- Call `list_notebooks`.
+- Look for a notebook whose `name` matches `<project>` (case-insensitive).
+- **If it exists:** use it for all subsequent notebook operations. Record its `notebook_id`.
+- **If it doesn't exist:** create it with `create_notebook(name="<project>", description="<short description derived from README or repo purpose>")`. Then use the returned `notebook_id`.
+- **Why one per project:** keeps notes isolated, makes search results relevant, and lets you archive a notebook when a project is complete without affecting others.
+
+### 1c. Resume prior work
+- Search notes in the project notebook for the most recent session and checkpoint notes on the current topic (`search_notes: true`, `search_sources: false`).
+- Read any open **Pending Items** and **Blockers** before starting.
+
+### 1d. Pull relevant standing knowledge
+- Search for decision records, gotchas, and runbooks related to the files or components you are about to touch.
+
+### 1e. State what you found
+- Briefly tell the user which prior notes you are building on (by title), or that none matched.
+
+### 1f. Check the local fallback buffer
+- If `.agent-memory/pending-notes.md` exists (see Section 10), sync its contents to Open Notebook first, then clear the file.
+
+### 1g. Activate Serena project
+- Call `serena.activate_project(project="<project>")` to load the repository's symbol index and language server context.
+- Read any Serena memories relevant to the current task (`mem.list_memories`, then `mem.read_memory` for matching entries).
+- If Serena is not configured for this project, skip this step and rely on grep/glob for code exploration.
 
 ---
 
@@ -261,7 +285,7 @@ If the MCP server is unreachable or a write fails after one retry:
 
 ## Quick Checklist
 
-**Start:** find notebook → read recent session notes and pending items → sync local buffer → activate Serena project → read relevant Serena memories.
+**Start:** determine project name → create notebook if missing (one per project) → read recent session notes and pending items → sync local buffer → activate Serena project → read relevant Serena memories.
 
 **During:** search Open Notebook before answering → use Serena for codebase exploration (symbol-first) → use Steel for web tasks (scrape-first) → write atomic notes as decisions/fixes happen → checkpoint at milestones and before heavy operations.
 
