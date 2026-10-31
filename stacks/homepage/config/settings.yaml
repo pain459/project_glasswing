@@ -22,6 +22,9 @@ layout:
   AI Platform:
     style: column
     columns: 2
+  MCP Servers:
+    style: column
+    columns: 2
   Developer Workbench:
     style: column
     columns: 3

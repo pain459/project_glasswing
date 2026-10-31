@@ -8,13 +8,18 @@ services:
       service: hardened
     image: ghcr.io/gethomepage/homepage:v2.7.0
 
+    # Homepage needs root to access /var/run/docker.sock for container health monitoring
+    user: "0:0"
+
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3006:3000"
 
     environment:
       HOMEPAGE_ALLOWED_HOSTS: ${HOMEPAGE_ALLOWED_HOSTS:?Required from Infisical}
-      PUID: ${GLASSWING_PUID:?Required from Infisical}
-      PGID: ${GLASSWING_PGID:?Required from Infisical}
+
+      # Running as root, so PUID/PGID are not needed
+      # PUID: ${GLASSWING_PUID:?Required from Infisical}
+      # PGID: ${GLASSWING_PGID:?Required from Infisical}
 
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-homepage
@@ -22,6 +27,7 @@ services:
     volumes:
       - ./config:/app/config
       - ./icons:/app/public/icons:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
 
     # Resolve host for Glances API access
     extra_hosts:
