@@ -1,1 +1,5 @@
 ---
+# Monitor all Glasswing containers by label
+- name: glasswing
+  label: com.glasswing.monitoring
+  showContainers: false

@@ -103,12 +103,6 @@
         description: RTX 4090 · Model Inference
         siteMonitor: http://192.168.68.62:11434/api/version
 
-    - Serena:
-        icon: mdi-code-braces-box
-        href: http://192.168.68.62:24282/dashboard/index.html
-        description: AI Code Intelligence & MCP Server
-        siteMonitor: http://192.168.68.62:24282/dashboard/index.html
-
     - Flowise:
         icon: flowise.png
         href: http://192.168.68.62:3002
@@ -121,27 +115,38 @@
         description: LLM Tracing & Analytics
         siteMonitor: http://192.168.68.62:3010/api/public/health
 
-    - Open Notebook:
-        icon: open-notebook.png
-        href: http://192.168.68.62:8502
-        description: AI Research & Knowledge
-        siteMonitor: http://192.168.68.62:8502
-
     - AnythingLLM:
         icon: anything-llm.png
         href: http://192.168.68.62:3012
         description: Local AI Knowledge and Document RAG
         siteMonitor: http://192.168.68.62:3012
 
-    - Steel Browser:
+- MCP Servers:
+    - Open Notebook MCP:
+        icon: open-notebook.png
+        href: http://192.168.68.62:8502
+        description: Knowledge Base & Research MCP
+        container: glasswing-open-notebook-mcp-open-notebook-mcp-1
+        siteMonitor: http://192.168.68.62:8502
+
+    - Steel MCP:
         icon: mdi-web
         href: http://192.168.68.62:3100/ui
-        description: Private AI browser automation
+        description: Browser Automation MCP
+        container: glasswing-steel-mcp-steel-mcp-1
         siteMonitor: http://192.168.68.62:3100/v1/health
 
-    - REA:
+    - Serena MCP:
+        icon: mdi-code-braces-box
+        href: http://192.168.68.62:24282/dashboard/index.html
+        description: Code Intelligence MCP
+        container: glasswing-serena
+        siteMonitor: http://192.168.68.62:24282/dashboard/index.html
+
+    - REA MCP:
         icon: mdi-magnify-scan
-        description: Reverse Engineering MCP Server
+        description: Reverse Engineering MCP
+        container: glasswing-rea-mcp-rea-mcp-1
 
 - Developer Workbench:
     - Forgejo:
