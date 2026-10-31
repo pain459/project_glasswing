@@ -25,11 +25,34 @@ services:
         if ! grep -q "^- ${GLASSWING_HOST_IP}$" /config/serena_config.yml; then
           sed -i "/^web_dashboard_trusted_hosts:/a\\- ${GLASSWING_HOST_IP}" /config/serena_config.yml
         fi
+        # Sync the projects registry from repos.env.
+        # This replaces the projects: block in serena_config.yml with the
+        # container paths from .projects.list, so adding a repo to repos.env
+        # is all that is needed to register it with Serena.
+        if [ -f /bootstrap/projects.list ]; then
+          # Build a temp file with the new projects block
+          tmpfile=$(mktemp)
+          printf 'projects:\n' > "$tmpfile"
+          while IFS= read -r ppath; do
+            printf -- '- %s\n' "$ppath" >> "$tmpfile"
+          done < /bootstrap/projects.list
+          # Replace the existing projects block: everything from 'projects:'
+          # through the consecutive '- ' lines that follow it.
+          awk -v tmp="$tmpfile" '
+            /^projects:/ { skip=1 }
+            skip && /^- / { next }
+            skip && !/^- / { skip=0; system("cat " tmp) }
+            { print }
+          ' /config/serena_config.yml > /config/serena_config.yml.tmp
+          mv /config/serena_config.yml.tmp /config/serena_config.yml
+          rm -f "$tmpfile"
+        fi
         chown -R 1000:1000 /config
         chmod 600 /config/serena_config.yml
     volumes:
       - serena_config:/config
       - ./config/serena_config.yml:/bootstrap/serena_config.yml:ro
+      - ./.projects.list:/bootstrap/projects.list:ro
     network_mode: none
     restart: "no"
 
