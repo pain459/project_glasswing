@@ -18,6 +18,7 @@ from core.ephemeris import EphemerisManager
 from core.solar import SolarService
 from core.lunar import LunarService
 from core.planetary import PlanetaryService
+from core.events import EventsService
 from api.models.schemas import SystemStatusResponse
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ class SkyService:
         self.solar = None
         self.lunar = None
         self.planetary = None
+        self.events = None
         self._start_time = None
         self._is_ready = False
 
@@ -51,6 +53,7 @@ class SkyService:
         self.solar = SolarService(self.ephemeris_mgr.loaded_kernel)
         self.lunar = LunarService(self.ephemeris_mgr.loaded_kernel)
         self.planetary = PlanetaryService(self.ephemeris_mgr.loaded_kernel)
+        self.events = EventsService(self.ephemeris_mgr.loaded_kernel)
 
         self._is_ready = True
         logger.info("SkyService initialized successfully")
@@ -135,11 +138,26 @@ class SkyService:
             current_dt, location.elevation_m
         )
 
+    def get_sky_events(self, date: datetime, location: ObserverLocation) -> dict:
+        """Get sky events for a date and location."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        local_date = self._get_local_date(date, location.tz)
+        return self.events.get_sky_events(
+            self.ts,
+            local_date,
+            location.latitude_deg,
+            location.longitude_deg,
+            location.elevation_m,
+        )
+
     def get_daily_sky(self, date: datetime, location: ObserverLocation) -> dict:
         """Get a comprehensive daily sky briefing."""
         solar = self.get_solar_data(date, location)
         lunar = self.get_lunar_data(date, location)
         planets = self.get_planet_data(date, location)
+        sky_events = self.get_sky_events(date, location)
 
         return {
             "date": date.strftime("%Y-%m-%d"),
@@ -153,4 +171,5 @@ class SkyService:
             "lunar": lunar,
             "planets": planets["all"],
             "visible_planets": planets["visible"],
+            "sky_events": sky_events,
         }
