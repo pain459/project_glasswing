@@ -4,7 +4,9 @@ Sky events module.
 Calculates:
 - Milky Way / galactic center visibility and transit
 - Meteor shower activity windows
-- ISS pass predictions (simplified)
+- Moon constellation and distance context
+- Seasonal and day-of-year information
+- Solar declination
 - General sky events for the day
 """
 
@@ -116,6 +118,7 @@ class EventsService:
         self.eph = ephemeris
         self.sun = ephemeris["sun"]
         self.earth = ephemeris["earth"]
+        self.moon = ephemeris["moon"]
 
     def _get_observer(self, latitude: float, longitude: float, elevation: float = 0.0):
         """Create a topocentric observer."""
@@ -125,6 +128,118 @@ class EventsService:
             elevation_m=elevation,
         )
         return self.earth + topos
+
+    # ─── Solar Declination ─────────────────────────────────────────────
+
+    def get_solar_declination(self, ts, dt: datetime) -> dict:
+        """Get solar declination and equation of time for a date."""
+        t = ts.from_datetime(dt)
+        geo = self.earth.at(t).observe(self.sun)
+        ra, dec, _ = geo.radec()
+
+        # Equation of time approximation
+        # EoT = 4 * (Y - equation_of_time_minutes) where Y is the mean solar time
+        day_of_year = dt.timetuple().tm_yday
+        # Simplified EoT formula (minutes)
+        B = 2 * math.pi * (day_of_year - 81) / 365
+        eq_time = (
+            9.87 * math.sin(2 * B)
+            - 7.53 * math.cos(B)
+            - 1.5 * math.sin(B)
+        )
+
+        return {
+            "solar_declination_deg": round(dec.degrees, 2),
+            "right_ascension_hours": round(ra.hours, 4),
+            "equation_of_time_minutes": round(eq_time, 1),
+            "season": self._get_season(dt),
+            "day_of_year": day_of_year,
+        }
+
+    def _get_season(self, dt: datetime) -> str:
+        """Determine the season for a date (Northern Hemisphere)."""
+        month = dt.month
+        day = dt.day
+        if (month, day) < (3, 20):
+            return "winter"
+        elif (month, day) < (6, 21):
+            return "spring"
+        elif (month, day) < (9, 22):
+            return "summer"
+        elif (month, day) < (12, 21):
+            return "autumn"
+        return "winter"
+
+    # ─── Moon Constellation & Distance ─────────────────────────────────
+
+    # Simplified constellation boundaries (RA/Dec boxes for major constellations
+    # along the ecliptic — the zodiac plus Orion which is prominent)
+    CONSTELLATIONS = [
+        {"name": "Aries", "ra_min": 20.5, "ra_max": 23.5, "dec_min": -8, "dec_max": 24},
+        {"name": "Taurus", "ra_min": 23.5, "ra_max": 2.5, "dec_min": -6, "dec_max": 28},
+        {"name": "Gemini", "ra_min": 2.5, "ra_max": 6.0, "dec_min": -2, "dec_max": 33},
+        {"name": "Cancer", "ra_min": 6.0, "ra_max": 8.8, "dec_min": 5, "dec_max": 33},
+        {"name": "Leo", "ra_min": 8.8, "ra_max": 12.0, "dec_min": -8, "dec_max": 33},
+        {"name": "Virgo", "ra_min": 12.0, "ra_max": 15.5, "dec_min": -12, "dec_max": 12},
+        {"name": "Libra", "ra_min": 15.5, "ra_max": 17.5, "dec_min": -15, "dec_max": 8},
+        {"name": "Scorpius", "ra_min": 17.5, "ra_max": 19.5, "dec_min": -35, "dec_max": 5},
+        {"name": "Sagittarius", "ra_min": 19.5, "ra_max": 22.0, "dec_min": -45, "dec_max": -5},
+        {"name": "Capricornus", "ra_min": 22.0, "ra_max": 23.8, "dec_min": -25, "dec_max": 5},
+        {"name": "Aquarius", "ra_min": 23.8, "ra_max": 2.5, "dec_min": -18, "dec_max": 15},
+        {"name": "Pisces", "ra_min": 0.0, "ra_max": 2.5, "dec_min": -3, "dec_max": 18},
+        {"name": "Pisces", "ra_min": 20.5, "ra_max": 24.0, "dec_min": -3, "dec_max": 18},
+        {"name": "Orion", "ra_min": 4.5, "ra_max": 7.0, "dec_min": -12, "dec_max": 22},
+        {"name": "Ophiuchus", "ra_min": 16.0, "ra_max": 18.5, "dec_min": -20, "dec_max": 10},
+    ]
+
+    def get_moon_constellation(self, ts, dt: datetime) -> str:
+        """Get the constellation the Moon is in at a given time."""
+        t = ts.from_datetime(dt)
+        geo = self.earth.at(t).observe(self.moon)
+        ra, dec, _ = geo.radec()
+
+        ra_h = ra.hours
+        dec_d = dec.degrees
+
+        for c in self.CONSTELLATIONS:
+            # Handle RA wrap-around for constellations that cross 0h
+            if c["ra_min"] < c["ra_max"]:
+                if c["ra_min"] <= ra_h < c["ra_max"]:
+                    if c["dec_min"] <= dec_d <= c["dec_max"]:
+                        return c["name"]
+            else:
+                # Wraps around 0h (e.g., Aquarius 23.8 to 2.5)
+                if ra_h >= c["ra_min"] or ra_h < c["ra_max"]:
+                    if c["dec_min"] <= dec_d <= c["dec_max"]:
+                        return c["name"]
+
+        return "Unknown"
+
+    def get_moon_distance_info(self, ts, dt: datetime) -> dict:
+        """Get moon distance and context (supermoon, micromoon)."""
+        t = ts.from_datetime(dt)
+        geo = self.earth.at(t).observe(self.moon)
+        distance_km = geo.distance().km
+
+        # Approximate perigee ~363,300 km, apogee ~405,500 km
+        # Supermoon: within 370,000 km, Micromoon: beyond 400,000 km
+        if distance_km < 370_000:
+            label = "supermoon"
+        elif distance_km > 400_000:
+            label = "micromoon"
+        else:
+            label = "normal"
+
+        # Angular diameter approximation
+        angular_diam_arcmin = math.degrees(
+            2 * math.atan(1737.4 / distance_km)
+        ) * 60
+
+        return {
+            "distance_km": round(distance_km, 0),
+            "distance_label": label,
+            "angular_diameter_arcmin": round(angular_diam_arcmin, 1),
+        }
 
     # ─── Milky Way / Galactic Center ───────────────────────────────────
 
@@ -343,7 +458,6 @@ class EventsService:
         elevation: float = 0.0,
     ) -> dict:
         """Get all sky events for a given date and location."""
-        # Use noon UTC as reference time for the day
         ref_dt = date.replace(hour=12, minute=0, second=0, microsecond=0)
 
         milky_way = self.get_milky_way_info(
@@ -351,10 +465,16 @@ class EventsService:
         )
         showers = self.get_active_meteor_showers(date)
         facts = self.get_daily_facts(date, count=3)
+        solar_decl = self.get_solar_declination(ts, ref_dt)
+        moon_const = self.get_moon_constellation(ts, ref_dt)
+        moon_dist = self.get_moon_distance_info(ts, ref_dt)
 
         return {
             "milky_way": milky_way,
             "meteor_showers": showers,
             "active_shower_count": len(showers),
             "facts": facts,
+            "solar_declination": solar_decl,
+            "moon_constellation": moon_const,
+            "moon_distance": moon_dist,
         }

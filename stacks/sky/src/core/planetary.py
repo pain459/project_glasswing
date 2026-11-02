@@ -13,6 +13,18 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 PLANET_NAMES = ["mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune"]
+
+# DE440S uses "mars barycenter" etc. for outer planets; mercury/venus use simple names
+PLANET_EPHEMERIS_KEY = {
+    "mercury": "mercury",
+    "venus": "venus",
+    "mars": "mars barycenter",
+    "jupiter": "jupiter barycenter",
+    "saturn": "saturn barycenter",
+    "uranus": "uranus barycenter",
+    "neptune": "neptune barycenter",
+}
+
 PLANET_DISPLAY = {
     "mercury": "Mercury",
     "venus": "Venus",
@@ -45,7 +57,8 @@ class PlanetaryService:
             return None
 
         try:
-            planet = self.eph[planet_name_lower]
+            eph_key = PLANET_EPHEMERIS_KEY.get(planet_name_lower, planet_name_lower)
+            planet = self.eph[eph_key]
         except KeyError:
             logger.warning("Planet %s not found in ephemeris", planet_name)
             return None

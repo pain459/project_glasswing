@@ -88,8 +88,11 @@ class LunarService:
         phase_angle = moon_phase(self.eph, t)
         phase_angle_deg = phase_angle.degrees
 
-        # Illuminated fraction from phase angle
-        illuminated_fraction = (1 + math.cos(math.radians(phase_angle_deg))) / 2
+        # Illuminated fraction from phase angle.
+        # Phase angle 0° = New Moon (dark), 180° = Full Moon (bright).
+        # Formula: k = (1 + cos(phase_angle)) / 2 gives 1.0 at 0° which is WRONG.
+        # Correct: k = (1 - cos(phase_angle)) / 2 gives 0.0 at 0° (New Moon).
+        illuminated_fraction = (1 - math.cos(math.radians(phase_angle_deg))) / 2
 
         # Phase fraction 0-1 (0 = new moon, 0.5 = full moon)
         phase_fraction = (phase_angle_deg % 360) / 360.0
@@ -128,7 +131,12 @@ class LunarService:
     def get_upcoming_phases(
         self, ts, from_dt: datetime, count: int = 4
     ) -> list:
-        """Get upcoming moon phase dates using find_discrete with moon_phases."""
+        """Get upcoming moon phase dates using find_discrete with moon_phases.
+
+        find_discrete returns (times_array, values_array) where each index
+        corresponds to a different phase. times_array[i] is the Time when
+        phase values_array[i] occurs.
+        """
         from skyfield.almanac import moon_phases, find_discrete
 
         phases = []
@@ -138,19 +146,19 @@ class LunarService:
         t_to = ts.from_datetime(from_dt + timedelta(days=30))
 
         try:
-            # moon_phases returns a function suitable for find_discrete
             phase_func = moon_phases(self.eph)
             phase_func.step_days = 1.0 / 4.0  # Sample 6x per day
-            phase_times = find_discrete(t_from, t_to, phase_func)
-            for i, pt in enumerate(phase_times):
+            result = find_discrete(t_from, t_to, phase_func)
+            times_arr, values_arr = result
+            for i in range(len(times_arr)):
                 if i >= count:
                     break
-                phase_val = phase_func(pt)
-                phase_label = MOON_PHASES.get(int(phase_val), "Unknown")
+                t = times_arr[i]
+                v = int(values_arr[i])
+                phase_label = MOON_PHASES[v] if 0 <= v < len(MOON_PHASES) else "Unknown"
                 phases.append({
                     "phase": phase_label,
-                    "datetime_utc": pt.utc_datetime().isoformat(),
-                    "phase_value": round(phase_val / 4.0, 4),
+                    "datetime_utc": t.utc_datetime().isoformat(),
                 })
         except Exception as e:
             logger.debug("Could not find upcoming phases: %s", e)

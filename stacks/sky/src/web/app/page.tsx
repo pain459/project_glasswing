@@ -39,19 +39,6 @@ interface SolarData {
   };
 }
 
-interface LunarData {
-  moonrise: string | null;
-  moonset: string | null;
-  phase_name: string;
-  phase_fraction: number;
-  illuminated_fraction: number;
-  illumination_percent: number;
-  current_position?: {
-    altitude_deg: number;
-    is_above_horizon: boolean;
-  };
-}
-
 interface PlanetData {
   name: string;
   altitude_deg: number;
@@ -87,6 +74,36 @@ interface SkyEvents {
   meteor_showers: MeteorShower[];
   active_shower_count: number;
   facts: FactEntry[];
+  solar_declination?: {
+    solar_declination_deg: number;
+    right_ascension_hours: number;
+    equation_of_time_minutes: number;
+    season: string;
+    day_of_year: number;
+  };
+  moon_constellation?: string;
+  moon_distance?: {
+    distance_km: number;
+    distance_label: string;
+    angular_diameter_arcmin: number;
+  };
+}
+
+interface LunarData {
+  moonrise: string | null;
+  moonset: string | null;
+  phase_name: string;
+  phase_fraction: number;
+  illuminated_fraction: number;
+  illumination_percent: number;
+  current_position?: {
+    altitude_deg: number;
+    is_above_horizon: boolean;
+  };
+  upcoming_phases?: Array<{
+    phase: string;
+    datetime_utc: string;
+  }>;
 }
 
 interface DailySkyData {
@@ -415,6 +432,26 @@ export default function Dashboard() {
               </>
             )}
 
+            {data.sky_events?.solar_declination && (
+              <>
+                <div className="my-2 sky-divider" />
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Declination</span>
+                  <span className="row-value">
+                    {data.sky_events.solar_declination.solar_declination_deg.toFixed(1)}&deg;
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Season</span>
+                  <span className="row-value capitalize">{data.sky_events.solar_declination.season}</span>
+                </div>
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Day of Year</span>
+                  <span className="row-value">{data.sky_events.solar_declination.day_of_year}</span>
+                </div>
+              </>
+            )}
+
             <DayArc solar={data.solar} />
           </div>
         </div>
@@ -479,9 +516,86 @@ export default function Dashboard() {
                 </div>
               </>
             )}
+
+            {data.sky_events?.moon_constellation && (
+              <>
+                <div className="my-2 sky-divider" />
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Constellation</span>
+                  <span className="row-value">{data.sky_events.moon_constellation}</span>
+                </div>
+              </>
+            )}
+
+            {data.sky_events?.moon_distance && (
+              <>
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Distance</span>
+                  <span className="row-value">
+                    {(data.sky_events.moon_distance.distance_km / 1000).toFixed(0)}k km
+                    {data.sky_events.moon_distance.distance_label !== "normal" && (
+                      <span
+                        className="ml-1.5 text-[9px] px-1 py-0.5 rounded-full font-semibold uppercase"
+                        style={{
+                          background:
+                            data.sky_events.moon_distance.distance_label === "supermoon"
+                              ? "rgba(251,191,36,0.15)"
+                              : "rgba(96,165,250,0.15)",
+                          color:
+                            data.sky_events.moon_distance.distance_label === "supermoon"
+                              ? "#fbbf24"
+                              : "#60a5fa",
+                        }}
+                      >
+                        {data.sky_events.moon_distance.distance_label}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
+
+      {/* ── Upcoming Moon Phases ────────────────────────────────── */}
+      {data.lunar.upcoming_phases && data.lunar.upcoming_phases.length > 0 && (
+        <div className="sky-card">
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <MoonIcon className="w-3.5 h-3.5" style={{ color: "#c4b5fd" }} />
+              <span className="section-label">Upcoming Moon Phases</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {data.lunar.upcoming_phases.map((phase, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-lg p-3 text-center border"
+                  style={{
+                    background: "var(--sky-planet-bg)",
+                    borderColor: "var(--sky-planet-border)",
+                  }}
+                >
+                  <p className="text-[10px] font-medium row-value">{phase.phase}</p>
+                  <p className="text-[9px] mt-1" style={{ color: "var(--sky-muted)" }}>
+                    {new Date(phase.datetime_utc).toLocaleDateString("en-IN", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </p>
+                  <p className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                    {new Date(phase.datetime_utc).toLocaleTimeString("en-IN", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Planets ─────────────────────────────────────────────── */}
       <div className="sky-card">

@@ -3,11 +3,15 @@ SkyService — Orchestrates all astronomy calculations for the API.
 
 Initializes the ephemeris, time system, and delegates to solar/lunar/planetary
 services. Provides a unified interface for the API layer.
+
+KEY DESIGN: When a date is requested, ALL calculations (phase, position,
+visibility) are performed for that date at noon local time. There is no
+separate "current_dt" — the requested date IS the observation time.
 """
 
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -78,8 +82,17 @@ class SkyService:
         )
 
     def _get_local_date(self, utc_date: datetime, tz) -> datetime:
-        """Convert a UTC date to the local timezone date."""
+        """Convert a UTC date to the local timezone date at midnight."""
         return utc_date.astimezone(tz).replace(hour=0, minute=0, second=0, microsecond=0)
+
+    def _get_observation_time(self, utc_date: datetime, tz) -> datetime:
+        """Get the observation datetime for a requested date (noon local time).
+
+        This is the single source of truth for "when are we observing the sky?"
+        All phase, position, and visibility calculations use this time.
+        """
+        local = utc_date.astimezone(tz)
+        return local.replace(hour=12, minute=0, second=0, microsecond=0)
 
     def get_solar_data(self, date: datetime, location: ObserverLocation) -> dict:
         """Get all solar data for a date and location."""
@@ -87,11 +100,11 @@ class SkyService:
             raise RuntimeError("SkyService not initialized")
 
         local_date = self._get_local_date(date, location.tz)
-        current_dt = datetime.now(timezone.utc)
+        obs_dt = self._get_observation_time(date, location.tz)
 
         return self.solar.get_full_solar_data(
             self.ts, location.latitude_deg, location.longitude_deg,
-            local_date, location.elevation_m, current_dt
+            local_date, location.elevation_m, obs_dt
         )
 
     def get_lunar_data(self, date: datetime, location: ObserverLocation) -> dict:
@@ -100,26 +113,33 @@ class SkyService:
             raise RuntimeError("SkyService not initialized")
 
         local_date = self._get_local_date(date, location.tz)
-        current_dt = datetime.now(timezone.utc)
+        obs_dt = self._get_observation_time(date, location.tz)
 
-        return self.lunar.get_full_lunar_data(
+        lunar = self.lunar.get_full_lunar_data(
             self.ts, location.latitude_deg, location.longitude_deg,
-            local_date, location.elevation_m, current_dt
+            local_date, location.elevation_m, obs_dt
         )
+
+        # Add upcoming moon phases for this date
+        lunar["upcoming_phases"] = self.lunar.get_upcoming_phases(
+            self.ts, local_date, count=4
+        )
+
+        return lunar
 
     def get_planet_data(self, date: datetime, location: ObserverLocation) -> dict:
         """Get all planet data for a date and location."""
         if not self._is_ready:
             raise RuntimeError("SkyService not initialized")
 
-        current_dt = datetime.now(timezone.utc)
+        obs_dt = self._get_observation_time(date, location.tz)
         all_planets = self.planetary.get_all_planets(
             self.ts, location.latitude_deg, location.longitude_deg,
-            current_dt, location.elevation_m
+            obs_dt, location.elevation_m
         )
         visible = self.planetary.get_visible_planets(
             self.ts, location.latitude_deg, location.longitude_deg,
-            current_dt, location.elevation_m
+            obs_dt, location.elevation_m
         )
 
         return {
@@ -132,10 +152,10 @@ class SkyService:
         if not self._is_ready:
             raise RuntimeError("SkyService not initialized")
 
-        current_dt = datetime.now(timezone.utc)
+        obs_dt = self._get_observation_time(date, location.tz)
         return self.planetary.get_planet_position(
             self.ts, planet_name, location.latitude_deg, location.longitude_deg,
-            current_dt, location.elevation_m
+            obs_dt, location.elevation_m
         )
 
     def get_sky_events(self, date: datetime, location: ObserverLocation) -> dict:
