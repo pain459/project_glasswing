@@ -1,0 +1,4 @@
+src/web/node_modules
+src/web/.next
+src/web/.turbo
+data/ephemeris/*.bsp
