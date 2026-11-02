@@ -36,6 +36,7 @@ Host IP: `192.168.68.62` (from `GLASSWING_HOST_IP`, else `stacks/infisical/.env`
 | `steel` | `steel` | http://192.168.68.62:3100 | 3000/tcp | glasswing | LAN |
 | `otel-collector` | `otel-collector` | http://192.168.68.62:4318 | 4318/tcp | glasswing | LAN |
 | `open-notebook` | `open_notebook` | http://192.168.68.62:5055 | 5055/tcp | internal+glasswing | LAN |
+| `sky` | `web` | http://192.168.68.62:5088 | 3000/tcp | internal+glasswing | LAN |
 | `postgres` | `postgres` | postgres://192.168.68.62:5432 | 5432/tcp | glasswing | LAN |
 | `open-notebook-mcp` | `open-notebook-mcp` | http://127.0.0.1:8001 | 8000/tcp | glasswing | host-only |
 | `steel-mcp` | `steel-mcp` | http://127.0.0.1:8002 | 8000/tcp | glasswing | host-only |

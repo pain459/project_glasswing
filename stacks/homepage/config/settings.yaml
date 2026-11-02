@@ -25,6 +25,9 @@ layout:
   Developer Workbench:
     style: column
     columns: 3
+  Astronomy:
+    style: column
+    columns: 2
   Entertainment:
     style: column
     columns: 2

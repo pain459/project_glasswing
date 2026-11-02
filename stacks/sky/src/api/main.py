@@ -1,0 +1,307 @@
+"""
+Skytoday API — FastAPI application for the Pathfinder Sky platform.
+
+Provides REST endpoints for astronomical calculations, observations,
+events, and system status.
+"""
+
+import logging
+import sys
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from pathlib import Path
+
+import uvicorn
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from api.models.schemas import (
+    ApiResponse, HealthResponse, SystemStatusResponse,
+    SolarResponse, LunarResponse, PlanetsResponse,
+    DailySkyResponse, LocationCreate, LocationResponse,
+)
+from api.services.sky_service import SkyService
+from api.services.location_service import LocationService
+from core.coordinates import ObserverLocation
+
+logger = logging.getLogger(__name__)
+
+# Global services (initialized on startup)
+sky_service: SkyService = None
+location_service: LocationService = None
+
+
+def get_default_location() -> ObserverLocation:
+    """Default location: Hyderabad, India."""
+    return ObserverLocation(
+        name="Hyderabad",
+        latitude_deg=17.3850,
+        longitude_deg=78.4867,
+        elevation_m=542.0,
+        timezone="Asia/Kolkata",
+    )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifecycle: initialize services on startup."""
+    global sky_service, location_service
+
+    logger.info("Initializing Skytoday API...")
+
+    # Initialize the sky service (loads ephemeris, creates time system)
+    sky_service = SkyService(ephemeris_data_dir="/app/data/ephemeris")
+    sky_service.initialize()
+
+    # Initialize location service
+    location_service = LocationService()
+    # Seed default location
+    default_loc = get_default_location()
+    location_service.ensure_default_location(default_loc)
+
+    logger.info("Skytoday API initialized successfully")
+    yield
+
+    logger.info("Shutting down Skytoday API")
+
+
+app = FastAPI(
+    title="Skytoday API",
+    description="Pathfinder Sky — Personal Astronomy Intelligence Platform",
+    version="0.1.0",
+    lifespan=lifespan,
+)
+
+# CORS for the frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # LAN-only deployment; tighten if needed
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ─── Health endpoints ───────────────────────────────────────────────────────
+
+@app.get("/health/live")
+async def health_live() -> HealthResponse:
+    """Liveness probe — always returns 200 if the process is running."""
+    return HealthResponse(status="ok", service="glasswing-sky-api")
+
+
+@app.get("/health/ready")
+async def health_ready() -> HealthResponse:
+    """Readiness probe — checks that the ephemeris is loaded."""
+    if sky_service is None or not sky_service.is_ready:
+        raise HTTPException(status_code=503, detail="Ephemeris not loaded")
+    return HealthResponse(status="ok", service="glasswing-sky-api", ready=True)
+
+
+# ─── System status ──────────────────────────────────────────────────────────
+
+@app.get("/api/v1/system/status")
+async def system_status() -> SystemStatusResponse:
+    """Return system status including ephemeris and engine info."""
+    if sky_service:
+        return sky_service.get_system_status()
+    return SystemStatusResponse(
+        engine="skyfield",
+        engine_version=None,
+        ephemeris=None,
+        status="initializing",
+    )
+
+
+@app.get("/api/v1/sources/status")
+async def sources_status():
+    """Return data source availability status."""
+    return ApiResponse(
+        data={
+            "ephemeris": "available" if sky_service and sky_service.is_ready else "unavailable",
+            "weather": "unavailable",  # Not yet implemented
+            "satellites": "unavailable",  # Not yet implemented
+            "catalogues": "available",
+        },
+        metadata={"checked_at": datetime.now(timezone.utc).isoformat()},
+    )
+
+
+# ─── Locations ──────────────────────────────────────────────────────────────
+
+@app.get("/api/v1/locations")
+async def list_locations():
+    """List all saved observing locations."""
+    locations = location_service.list_locations()
+    return ApiResponse(data={"locations": locations})
+
+
+@app.post("/api/v1/locations")
+async def create_location(loc: LocationCreate):
+    """Create a new observing location."""
+    saved = location_service.create_location(loc)
+    return ApiResponse(data={"location": saved}, status="created")
+
+
+@app.get("/api/v1/locations/{location_id}")
+async def get_location(location_id: int):
+    """Get a specific observing location."""
+    loc = location_service.get_location(location_id)
+    if not loc:
+        raise HTTPException(status_code=404, detail="Location not found")
+    return ApiResponse(data={"location": loc})
+
+
+# ─── Solar data ─────────────────────────────────────────────────────────────
+
+@app.get("/api/v1/sun")
+async def get_sun_data(
+    date: str = Query("today", description="Date in YYYY-MM-DD format or 'today'"),
+    location_id: int = Query(None, description="Location ID"),
+    latitude: float = Query(None, description="Override latitude"),
+    longitude: float = Query(None, description="Override longitude"),
+    timezone: str = Query(None, description="Override timezone (IANA)"),
+):
+    """Get solar data for a given date and location."""
+    loc = _resolve_location(location_id, latitude, longitude, timezone)
+    target_date = _resolve_date(date)
+
+    solar_data = sky_service.get_solar_data(target_date, loc)
+    return ApiResponse(
+        data=solar_data,
+        metadata=_calc_metadata(target_date, loc),
+    )
+
+
+# ─── Lunar data ─────────────────────────────────────────────────────────────
+
+@app.get("/api/v1/moon")
+async def get_moon_data(
+    date: str = Query("today", description="Date in YYYY-MM-DD format or 'today'"),
+    location_id: int = Query(None, description="Location ID"),
+    latitude: float = Query(None, description="Override latitude"),
+    longitude: float = Query(None, description="Override longitude"),
+    timezone: str = Query(None, description="Override timezone (IANA)"),
+):
+    """Get lunar data for a given date and location."""
+    loc = _resolve_location(location_id, latitude, longitude, timezone)
+    target_date = _resolve_date(date)
+
+    lunar_data = sky_service.get_lunar_data(target_date, loc)
+    return ApiResponse(
+        data=lunar_data,
+        metadata=_calc_metadata(target_date, loc),
+    )
+
+
+# ─── Planets ────────────────────────────────────────────────────────────────
+
+@app.get("/api/v1/planets")
+async def get_planets(
+    date: str = Query("today"),
+    location_id: int = Query(None),
+    latitude: float = Query(None),
+    longitude: float = Query(None),
+    timezone: str = Query(None),
+):
+    """Get all planet positions for a given date and location."""
+    loc = _resolve_location(location_id, latitude, longitude, timezone)
+    target_date = _resolve_date(date)
+
+    planets = sky_service.get_planet_data(target_date, loc)
+    return ApiResponse(
+        data={"planets": planets},
+        metadata=_calc_metadata(target_date, loc),
+    )
+
+
+@app.get("/api/v1/planets/{planet}")
+async def get_planet(
+    planet: str,
+    date: str = Query("today"),
+    location_id: int = Query(None),
+    latitude: float = Query(None),
+    longitude: float = Query(None),
+    timezone: str = Query(None),
+):
+    """Get a specific planet's data."""
+    loc = _resolve_location(location_id, latitude, longitude, timezone)
+    target_date = _resolve_date(date)
+
+    planet_data = sky_service.get_single_planet(target_date, loc, planet)
+    if not planet_data:
+        raise HTTPException(status_code=404, detail=f"Planet '{planet}' not found")
+    return ApiResponse(data=planet_data)
+
+
+# ─── Daily sky overview ─────────────────────────────────────────────────────
+
+@app.get("/api/v1/sky/daily")
+async def get_daily_sky(
+    date: str = Query("today"),
+    location_id: int = Query(None),
+    latitude: float = Query(None),
+    longitude: float = Query(None),
+    timezone: str = Query(None),
+):
+    """Get a comprehensive daily sky briefing."""
+    loc = _resolve_location(location_id, latitude, longitude, timezone)
+    target_date = _resolve_date(date)
+
+    daily = sky_service.get_daily_sky(target_date, loc)
+    return ApiResponse(
+        data=daily,
+        metadata=_calc_metadata(target_date, loc),
+    )
+
+
+# ─── Helper functions ───────────────────────────────────────────────────────
+
+def _resolve_location(location_id, latitude, longitude, timezone_str):
+    """Resolve location from ID or coordinates."""
+    default = get_default_location()
+    if location_id:
+        loc = location_service.get_location(location_id)
+        if loc:
+            return ObserverLocation(**loc)
+    if latitude is not None and longitude is not None:
+        return ObserverLocation(
+            name="Custom",
+            latitude_deg=latitude,
+            longitude_deg=longitude,
+            timezone=timezone_str or "UTC",
+        )
+    return default
+
+
+def _resolve_date(date_str: str) -> datetime:
+    """Parse a date string into a datetime."""
+    if date_str == "today":
+        return datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+
+
+def _calc_metadata(target_date: datetime, loc: ObserverLocation) -> dict:
+    """Calculate response metadata."""
+    return {
+        "date": target_date.strftime("%Y-%m-%d"),
+        "location": {
+            "name": loc.name,
+            "latitude": loc.latitude_deg,
+            "longitude": loc.longitude_deg,
+            "timezone": loc.timezone,
+        },
+        "engine": "skyfield",
+        "calculated_at": datetime.now(timezone.utc).isoformat(),
+        "source_status": "available" if sky_service and sky_service.is_ready else "unavailable",
+    }
+
+
+if __name__ == "__main__":
+    uvicorn.run("api.main:app", host="0.0.0.0", port=8000, reload=False)

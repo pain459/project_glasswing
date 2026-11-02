@@ -226,6 +226,14 @@
         container: glasswing-paperless
         siteMonitor: http://192.168.68.62:3025/api/status/
 
+- Astronomy:
+    - Skytoday:
+        icon: mdi-telescope
+        href: http://192.168.68.62:5088
+        description: Astronomy Intelligence — Solar, Lunar, Planetary & Observation Data
+        container: glasswing-sky-web
+        siteMonitor: http://192.168.68.62:5088
+
 - Entertainment:
     - Plex:
         icon: plex.png
