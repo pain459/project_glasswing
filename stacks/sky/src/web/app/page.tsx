@@ -863,19 +863,19 @@ export default function Dashboard() {
             <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
               {data.planets.map((planet) => (
                 <div key={`detail-${planet.name}`} className="text-center">
-                  <p className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                  <p className="text-[10px]" style={{ color: "var(--sky-detail-text)" }}>
                     {planet.ra_hours != null ? `${planet.ra_hours.toFixed(1)}h` : "—"}
                   </p>
-                  <p className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                  <p className="text-[10px]" style={{ color: "var(--sky-detail-text)" }}>
                     {planet.dec_deg != null ? `${planet.dec_deg >= 0 ? "+" : ""}${planet.dec_deg.toFixed(1)}°` : "—"}
                   </p>
-                  <p className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                  <p className="text-[10px]" style={{ color: "var(--sky-detail-text)" }}>
                     {planet.azimuth_deg != null ? `${planet.azimuth_deg.toFixed(0)}°` : "—"}
                   </p>
                 </div>
               ))}
             </div>
-            <p className="text-[8px] mt-1 text-center uppercase tracking-wider" style={{ color: "var(--sky-footer-text)" }}>
+            <p className="text-[9px] mt-1 text-center uppercase tracking-wider" style={{ color: "var(--sky-detail-text)" }}>
               RA · Dec · Az
             </p>
           </div>
@@ -885,19 +885,19 @@ export default function Dashboard() {
             <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
               {data.planets.map((planet) => (
                 <div key={`rise-${planet.name}`} className="text-center">
-                  <p className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                  <p className="text-[10px]" style={{ color: "var(--sky-detail-text)" }}>
                     {planet.rise ? formatTime(planet.rise) : "—"}
                   </p>
-                  <p className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                  <p className="text-[10px]" style={{ color: "var(--sky-detail-text)" }}>
                     {planet.set ? formatTime(planet.set) : "—"}
                   </p>
-                  <p className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                  <p className="text-[10px]" style={{ color: "var(--sky-detail-text)" }}>
                     {planet.culmination ? formatTime(planet.culmination) : "—"}
                   </p>
                 </div>
               ))}
             </div>
-            <p className="text-[8px] mt-1 text-center uppercase tracking-wider" style={{ color: "var(--sky-footer-text)" }}>
+            <p className="text-[9px] mt-1 text-center uppercase tracking-wider" style={{ color: "var(--sky-detail-text)" }}>
               Rise · Set · Culmination
             </p>
           </div>
@@ -973,32 +973,23 @@ export default function Dashboard() {
               <span className="section-label">Sky Brightness</span>
             </div>
             <div className="grid grid-cols-4 sm:grid-cols-8 gap-1">
-              {data.sky_events.dark_twilight_classification.map((cls, idx) => {
-                const colors: Record<number, string> = {
-                  0: "#1e1b4b",
-                  1: "#312e81",
-                  2: "#4338ca",
-                  3: "#7c3aed",
-                  4: "#f59e0b",
-                };
-                return (
+              {data.sky_events.dark_twilight_classification.map((cls, idx) => (
                   <div
                     key={idx}
                     className="rounded p-2 text-center border"
                     style={{
-                      background: colors[cls.code] || "#374151",
+                      background: "var(--sky-planet-bg)",
                       borderColor: "var(--sky-planet-border)",
                     }}
                   >
-                    <p className="text-[9px] font-medium" style={{ color: "#e5e7eb" }}>
+                    <p className="text-[10px] font-medium" style={{ color: "var(--sky-brightness-text)" }}>
                       {String(cls.hour_utc).padStart(2, "0")}:00
                     </p>
-                    <p className="text-[8px] mt-0.5" style={{ color: "#d1d5db" }}>
+                    <p className="text-[9px] mt-0.5" style={{ color: "var(--sky-brightness-label)" }}>
                       {cls.classification === "Night" ? "Dark" : cls.classification}
                     </p>
                   </div>
-                );
-              })}
+                ))}
             </div>
             <p className="text-[9px] mt-2 text-center" style={{ color: "var(--sky-footer-text)" }}>
               Hourly sky brightness classification (UTC)

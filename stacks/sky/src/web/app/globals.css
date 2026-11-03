@@ -10,37 +10,40 @@
   --sky-surface: #ffffff;
   --sky-card: #ffffff;
   --sky-text: #0f172a;
-  --sky-muted: #64748b;
+  --sky-muted: #475569;
   --sky-border: #e2e8f0;
   --sky-hover: #f1f5f9;
   --sky-divider: #e2e8f0;
-  --sky-accent: #3b82f6;
+  --sky-accent: #2563eb;
   --sky-accent-dim: #93c5fd;
-  --sky-section-label: #475569;
-  --sky-row-value: #1e293b;
+  --sky-section-label: #334155;
+  --sky-row-value: #0f172a;
   --sky-card-border: rgba(0, 0, 0, 0.08);
-  --sky-card-bg: rgba(255, 255, 255, 0.8);
-  --sky-header-bg: rgba(255, 255, 255, 0.85);
-  --sky-planet-bg: #f8fafc;
-  --sky-planet-border: #e2e8f0;
+  --sky-card-bg: rgba(255, 255, 255, 0.95);
+  --sky-header-bg: rgba(255, 255, 255, 0.9);
+  --sky-planet-bg: #f1f5f9;
+  --sky-planet-border: #cbd5e1;
   --sky-planet-invisible: rgba(255, 255, 255, 0.4);
   --sky-moon-base: #cbd5e1;
   --sky-moon-lit: #1e293b;
   --sky-arc-track: #e2e8f0;
   --sky-arc-fill: linear-gradient(to right, #f59e0b, #f97316, #f59e0b);
   --sky-arc-marker: #0f172a;
-  --sky-visible-bg: rgba(16, 185, 129, 0.06);
-  --sky-visible-border: rgba(16, 185, 129, 0.15);
-  --sky-fact-bg: rgba(59, 130, 246, 0.05);
-  --sky-fact-border: rgba(59, 130, 246, 0.12);
-  --sky-shower-bg: rgba(139, 92, 246, 0.05);
-  --sky-shower-border: rgba(139, 92, 246, 0.12);
-  --sky-mw-bg: rgba(168, 85, 247, 0.05);
-  --sky-mw-border: rgba(168, 85, 247, 0.12);
+  --sky-visible-bg: rgba(16, 185, 129, 0.08);
+  --sky-visible-border: rgba(16, 185, 129, 0.25);
+  --sky-fact-bg: rgba(59, 130, 246, 0.06);
+  --sky-fact-border: rgba(59, 130, 246, 0.15);
+  --sky-shower-bg: rgba(139, 92, 246, 0.06);
+  --sky-shower-border: rgba(139, 92, 246, 0.15);
+  --sky-mw-bg: rgba(168, 85, 247, 0.06);
+  --sky-mw-border: rgba(168, 85, 247, 0.15);
   --sky-date-btn-bg: #ffffff;
   --sky-date-btn-border: #cbd5e1;
   --sky-date-btn-hover: #f1f5f9;
-  --sky-footer-text: #94a3b8;
+  --sky-footer-text: #64748b;
+  --sky-detail-text: #334155;
+  --sky-brightness-text: #1e293b;
+  --sky-brightness-label: #475569;
 }
 
 .dark {
@@ -48,37 +51,40 @@
   --sky-surface: #0f1629;
   --sky-card: #131a2e;
   --sky-text: #e2e8f0;
-  --sky-muted: #64748b;
+  --sky-muted: #94a3b8;
   --sky-border: rgba(255, 255, 255, 0.06);
   --sky-hover: rgba(255, 255, 255, 0.06);
-  --sky-divider: rgba(255, 255, 255, 0.06);
+  --sky-divider: rgba(255, 255, 255, 0.08);
   --sky-accent: #60a5fa;
   --sky-accent-dim: #3b82f6;
-  --sky-section-label: #64748b;
-  --sky-row-value: #e2e8f0;
-  --sky-card-border: rgba(255, 255, 255, 0.06);
-  --sky-card-bg: rgba(255, 255, 255, 0.03);
-  --sky-header-bg: rgba(15, 22, 41, 0.85);
-  --sky-planet-bg: rgba(255, 255, 255, 0.02);
-  --sky-planet-border: rgba(255, 255, 255, 0.04);
+  --sky-section-label: #cbd5e1;
+  --sky-row-value: #f1f5f9;
+  --sky-card-border: rgba(255, 255, 255, 0.08);
+  --sky-card-bg: rgba(19, 26, 46, 0.95);
+  --sky-header-bg: rgba(15, 22, 41, 0.9);
+  --sky-planet-bg: rgba(255, 255, 255, 0.04);
+  --sky-planet-border: rgba(255, 255, 255, 0.08);
   --sky-planet-invisible: rgba(255, 255, 255, 0.15);
   --sky-moon-base: #1e293b;
   --sky-moon-lit: #e2e8f0;
   --sky-arc-track: rgba(30, 41, 59, 0.6);
-  --sky-arc-fill: linear-gradient(to right, rgba(245, 158, 11, 0.4), rgba(251, 146, 60, 0.5), rgba(245, 158, 11, 0.4));
-  --sky-arc-marker: rgba(255, 255, 255, 0.8);
-  --sky-visible-bg: rgba(16, 185, 129, 0.04);
-  --sky-visible-border: rgba(16, 185, 129, 0.12);
-  --sky-fact-bg: rgba(59, 130, 246, 0.04);
-  --sky-fact-border: rgba(59, 130, 246, 0.1);
-  --sky-shower-bg: rgba(139, 92, 246, 0.04);
-  --sky-shower-border: rgba(139, 92, 246, 0.1);
-  --sky-mw-bg: rgba(168, 85, 247, 0.04);
-  --sky-mw-border: rgba(168, 85, 247, 0.1);
-  --sky-date-btn-bg: rgba(255, 255, 255, 0.04);
-  --sky-date-btn-border: rgba(255, 255, 255, 0.1);
-  --sky-date-btn-hover: rgba(255, 255, 255, 0.08);
-  --sky-footer-text: #334155;
+  --sky-arc-fill: linear-gradient(to right, rgba(245, 158, 11, 0.5), rgba(251, 146, 60, 0.6), rgba(245, 158, 11, 0.5));
+  --sky-arc-marker: rgba(255, 255, 255, 0.9);
+  --sky-visible-bg: rgba(16, 185, 129, 0.06);
+  --sky-visible-border: rgba(16, 185, 129, 0.2);
+  --sky-fact-bg: rgba(59, 130, 246, 0.06);
+  --sky-fact-border: rgba(59, 130, 246, 0.12);
+  --sky-shower-bg: rgba(139, 92, 246, 0.06);
+  --sky-shower-border: rgba(139, 92, 246, 0.12);
+  --sky-mw-bg: rgba(168, 85, 247, 0.06);
+  --sky-mw-border: rgba(168, 85, 247, 0.12);
+  --sky-date-btn-bg: rgba(255, 255, 255, 0.06);
+  --sky-date-btn-border: rgba(255, 255, 255, 0.12);
+  --sky-date-btn-hover: rgba(255, 255, 255, 0.1);
+  --sky-footer-text: #64748b;
+  --sky-detail-text: #94a3b8;
+  --sky-brightness-text: #e2e8f0;
+  --sky-brightness-label: #94a3b8;
 }
 
 /* ─── Base ──────────────────────────────────────────────────────────── */
@@ -126,22 +132,23 @@ body {
 
 .section-label {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
   color: var(--sky-section-label);
 }
 
 /* ─── Row ───────────────────────────────────────────────────────────── */
 
 .row-label {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--sky-muted);
+  font-weight: 500;
 }
 
 .row-value {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--sky-row-value);
 }
 
