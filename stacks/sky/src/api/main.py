@@ -5,6 +5,7 @@ Provides REST endpoints for astronomical calculations, observations,
 events, and system status.
 """
 
+import json
 import logging
 import os
 import sys
@@ -17,7 +18,7 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 # Add parent directory to path for imports
@@ -135,6 +136,12 @@ async def lifespan(app: FastAPI):
     # Seed default location
     default_loc = get_default_location()
     location_service.ensure_default_location(default_loc)
+
+    # ── Seed astronomical objects catalog ────────────────────────
+    _seed_astronomical_objects(db_session)
+
+    # ── Record ephemeris assets ──────────────────────────────────
+    _record_ephemeris_assets(db_session, sky_service)
 
     logger.info("Skytoday API initialized successfully")
     yield
@@ -777,6 +784,159 @@ def _fetch_panchangam_feed_sync(city: str, date_str: str) -> Optional[dict]:
             continue
 
     return None
+
+
+# ─── Database seeding helpers ───────────────────────────────────────────────
+
+def _seed_astronomical_objects(db_session):
+    """Populate astronomical_objects table from built-in star and Messier catalogs.
+
+    Uses INSERT ... ON CONFLICT DO NOTHING so repeated startups are idempotent.
+    """
+    from core.stars import UNIQUE_STARS
+    from core.messier import MESSIER_CATALOG
+
+    now = datetime.now(timezone.utc)
+
+    # ── Stars ────────────────────────────────────────────────────
+    star_count = 0
+    for name, v_mag, ra_h, dec_d, spec, dist_ly, const in UNIQUE_STARS:
+        ra_deg = round(ra_h * 15.0, 4)  # hours → degrees
+        try:
+            db_session.execute(
+                text("""
+                    INSERT INTO astronomical_objects
+                        (catalog_id, common_name, object_type, ra_deg, dec_deg,
+                         epoch, apparent_magnitude, constellation,
+                         metadata_json, created_at)
+                    VALUES (:cid, :cname, :otype, :ra, :dec,
+                            :epoch, :mag, :const, :meta, :created)
+                    ON CONFLICT (catalog_id) DO NOTHING
+                """),
+                {
+                    "cid": f"star:{name}",
+                    "cname": name,
+                    "otype": "star",
+                    "ra": ra_deg,
+                    "dec": dec_d,
+                    "epoch": "J2000",
+                    "mag": v_mag,
+                    "const": const,
+                    "meta": json.dumps({
+                        "spectral_type": spec,
+                        "distance_ly": dist_ly,
+                        "ra_hours": ra_h,
+                    }),
+                    "created": now,
+                },
+            )
+            star_count += 1
+        except Exception as exc:
+            logger.debug("Skipping star %s: %s", name, exc)
+
+    # ── Messier objects ──────────────────────────────────────────
+    messier_count = 0
+    for desig, obj_type, v_mag, ra_h, dec_d, size, const in MESSIER_CATALOG:
+        ra_deg = round(ra_h * 15.0, 4)
+        try:
+            db_session.execute(
+                text("""
+                    INSERT INTO astronomical_objects
+                        (catalog_id, common_name, object_type, ra_deg, dec_deg,
+                         epoch, apparent_magnitude, angular_size_arcsec,
+                         constellation, description, metadata_json, created_at)
+                    VALUES (:cid, :cname, :otype, :ra, :dec,
+                            :epoch, :mag, :size, :const, :desc, :meta, :created)
+                    ON CONFLICT (catalog_id) DO NOTHING
+                """),
+                {
+                    "cid": f"messier:{desig}",
+                    "cname": desig,
+                    "otype": "messier",
+                    "ra": ra_deg,
+                    "dec": dec_d,
+                    "epoch": "J2000",
+                    "mag": v_mag,
+                    "size": size * 60,  # arcmin → arcsec
+                    "const": const,
+                    "desc": obj_type,
+                    "meta": json.dumps({
+                        "messier_type": obj_type,
+                        "size_arcmin": size,
+                        "ra_hours": ra_h,
+                    }),
+                    "created": now,
+                },
+            )
+            messier_count += 1
+        except Exception as exc:
+            logger.debug("Skipping Messier %s: %s", desig, exc)
+
+    db_session.commit()
+    logger.info(
+        "Astronomical objects seeded: %d stars, %d Messier objects",
+        star_count, messier_count,
+    )
+
+
+def _record_ephemeris_assets(db_session, sky_svc):
+    """Record the loaded ephemeris kernel in ephemeris_assets table.
+
+    Idempotent: upserts by kernel name so repeated startups are safe.
+    """
+    if not sky_svc or not sky_svc.ephemeris_mgr:
+        logger.warning("Ephemeris manager not available; skipping asset recording")
+        return
+
+    kernel_info = sky_svc.ephemeris_mgr.kernel_info
+    if not kernel_info:
+        logger.warning("No kernel info available; skipping asset recording")
+        return
+
+    now = datetime.now(timezone.utc)
+    kernel_path = Path(kernel_info.get("path", ""))
+
+    # Get actual file size and checksum
+    size_bytes = kernel_path.stat().st_size if kernel_path.exists() else 0
+    sha256 = ""
+    if kernel_path.exists():
+        import hashlib
+        sha256 = hashlib.sha256(kernel_path.read_bytes()).hexdigest()
+
+    try:
+        db_session.execute(
+            text("""
+                INSERT INTO ephemeris_assets
+                    (name, file_path, sha256, size_bytes,
+                     coverage_start, coverage_end,
+                     downloaded_at, is_active)
+                VALUES (:name, :fpath, :sha, :size,
+                        :cstart, :cend, :dtime, :active)
+                ON CONFLICT (name)
+                DO UPDATE SET
+                    file_path = EXCLUDED.file_path,
+                    sha256 = EXCLUDED.sha256,
+                    size_bytes = EXCLUDED.size_bytes,
+                    coverage_start = EXCLUDED.coverage_start,
+                    coverage_end = EXCLUDED.coverage_end,
+                    downloaded_at = EXCLUDED.downloaded_at,
+                    is_active = EXCLUDED.is_active
+            """),
+            {
+                "name": kernel_info["name"],
+                "fpath": str(kernel_path),
+                "sha": sha256,
+                "size": size_bytes,
+                "cstart": kernel_info.get("coverage_start", 1950),
+                "cend": kernel_info.get("coverage_end", 2050),
+                "dtime": now,
+                "active": True,
+            },
+        )
+        db_session.commit()
+        logger.info("Ephemeris asset recorded: %s (%s)", kernel_info["name"], kernel_path)
+    except Exception as exc:
+        logger.warning("Could not record ephemeris asset: %s", exc)
 
 
 # ─── Helper functions ───────────────────────────────────────────────────────

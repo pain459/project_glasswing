@@ -555,7 +555,7 @@ interface WeatherData {
 
 // ─── Tab definitions ────────────────────────────────────────────────
 
-type TabKey = "daily" | "planets" | "calendar" | "stories" | "iss" | "events" | "panchang" | "weather";
+type TabKey = "daily" | "planets" | "calendar" | "stories" | "iss" | "events" | "panchang" | "weather" | "charts";
 
 const TABS: Array<{ key: TabKey; label: string; icon: React.ReactNode }> = [
   { key: "daily", label: "Daily Sky", icon: <Sun className="w-3.5 h-3.5" /> },
@@ -566,6 +566,7 @@ const TABS: Array<{ key: TabKey; label: string; icon: React.ReactNode }> = [
   { key: "events", label: "Events", icon: <Sparkles className="w-3.5 h-3.5" /> },
   { key: "panchang", label: "Panchang", icon: <ScrollText className="w-3.5 h-3.5" /> },
   { key: "weather", label: "Weather", icon: <CloudRain className="w-3.5 h-3.5" /> },
+  { key: "charts", label: "Charts", icon: <Telescope className="w-3.5 h-3.5" /> },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -909,6 +910,274 @@ function ErrorState({ message }: { message: string }) {
   return (
     <div className="flex items-center justify-center py-24">
       <span className="text-xs text-red-400/80">{message}</span>
+    </div>
+  );
+}
+
+// ─── Altitude Arc Chart Components ───────────────────────────────────
+
+function AltitudeArcChart({ points, color, label }: { points: AltitudePoint[]; color: string; label: string }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+
+  const chartHeight = 120;
+  const chartWidth = 100; // percent
+  const padding = { top: 10, bottom: 24, left: 32, right: 8 };
+
+  // Compute scale: altitude ranges from -90 to +90, but we only show -10 to max(90, maxAltitude)
+  const maxAlt = Math.max(90, ...points.map(p => Math.max(p.altitude, 0)));
+  const minAlt = -10;
+  const range = maxAlt - minAlt;
+
+  const toY = (alt: number) => {
+    const clamped = Math.max(minAlt, Math.min(maxAlt, alt));
+    return padding.top + (1 - (clamped - minAlt) / range) * (chartHeight - padding.top - padding.bottom);
+  };
+
+  const toX = (hour: number) => {
+    return padding.left + (hour / 24) * (100 - padding.left - padding.right);
+  };
+
+  // Build SVG path
+  const pathD = points.map((p, i) => {
+    const x = toX(p.hour);
+    const y = toY(p.altitude);
+    return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+
+  // Horizon line
+  const horizonY = toY(0);
+
+  return (
+    <div className="relative" style={{ height: chartHeight }}>
+      <svg
+        viewBox={`0 0 100 ${chartHeight}`}
+        className="w-full"
+        style={{ height: chartHeight }}
+        preserveAspectRatio="none"
+      >
+        {/* Background fill above horizon */}
+        <rect
+          x={0} y={horizonY}
+          width={100} height={chartHeight - horizonY}
+          fill="rgba(59,130,246,0.03)"
+        />
+
+        {/* Horizon line */}
+        <line
+          x1={padding.left} y1={horizonY}
+          x2={100 - padding.right} y2={horizonY}
+          stroke="rgba(255,255,255,0.1)"
+          strokeWidth="0.3"
+          strokeDasharray="2,2"
+        />
+
+        {/* Area fill under curve (above horizon only) */}
+        <path
+          d={`${pathD} L${toX(points[points.length - 1].hour).toFixed(1)},${horizonY} L${toX(points[0].hour).toFixed(1)},${horizonY} Z`}
+          fill={color}
+          opacity="0.08"
+        />
+
+        {/* Arc line */}
+        <path
+          d={pathD}
+          fill="none"
+          stroke={color}
+          strokeWidth="0.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Hour labels */}
+        {[0, 4, 8, 12, 16, 20].map(h => (
+          <text
+            key={h}
+            x={toX(h)}
+            y={chartHeight - 4}
+            textAnchor="middle"
+            fill="var(--sky-muted)"
+            fontSize="3"
+          >
+            {h.toString().padStart(2, "0")}:00
+          </text>
+        ))}
+
+        {/* Altitude labels */}
+        {[0, 30, 60, 90].filter(a => a <= maxAlt).map(a => (
+          <text
+            key={a}
+            x={2}
+            y={toY(a) + 1}
+            fill="var(--sky-muted)"
+            fontSize="2.5"
+          >
+            {a}°
+          </text>
+        ))}
+      </svg>
+
+      {/* Hover overlay */}
+      <div
+        className="absolute inset-0"
+        style={{ pointerEvents: "auto" }}
+      >
+        {points.map((p, i) => (
+          <div
+            key={i}
+            className="absolute top-0 bottom-0"
+            style={{
+              left: `${toX(p.hour)}%`,
+              width: `${100 / points.length}%`,
+              cursor: "crosshair",
+            }}
+            onMouseEnter={() => setHovered(i)}
+            onMouseLeave={() => setHovered(null)}
+          >
+            {hovered === i && (
+              <div
+                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 rounded text-[9px] whitespace-nowrap border z-10"
+                style={{
+                  background: "rgba(15,23,42,0.95)",
+                  borderColor: "rgba(255,255,255,0.1)",
+                  color: "var(--sky-text)",
+                }}
+              >
+                <div className="font-semibold">{p.hour.toString().padStart(2, "0")}:00</div>
+                <div style={{ color }}>
+                  Alt: {p.altitude.toFixed(1)}° &nbsp; Az: {p.azimuth.toFixed(0)}°
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CombinedArcChart({ solar, lunar }: { solar: AltitudePoint[]; lunar: AltitudePoint[] }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+
+  const chartHeight = 140;
+  const padding = { top: 10, bottom: 24, left: 32, right: 8 };
+
+  const maxAlt = 90;
+  const minAlt = -10;
+  const range = maxAlt - minAlt;
+
+  const toY = (alt: number) => {
+    const clamped = Math.max(minAlt, Math.min(maxAlt, alt));
+    return padding.top + (1 - (clamped - minAlt) / range) * (chartHeight - padding.top - padding.bottom);
+  };
+
+  const toX = (hour: number) => {
+    return padding.left + (hour / 24) * (100 - padding.left - padding.right);
+  };
+
+  const makePath = (pts: AltitudePoint[]) =>
+    pts.map((p, i) => {
+      const x = toX(p.hour);
+      const y = toY(p.altitude);
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+
+  const horizonY = toY(0);
+
+  return (
+    <div className="relative" style={{ height: chartHeight }}>
+      <svg
+        viewBox={`0 0 100 ${chartHeight}`}
+        className="w-full"
+        style={{ height: chartHeight }}
+        preserveAspectRatio="none"
+      >
+        {/* Background fill above horizon */}
+        <rect
+          x={0} y={horizonY}
+          width={100} height={chartHeight - horizonY}
+          fill="rgba(59,130,246,0.03)"
+        />
+
+        {/* Horizon line */}
+        <line
+          x1={padding.left} y1={horizonY}
+          x2={100 - padding.right} y2={horizonY}
+          stroke="rgba(255,255,255,0.1)"
+          strokeWidth="0.3"
+          strokeDasharray="2,2"
+        />
+
+        {/* Sun arc */}
+        <path d={makePath(solar)} fill="none" stroke="#fbbf24" strokeWidth="0.6" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Moon arc */}
+        <path d={makePath(lunar)} fill="none" stroke="#94a3b8" strokeWidth="0.6" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="3,1.5" />
+
+        {/* Hour labels */}
+        {[0, 4, 8, 12, 16, 20].map(h => (
+          <text
+            key={h}
+            x={toX(h)}
+            y={chartHeight - 4}
+            textAnchor="middle"
+            fill="var(--sky-muted)"
+            fontSize="3"
+          >
+            {h.toString().padStart(2, "0")}:00
+          </text>
+        ))}
+
+        {/* Altitude labels */}
+        {[0, 30, 60, 90].map(a => (
+          <text
+            key={a}
+            x={2}
+            y={toY(a) + 1}
+            fill="var(--sky-muted)"
+            fontSize="2.5"
+          >
+            {a}°
+          </text>
+        ))}
+
+        {/* Legend */}
+        <circle cx={65} cy={6} r={1.5} fill="#fbbf24" />
+        <text x={68} y={7} fill="var(--sky-muted)" fontSize="2.5">Sun</text>
+        <circle cx={80} cy={6} r={1.5} fill="#94a3b8" />
+        <text x={83} y={7} fill="var(--sky-muted)" fontSize="2.5">Moon</text>
+      </svg>
+
+      {/* Hover overlay */}
+      <div className="absolute inset-0" style={{ pointerEvents: "auto" }}>
+        {solar.map((p, i) => (
+          <div
+            key={i}
+            className="absolute top-0 bottom-0"
+            style={{
+              left: `${toX(p.hour)}%`,
+              width: `${100 / solar.length}%`,
+              cursor: "crosshair",
+            }}
+            onMouseEnter={() => setHovered(i)}
+            onMouseLeave={() => setHovered(null)}
+          >
+            {hovered === i && lunar[i] && (
+              <div
+                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 rounded text-[9px] whitespace-nowrap border z-10"
+                style={{
+                  background: "rgba(15,23,42,0.95)",
+                  borderColor: "rgba(255,255,255,0.1)",
+                  color: "var(--sky-text)",
+                }}
+              >
+                <div className="font-semibold">{p.hour.toString().padStart(2, "0")}:00</div>
+                <div style={{ color: "#fbbf24" }}>☀ Sun: {p.altitude.toFixed(1)}°</div>
+                <div style={{ color: "#94a3b8" }}>☽ Moon: {lunar[i].altitude.toFixed(1)}°</div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -3479,6 +3748,132 @@ export default function Dashboard() {
             {weatherData && (
               <div className="text-center text-[8px]" style={{ color: "var(--sky-muted)" }}>
                 Weather data from Open-Meteo (CC BY 4.0) &bull; Updated on request
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Charts Tab: Altitude Arcs ──────────────────────────── */}
+        {activeTab === "charts" && (
+          <div className="space-y-4">
+            {/* Sun Altitude Arc */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sun className="w-3.5 h-3.5" style={{ color: "#fbbf24" }} />
+                  <span className="section-label">Sun Altitude Arc</span>
+                  <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                    Hourly tracking
+                  </span>
+                </div>
+                {arcData?.solar && arcData.solar.length > 0 ? (
+                  <AltitudeArcChart
+                    points={arcData.solar}
+                    color="#fbbf24"
+                    label="Sun"
+                  />
+                ) : (
+                  <div className="text-center py-8 text-[11px]" style={{ color: "var(--sky-muted)" }}>
+                    No data available
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Moon Altitude Arc */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <MoonIcon className="w-3.5 h-3.5" style={{ color: "#94a3b8" }} />
+                  <span className="section-label">Moon Altitude Arc</span>
+                  <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                    Hourly tracking
+                  </span>
+                </div>
+                {arcData?.lunar && arcData.lunar.length > 0 ? (
+                  <AltitudeArcChart
+                    points={arcData.lunar}
+                    color="#94a3b8"
+                    label="Moon"
+                  />
+                ) : (
+                  <div className="text-center py-8 text-[11px]" style={{ color: "var(--sky-muted)" }}>
+                    No data available
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Combined Sun + Moon Arc */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Telescope className="w-3.5 h-3.5" style={{ color: "#818cf8" }} />
+                  <span className="section-label">Combined Arc</span>
+                  <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                    Sun &amp; Moon together
+                  </span>
+                </div>
+                {arcData?.solar && arcData?.lunar && arcData.solar.length > 0 && arcData.lunar.length > 0 ? (
+                  <CombinedArcChart
+                    solar={arcData.solar}
+                    lunar={arcData.lunar}
+                  />
+                ) : (
+                  <div className="text-center py-8 text-[11px]" style={{ color: "var(--sky-muted)" }}>
+                    No data available
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Summary Stats */}
+            {arcData?.solar && arcData.solar.length > 0 && (
+              <div className="sky-card">
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Info className="w-3.5 h-3.5" style={{ color: "#818cf8" }} />
+                    <span className="section-label">Arc Summary</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-lg p-3 border" style={{ background: "var(--sky-sun-bg)", borderColor: "var(--sky-sun-border)" }}>
+                      <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Sun Peak</div>
+                      <div className="text-sm font-bold" style={{ color: "#fbbf24" }}>
+                        {Math.max(...arcData.solar.map(p => p.altitude)).toFixed(1)}°
+                      </div>
+                      <div className="text-[9px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>
+                        at {Math.max(...arcData.solar.map(p => p.altitude)) > 0
+                          ? arcData.solar.reduce((best, p) => p.altitude > best.altitude ? p : best, arcData.solar[0]).hour.toString().padStart(2, "0") + ":00"
+                          : "N/A"}
+                      </div>
+                    </div>
+                    <div className="rounded-lg p-3 border" style={{ background: "var(--sky-moon-bg)", borderColor: "var(--sky-moon-border)" }}>
+                      <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Moon Peak</div>
+                      <div className="text-sm font-bold" style={{ color: "#94a3b8" }}>
+                        {arcData.lunar ? Math.max(...arcData.lunar.map(p => p.altitude)).toFixed(1) + "°" : "—"}
+                      </div>
+                      <div className="text-[9px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>
+                        {arcData.lunar && Math.max(...arcData.lunar.map(p => p.altitude)) > 0
+                          ? "at " + arcData.lunar.reduce((best, p) => p.altitude > best.altitude ? p : best, arcData.lunar[0]).hour.toString().padStart(2, "0") + ":00"
+                          : "N/A"}
+                      </div>
+                    </div>
+                    <div className="rounded-lg p-3 border" style={{ background: "rgba(59,130,246,0.06)", borderColor: "rgba(59,130,246,0.15)" }}>
+                      <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Sun Above</div>
+                      <div className="text-sm font-bold" style={{ color: "#60a5fa" }}>
+                        {arcData.solar.filter(p => p.altitude > 0).length}h
+                      </div>
+                      <div className="text-[9px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>hours visible</div>
+                    </div>
+                    <div className="rounded-lg p-3 border" style={{ background: "rgba(59,130,246,0.06)", borderColor: "rgba(59,130,246,0.15)" }}>
+                      <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Moon Above</div>
+                      <div className="text-sm font-bold" style={{ color: "#60a5fa" }}>
+                        {arcData.lunar ? arcData.lunar.filter(p => p.altitude > 0).length + "h" : "—"}
+                      </div>
+                      <div className="text-[9px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>hours visible</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
