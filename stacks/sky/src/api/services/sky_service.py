@@ -308,10 +308,24 @@ class SkyService:
             local_date,
         )
 
+        # Compute 6-month constellation transitions for each planet
+        from core.planetary import PLANET_DISPLAY
+        transitions = {}
+        for planet_lower in ["mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune"]:
+            display_name = PLANET_DISPLAY.get(planet_lower, planet_lower.title())
+            try:
+                segs = self.planetary.get_planet_constellation_transitions(
+                    self.ts, planet_lower, local_date, months=6
+                )
+                transitions[display_name] = segs
+            except Exception:
+                transitions[display_name] = []
+
         return {
             "date": local_date.strftime("%Y-%m-%d"),
             "location": location.name,
             "planets": planets,
+            "constellation_transitions": transitions,
         }
 
     def get_season_calendar(self, year: Optional[int] = None) -> list:

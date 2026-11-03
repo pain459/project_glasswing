@@ -62,6 +62,7 @@ interface PlanetData {
   is_above_horizon: boolean;
   distance_au?: number;
   angular_diameter_arcsec?: number;
+  constellation?: string;
   rise?: string | null;
   set?: string | null;
   culmination?: string | null;
@@ -222,6 +223,11 @@ interface PlanetTonightData {
   date: string;
   location: string;
   planets: PlanetTonightEntry[];
+  constellation_transitions?: Record<string, Array<{
+    constellation: string;
+    start: string;
+    end: string;
+  }>>;
 }
 
 // ─── Season Calendar Types ───────────────────────────────────────────
@@ -1163,7 +1169,7 @@ export default function Dashboard() {
                           }}
                         >
                           {/* Header: symbol, name, badges, horizon status */}
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
                               <span className="text-lg">{planet.symbol}</span>
                               <span className="text-[12px] font-semibold" style={{ color: "var(--sky-text)" }}>
@@ -1181,6 +1187,41 @@ export default function Dashboard() {
                               {planet.is_above_horizon ? "Above horizon" : "Below horizon"}
                             </span>
                           </div>
+
+                          {/* Constellation + transitions */}
+                          {raw?.constellation && (
+                            <div className="mb-2" style={{ borderTop: "1px solid var(--sky-divider)", paddingTop: "6px" }}>
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>In</span>
+                                <span className="text-[10px] font-semibold" style={{ color: "#a78bfa" }}>
+                                  {raw.constellation}
+                                </span>
+                              </div>
+                              {planetTonightData?.constellation_transitions?.[planet.name] && (
+                                <div className="flex items-center gap-1 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+                                  {planetTonightData.constellation_transitions[planet.name].map((seg, si) => {
+                                    const isCurrent = seg.constellation === raw.constellation;
+                                    return (
+                                      <span
+                                        key={si}
+                                        className="text-[9px] px-1.5 py-0.5 rounded-full flex-shrink-0"
+                                        style={{
+                                          background: isCurrent ? "rgba(167,139,250,0.2)" : "rgba(148,163,184,0.1)",
+                                          color: isCurrent ? "#a78bfa" : "var(--sky-footer-text)",
+                                          fontWeight: isCurrent ? 600 : 400,
+                                        }}
+                                      >
+                                        {seg.constellation}
+                                        <span className="ml-1 opacity-60">
+                                          {seg.start.slice(5)} → {seg.end.slice(5)}
+                                        </span>
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          )}
 
                           {/* Timing: rise, set, culmination */}
                           <div className="grid grid-cols-3 gap-2 mb-2">

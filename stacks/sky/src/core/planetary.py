@@ -32,6 +32,33 @@ PLANET_EPHEMERIS_KEY = {
     "neptune": "neptune barycenter",
 }
 
+# IAU 3-letter abbreviation → full constellation name (all 88 constellations)
+CONSTELLATION_FULL = {
+    "And": "Andromeda", "Aps": "Apus", "Aql": "Aquila", "Aqr": "Aquarius",
+    "Ara": "Ara", "Ari": "Aries", "Aur": "Auriga", "Boo": "Boötes",
+    "Cae": "Caelum", "Cam": "Camelopardalis", "Cap": "Capricornus", "Car": "Carina",
+    "Cen": "Centaurus", "Cep": "Cepheus", "Cet": "Cetus", "Cma": "Chamaeleon",
+    "CMa": "Canis Major", "CMi": "Canis Minor", "Cnc": "Cancer", "Col": "Columba",
+    "Com": "Coma Berenices", "CrA": "Corona Australis", "CrB": "Corona Borealis",
+    "Crt": "Crater", "Cru": "Crux", "Cyg": "Cygnus",
+    "Del": "Delphinus", "Dor": "Dorado", "Dra": "Draco", "Equ": "Equuleus",
+    "Eri": "Eridanus", "For": "Fornax", "Gem": "Gemini", "Gru": "Grus",
+    "Her": "Hercules", "Hya": "Hydra", "Hyi": "Hydrus", "Ind": "Indus",
+    "Lac": "Lacerta", "Leo": "Leo", "LeA": "Leo Minor", "Lib": "Libra",
+    "Lep": "Lepus", "Lup": "Lupus", "Lyn": "Lynx", "Lyr": "Lyra",
+    "Men": "Mensa", "Mic": "Microscopium", "Mon": "Monoceros", "Mus": "Musca",
+    "Nor": "Norma", "Oct": "Octans", "Oph": "Ophiuchus", "Ori": "Orion",
+    "Pav": "Pavo", "Peg": "Pegasus", "Per": "Perseus",
+    "Phe": "Phoenix", "Pic": "Pictor", "PsA": "Piscis Austrinus", "Psc": "Pisces",
+    "Pup": "Puppis", "Pyx": "Pyxis", "Ret": "Reticulum", "Scl": "Sculptor",
+    "Sct": "Scutum", "Sco": "Scorpius", "Serpens": "Serpens", "Ser": "Serpens",
+    "Sex": "Sextans", "Sge": "Sagitta", "Sgr": "Sagittarius",
+    "Tau": "Taurus", "Tel": "Telescopium", "Tri": "Triangulum",
+    "TrA": "Triangulum Australe", "Tuc": "Tucana",
+    "UMa": "Ursa Major", "UMi": "Ursa Minor", "Vel": "Vela", "Vir": "Virgo",
+    "Vol": "Volans", "Vul": "Vulpecula",
+}
+
 PLANET_DISPLAY = {
     "mercury": "Mercury",
     "venus": "Venus",
@@ -59,6 +86,16 @@ class PlanetaryService:
 
     def __init__(self, ephemeris):
         self.eph = ephemeris
+        from skyfield.api import load_constellation_map
+        self.constellation_map = load_constellation_map()
+
+    def _get_constellation(self, geo_vector) -> str:
+        """Look up the IAU constellation for a geocentric observation vector."""
+        try:
+            abbr = self.constellation_map(geo_vector)
+            return CONSTELLATION_FULL.get(abbr, abbr)
+        except Exception:
+            return "Unknown"
 
     def _get_observer(self, latitude: float, longitude: float, elevation: float = 0.0):
         from skyfield.api import Topos
@@ -225,8 +262,71 @@ class PlanetaryService:
                 culmination = self.get_planet_culmination(ts, planet, latitude, longitude, local_date, elevation)
                 pos["culmination"] = culmination
 
+                # Add constellation (IAU boundaries, geocentric)
+                planet_name_lower = planet.lower()
+                eph_key = PLANET_EPHEMERIS_KEY.get(planet_name_lower, planet_name_lower)
+                try:
+                    t = ts.from_datetime(obs_dt)
+                    geo = self.eph["earth"].at(t).observe(self.eph[eph_key])
+                    pos["constellation"] = self._get_constellation(geo)
+                except Exception:
+                    pos["constellation"] = "Unknown"
+
                 results.append(pos)
         return results
+
+    def get_planet_constellation_transitions(
+        self, ts, planet_name: str, start_dt: datetime, months: int = 6
+    ) -> list:
+        """Compute constellation transitions for a planet over the next N months.
+
+        Returns a list of segments:
+        [
+            {"constellation": "Leo", "start": "2026-11-03", "end": "2026-12-15"},
+            {"constellation": "Virgo", "start": "2026-12-15", "end": "2027-02-10"},
+            ...
+        ]
+        """
+        planet_name_lower = planet_name.lower()
+        eph_key = PLANET_EPHEMERIS_KEY.get(planet_name_lower, planet_name_lower)
+        try:
+            planet_body = self.eph[eph_key]
+        except KeyError:
+            return []
+
+        end_dt = start_dt + timedelta(days=months * 30)
+        segments = []
+        current_const = None
+        segment_start = start_dt.strftime("%Y-%m-%d")
+
+        day = start_dt.replace(hour=12, minute=0, second=0, microsecond=0)
+        while day <= end_dt:
+            t = ts.from_datetime(day)
+            geo = self.eph["earth"].at(t).observe(planet_body)
+            const = self._get_constellation(geo)
+
+            if const != current_const:
+                # Close previous segment
+                if current_const is not None:
+                    segments.append({
+                        "constellation": current_const,
+                        "start": segment_start,
+                        "end": (day - timedelta(days=1)).strftime("%Y-%m-%d"),
+                    })
+                current_const = const
+                segment_start = day.strftime("%Y-%m-%d")
+
+            day += timedelta(days=1)
+
+        # Close final segment
+        if current_const is not None:
+            segments.append({
+                "constellation": current_const,
+                "start": segment_start,
+                "end": end_dt.strftime("%Y-%m-%d"),
+            })
+
+        return segments
 
     def get_visible_planets(
         self, ts, latitude: float, longitude: float,
