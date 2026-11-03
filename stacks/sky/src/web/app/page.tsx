@@ -1596,6 +1596,11 @@ export default function Dashboard() {
                   <div className="space-y-0">
                     {(() => {
                       const today = new Date();
+                      // Events are sorted chronologically by backend; find the next upcoming one
+                      const nextEventDate = seasonCalendarData.events.find(
+                        (e) => new Date(e.date + "T00:00:00") >= today
+                      )?.date ?? null;
+
                       const grouped: Record<string, SeasonEvent[]> = {};
                       for (const ev of seasonCalendarData.events) {
                         const year = ev.date.split("-")[0];
@@ -1613,10 +1618,7 @@ export default function Dashboard() {
                             {events.map((ev, idx) => {
                               const evDate = new Date(ev.date + "T00:00:00");
                               const isPast = evDate < today;
-                              const isNext = !isPast && !seasonCalendarData.events.find((e, i) => {
-                                if (i <= seasonCalendarData.events.indexOf(ev)) return false;
-                                return new Date(e.date + "T00:00:00") >= today;
-                              });
+                              const isNext = ev.date === nextEventDate;
 
                               return (
                                 <div

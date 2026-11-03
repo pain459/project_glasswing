@@ -129,8 +129,9 @@ def get_season_calendar(year: Optional[int] = None) -> list:
     """
     events = _computed_events or SEASON_EVENTS_2026_2027
     if year:
-        return [e for e in events if e["date"].startswith(str(year))]
-    return events
+        events = [e for e in events if e["date"].startswith(str(year))]
+    # Always return in chronological order
+    return sorted(events, key=lambda e: e["date"])
 
 
 def get_next_season_event_from_today() -> Optional[dict]:
