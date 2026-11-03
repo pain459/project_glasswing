@@ -8,13 +8,16 @@ Calculates:
 - Golden hour and blue hour
 - Daylight duration
 - Solar declination and equation of time
+- Solar culmination (meridian transit)
+- Solar angular diameter
 """
 
 import logging
+import math
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from skyfield.almanac import find_discrete, sunrise_sunset
+from skyfield.almanac import find_discrete, meridian_transits, sunrise_sunset
 from skyfield.api import Topos
 
 logger = logging.getLogger(__name__)
@@ -231,12 +234,45 @@ class SolarService:
         observer = self._get_observer(latitude, longitude, elevation)
         alt, az, distance = self._compute_altitude_azimuth(ts, dt, observer)
 
+        # Solar angular diameter from distance
+        sun_radius_km = 696_340.0
+        distance_km = distance * 149_597_870.7
+        angular_diam_arcsec = math.degrees(
+            2 * math.atan(sun_radius_km / distance_km)
+        ) * 3600
+
         return {
             "altitude_deg": round(alt, 2),
             "azimuth_deg": round(az, 2),
             "distance_au": round(distance, 6),
             "is_above_horizon": bool(alt > 0),
+            "angular_diameter_arcsec": round(angular_diam_arcsec, 1),
         }
+
+    def get_solar_culmination(
+        self, ts, latitude: float, longitude: float,
+        date: datetime, elevation: float = 0.0
+    ) -> Optional[str]:
+        """Get the solar culmination (meridian transit) time for a date.
+
+        This is the precise moment the Sun crosses the observer's meridian,
+        which may differ slightly from the midpoint of sunrise/sunset.
+        """
+        topos = Topos(latitude_degrees=latitude, longitude_degrees=longitude, elevation_m=elevation)
+        day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+
+        try:
+            t_start = ts.from_datetime(day_start)
+            t_end = ts.from_datetime(day_end)
+            transit_func = meridian_transits(self.eph, self.sun, topos)
+            transits, _ = find_discrete(t_start, t_end, transit_func)
+            if len(transits) > 0:
+                return transits[0].utc_datetime().isoformat()
+        except Exception as e:
+            logger.debug("Solar culmination failed: %s", e)
+
+        return None
 
     def get_full_solar_data(
         self, ts, latitude: float, longitude: float,
@@ -253,6 +289,11 @@ class SolarService:
             **twilight_data,
             **golden_blue,
         }
+
+        # Add solar culmination time
+        culmination = self.get_solar_culmination(ts, latitude, longitude, date, elevation)
+        if culmination:
+            result["solar_culmination"] = culmination
 
         if current_dt:
             result["current_position"] = self.get_solar_position(

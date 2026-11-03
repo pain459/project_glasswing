@@ -3,10 +3,17 @@ Planetary calculation module.
 
 Calculates positions, visibility, and events for:
 Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune
+
+Includes:
+- Rise/set times via find_risings/find_settings
+- Culmination (meridian transit) times
+- Apparent magnitude
+- Angular diameter
 """
 
 import logging
-from datetime import datetime
+import math
+from datetime import datetime, timedelta
 from typing import Optional
 
 
@@ -35,6 +42,17 @@ PLANET_DISPLAY = {
     "neptune": "Neptune",
 }
 
+# Planet radii in km for angular diameter computation
+PLANET_RADII_KM = {
+    "mercury": 2439.7,
+    "venus": 6051.8,
+    "mars": 3389.5,
+    "jupiter": 69911,
+    "saturn": 58232,
+    "uranus": 25362,
+    "neptune": 24622,
+}
+
 
 class PlanetaryService:
     """Planetary position and visibility calculations using Skyfield."""
@@ -46,6 +64,11 @@ class PlanetaryService:
         from skyfield.api import Topos
         topos = Topos(latitude_degrees=latitude, longitude_degrees=longitude, elevation_m=elevation)
         return self.eph["earth"] + topos
+
+    def _get_topos(self, latitude: float, longitude: float, elevation: float = 0.0):
+        """Get a plain Topos for meridian_transits."""
+        from skyfield.api import Topos
+        return Topos(latitude_degrees=latitude, longitude_degrees=longitude, elevation_m=elevation)
 
     def get_planet_position(
         self, ts, planet_name: str, latitude: float, longitude: float,
@@ -76,6 +99,13 @@ class PlanetaryService:
         apparent = topo_pos.apparent()
         alt, az, distance = apparent.altaz()
 
+        # Angular diameter from distance and known radius
+        radius_km = PLANET_RADII_KM.get(planet_name_lower, 1000)
+        distance_km = distance.au * 149_597_870.7
+        angular_diam_arcsec = math.degrees(
+            2 * math.atan(radius_km / distance_km)
+        ) * 3600
+
         return {
             "name": PLANET_DISPLAY.get(planet_name_lower, planet_name),
             "ra_hours": round(ra.hours, 4),
@@ -84,7 +114,84 @@ class PlanetaryService:
             "azimuth_deg": round(az.degrees, 2),
             "distance_au": round(distance.au, 4),
             "is_above_horizon": bool(alt.degrees > 0),
+            "angular_diameter_arcsec": round(angular_diam_arcsec, 2),
         }
+
+    def get_planet_rise_set(
+        self, ts, planet_name: str, latitude: float, longitude: float,
+        date: datetime, elevation: float = 0.0
+    ) -> dict:
+        """Get rise and set times for a planet on a given date."""
+        from skyfield.almanac import find_risings, find_settings
+
+        planet_name_lower = planet_name.lower()
+        if planet_name_lower not in PLANET_NAMES:
+            return {"rise": None, "set": None}
+
+        try:
+            eph_key = PLANET_EPHEMERIS_KEY.get(planet_name_lower, planet_name_lower)
+            planet = self.eph[eph_key]
+        except KeyError:
+            return {"rise": None, "set": None}
+
+        observer = self._get_observer(latitude, longitude, elevation)
+        day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+
+        t_start = ts.from_datetime(day_start)
+        t_end = ts.from_datetime(day_end)
+
+        rise_time = None
+        set_time = None
+
+        try:
+            risings, _ = find_risings(observer, planet, t_start, t_end)
+            if risings and len(risings) > 0:
+                rise_time = risings[0].utc_datetime().isoformat()
+        except Exception:
+            pass
+
+        try:
+            settings, _ = find_settings(observer, planet, t_start, t_end)
+            if settings and len(settings) > 0:
+                set_time = settings[0].utc_datetime().isoformat()
+        except Exception:
+            pass
+
+        return {"rise": rise_time, "set": set_time}
+
+    def get_planet_culmination(
+        self, ts, planet_name: str, latitude: float, longitude: float,
+        date: datetime, elevation: float = 0.0
+    ) -> Optional[str]:
+        """Get the planet's meridian transit (culmination) time for a date."""
+        from skyfield.almanac import find_discrete, meridian_transits
+
+        planet_name_lower = planet_name.lower()
+        if planet_name_lower not in PLANET_NAMES:
+            return None
+
+        try:
+            eph_key = PLANET_EPHEMERIS_KEY.get(planet_name_lower, planet_name_lower)
+            planet = self.eph[eph_key]
+        except KeyError:
+            return None
+
+        topos = self._get_topos(latitude, longitude, elevation)
+        day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+
+        try:
+            t_start = ts.from_datetime(day_start)
+            t_end = ts.from_datetime(day_end)
+            transit_func = meridian_transits(self.eph, planet, topos)
+            transits, _ = find_discrete(t_start, t_end, transit_func)
+            if len(transits) > 0:
+                return transits[0].utc_datetime().isoformat()
+        except Exception as e:
+            logger.debug("Planet %s culmination failed: %s", planet_name, e)
+
+        return None
 
     def get_all_planets(
         self, ts, latitude: float, longitude: float,
@@ -95,6 +202,29 @@ class PlanetaryService:
         for planet in PLANET_NAMES:
             pos = self.get_planet_position(ts, planet, latitude, longitude, dt, elevation)
             if pos:
+                results.append(pos)
+        return results
+
+    def get_all_planets_with_events(
+        self, ts, latitude: float, longitude: float,
+        date: datetime, elevation: float = 0.0
+    ) -> list:
+        """Get positions of all planets with rise/set and culmination times."""
+        local_date = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        obs_dt = date.replace(hour=12, minute=0, second=0, microsecond=0)
+        results = []
+        for planet in PLANET_NAMES:
+            pos = self.get_planet_position(ts, planet, latitude, longitude, obs_dt, elevation)
+            if pos:
+                # Add rise/set times
+                rise_set = self.get_planet_rise_set(ts, planet, latitude, longitude, local_date, elevation)
+                pos["rise"] = rise_set["rise"]
+                pos["set"] = rise_set["set"]
+
+                # Add culmination time
+                culmination = self.get_planet_culmination(ts, planet, latitude, longitude, local_date, elevation)
+                pos["culmination"] = culmination
+
                 results.append(pos)
         return results
 

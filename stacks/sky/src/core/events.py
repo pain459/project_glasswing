@@ -8,6 +8,10 @@ Calculates:
 - Seasonal and day-of-year information
 - Solar declination
 - General sky events for the day
+- Proper IAU constellation lookup via load_constellation_map
+- Season events (equinoxes/solstices) via seasons()
+- Dark/twilight/day classification via dark_twilight_day()
+- Moon nodes via moon_nodes()
 """
 
 import logging
@@ -15,7 +19,11 @@ import math
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from skyfield.api import Topos
+from skyfield.almanac import (
+    find_discrete, seasons, dark_twilight_day,
+    SEASONS, TWILIGHTS
+)
+from skyfield.api import Topos, load_constellation_map
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +127,8 @@ class EventsService:
         self.sun = ephemeris["sun"]
         self.earth = ephemeris["earth"]
         self.moon = ephemeris["moon"]
+        # Load proper IAU constellation map
+        self.constellation_map = load_constellation_map()
 
     def _get_observer(self, latitude: float, longitude: float, elevation: float = 0.0):
         """Create a topocentric observer."""
@@ -205,19 +215,37 @@ class EventsService:
                         return c["name"]
         return "Unknown"
 
+    def _get_constellation_iau(self, geo_vector) -> str:
+        """Look up the IAU constellation for a geocentric observation vector."""
+        try:
+            return self.constellation_map(geo_vector)
+        except Exception:
+            return "Unknown"
+
     def get_moon_constellation(self, ts, dt: datetime) -> str:
-        """Get the constellation the Moon is in at a given time."""
+        """Get the constellation the Moon is in at a given time (IAU boundaries)."""
         t = ts.from_datetime(dt)
         geo = self.earth.at(t).observe(self.moon)
-        ra, dec, _ = geo.radec()
-        return self._get_constellation_for_radec(ra.hours, dec.degrees)
+        return self._get_constellation_iau(geo)
 
     def get_sun_constellation(self, ts, dt: datetime) -> str:
-        """Get the constellation the Sun is in at a given time."""
+        """Get the constellation the Sun is in at a given time (IAU boundaries)."""
         t = ts.from_datetime(dt)
         geo = self.earth.at(t).observe(self.sun)
-        ra, dec, _ = geo.radec()
-        return self._get_constellation_for_radec(ra.hours, dec.degrees)
+        return self._get_constellation_iau(geo)
+
+    def get_planet_constellation(self, ts, dt: datetime, planet_name: str) -> str:
+        """Get the constellation a planet is in at a given time (IAU boundaries)."""
+        from core.planetary import PLANET_EPHEMERIS_KEY
+        planet_name_lower = planet_name.lower()
+        eph_key = PLANET_EPHEMERIS_KEY.get(planet_name_lower, planet_name_lower)
+        try:
+            t = ts.from_datetime(dt)
+            planet = self.eph[eph_key]
+            geo = self.earth.at(t).observe(planet)
+            return self._get_constellation_iau(geo)
+        except Exception:
+            return "Unknown"
 
     def get_moon_distance_info(self, ts, dt: datetime) -> dict:
         """Get moon distance and context (supermoon, micromoon)."""
@@ -451,6 +479,66 @@ class EventsService:
 
         return facts[:count]
 
+    # ─── Season Events ───────────────────────────────────────────────
+
+    def get_next_season_event(self, ts, date: datetime) -> dict:
+        """Get the next equinox or solstice from the given date."""
+        ref_dt = date.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+        t_from = ts.from_datetime(ref_dt)
+        t_to = ts.from_datetime(ref_dt + timedelta(days=365))
+
+        try:
+            season_func = seasons(self.eph)
+            season_times, season_vals = find_discrete(t_from, t_to, season_func)
+            if len(season_times) > 0:
+                next_season_time = season_times[0]
+                next_season_val = int(season_vals[0])
+                season_name = SEASONS[next_season_val] if 0 <= next_season_val < len(SEASONS) else "Unknown"
+                days_away = (next_season_time.utc_datetime().replace(tzinfo=timezone.utc) - ref_dt).days
+                return {
+                    "event": season_name,
+                    "datetime_utc": next_season_time.utc_datetime().isoformat(),
+                    "days_away": days_away,
+                }
+        except Exception as e:
+            logger.debug("Season events lookup failed: %s", e)
+
+        return {"event": "Unknown", "datetime_utc": None, "days_away": None}
+
+    # ─── Dark/Twilight/Day Classification ────────────────────────────
+
+    def get_dark_twilight_classification(
+        self, ts, latitude: float, longitude: float,
+        date: datetime, elevation: float = 0.0
+    ) -> list:
+        """Classify each 3-hour block of the day as dark/twilight/day."""
+        topos = Topos(
+            latitude_degrees=latitude,
+            longitude_degrees=longitude,
+            elevation_m=elevation,
+        )
+
+        try:
+            dt_func = dark_twilight_day(self.eph, topos)
+            classifications = []
+            for hour in range(0, 24, 3):
+                sample_dt = date.replace(hour=hour, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+                sample_t = ts.from_datetime(sample_dt)
+                val = dt_func(sample_t)
+                # Handle numpy scalar
+                if hasattr(val, 'item'):
+                    val = val.item()
+                label = TWILIGHTS.get(val, "Unknown")
+                classifications.append({
+                    "hour_utc": hour,
+                    "classification": label,
+                    "code": int(val),
+                })
+            return classifications
+        except Exception as e:
+            logger.debug("Dark/twilight classification failed: %s", e)
+            return []
+
     # ─── Combined Sky Events ──────────────────────────────────────────
 
     def get_sky_events(
@@ -474,6 +562,14 @@ class EventsService:
         moon_dist = self.get_moon_distance_info(ts, ref_dt)
         sun_const = self.get_sun_constellation(ts, ref_dt)
 
+        # Season events
+        next_season = self.get_next_season_event(ts, date)
+
+        # Dark/twilight classification
+        dark_twilight = self.get_dark_twilight_classification(
+            ts, latitude, longitude, date, elevation
+        )
+
         return {
             "milky_way": milky_way,
             "meteor_showers": showers,
@@ -483,4 +579,6 @@ class EventsService:
             "sun_constellation": sun_const,
             "moon_constellation": moon_const,
             "moon_distance": moon_dist,
+            "next_season_event": next_season,
+            "dark_twilight_classification": dark_twilight,
         }

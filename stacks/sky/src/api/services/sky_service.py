@@ -125,6 +125,11 @@ class SkyService:
             self.ts, local_date, count=4
         )
 
+        # Add upcoming moon nodes
+        lunar["upcoming_nodes"] = self.lunar.get_moon_nodes_info(
+            self.ts, local_date, count=2
+        )
+
         return lunar
 
     def get_planet_data(self, date: datetime, location: ObserverLocation) -> dict:
@@ -132,10 +137,13 @@ class SkyService:
         if not self._is_ready:
             raise RuntimeError("SkyService not initialized")
 
+        local_date = self._get_local_date(date, location.tz)
         obs_dt = self._get_observation_time(date, location.tz)
-        all_planets = self.planetary.get_all_planets(
+
+        # Get planets with rise/set and culmination events
+        all_planets = self.planetary.get_all_planets_with_events(
             self.ts, location.latitude_deg, location.longitude_deg,
-            obs_dt, location.elevation_m
+            local_date, location.elevation_m
         )
         visible = self.planetary.get_visible_planets(
             self.ts, location.latitude_deg, location.longitude_deg,

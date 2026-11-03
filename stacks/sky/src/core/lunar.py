@@ -7,6 +7,8 @@ Calculates:
 - Lunar phase angle, illuminated fraction, lunar age
 - New Moon, First Quarter, Full Moon, Last Quarter
 - Lunar distance and angular diameter
+- Lunar culmination (meridian transit)
+- Moon nodes (ascending/descending)
 """
 
 import logging
@@ -14,7 +16,10 @@ import math
 from datetime import datetime, timedelta
 from typing import Optional
 
-from skyfield.almanac import find_risings, find_settings, moon_phase, MOON_PHASES
+from skyfield.almanac import (
+    find_discrete, find_risings, find_settings,
+    meridian_transits, moon_nodes, moon_phase, MOON_NODES, MOON_PHASES
+)
 from skyfield.api import Topos
 
 logger = logging.getLogger(__name__)
@@ -165,6 +170,50 @@ class LunarService:
 
         return phases[:count]
 
+    def get_lunar_culmination(
+        self, ts, latitude: float, longitude: float,
+        date: datetime, elevation: float = 0.0
+    ) -> Optional[str]:
+        """Get the lunar culmination (meridian transit) time for a date."""
+        topos = Topos(latitude_degrees=latitude, longitude_degrees=longitude, elevation_m=elevation)
+        day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end = day_start + timedelta(days=1)
+
+        try:
+            t_start = ts.from_datetime(day_start)
+            t_end = ts.from_datetime(day_end)
+            transit_func = meridian_transits(self.eph, self.moon, topos)
+            transits, _ = find_discrete(t_start, t_end, transit_func)
+            if len(transits) > 0:
+                return transits[0].utc_datetime().isoformat()
+        except Exception as e:
+            logger.debug("Lunar culmination failed: %s", e)
+
+        return None
+
+    def get_moon_nodes_info(self, ts, from_dt: datetime, count: int = 2) -> list:
+        """Get upcoming moon node crossings (ascending/descending)."""
+        nodes = []
+        t_from = ts.from_datetime(from_dt)
+        t_to = ts.from_datetime(from_dt + timedelta(days=60))
+
+        try:
+            node_func = moon_nodes(self.eph)
+            node_times, node_values = find_discrete(t_from, t_to, node_func)
+            for i in range(len(node_times)):
+                if i >= count:
+                    break
+                v = int(node_values[i])
+                node_type = MOON_NODES[v] if 0 <= v < len(MOON_NODES) else "Unknown"
+                nodes.append({
+                    "type": node_type,
+                    "datetime_utc": node_times[i].utc_datetime().isoformat(),
+                })
+        except Exception as e:
+            logger.debug("Could not find moon nodes: %s", e)
+
+        return nodes
+
     def get_full_lunar_data(
         self, ts, latitude: float, longitude: float,
         date: datetime, elevation: float = 0.0,
@@ -180,6 +229,11 @@ class LunarService:
             **moonrise_data,
             **phase_data,
         }
+
+        # Add lunar culmination
+        culmination = self.get_lunar_culmination(ts, latitude, longitude, date, elevation)
+        if culmination:
+            result["lunar_culmination"] = culmination
 
         if current_dt:
             result["current_position"] = self.get_moon_position(
