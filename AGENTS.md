@@ -8,8 +8,9 @@ It is the standard template for this project and can be reused in any repository
 **Core principles**
 1. **Remember before you look.** Check Open Notebook before exploring code. Someone may already have mapped it.
 2. **Navigate by symbol, never by brute force.** Use Serena to go straight to the code you need. Never sweep the repository.
-3. **Capture continuously.** Context can be compacted at any time, and sessions often end without warning. Anything not saved to Open Notebook is lost.
+3. **Capture continuously, never assume you'll get a "goodbye".** Context can be compacted at any time without warning. Anything not saved to Open Notebook is lost. Write notes *before* heavy operations, not after.
 4. **Rich answers demand rich notes (never discard query intelligence).** When an exploration, explanation, or architectural trace yields deep, nuanced knowledge, that knowledge MUST be permanently captured into Open Notebook as decomposed, high-density micro-notes (Code Maps, Gotchas, Refs, Runbooks). Never collapse detailed multi-subsystem findings into a superficial 3-bullet summary.
+5. **Write-then-verify every note.** After creating or updating a note, immediately search for it by title. If it is not found, retry once, then fall back to `.agent-memory/pending-notes.md`.
 
 ---
 
@@ -222,13 +223,27 @@ When answering broad architectural questions, exploring subsystems, or explainin
 ---
 
 ## 7. When to Capture
-Do not wait for the session to end.
-1. **Immediately** after a decision, a fix, a gotcha, or a non-trivial code trace: write the note right then.
-2. **At milestones** in long tasks (after each sub-task, or roughly every 30–45 minutes): update a single `Checkpoint` note for the session.
-3. **Before context-heavy work** (large refactors, multi-file edits, long log analysis): checkpoint first, since compaction is likely to follow.
-4. **When the user signals closure** ("done", "that's all", "thanks", "wrap up"): finalize the session note.
-5. **When the topic changes substantially**: summarize the previous topic first.
-6. **When validated by the user** ("save this", "remember this", "note that"): trigger the **Comprehensive Knowledge Persistence Protocol** detailed below.
+Do not wait for the session to end. Compaction happens silently and without warning.
+
+### Hard triggers (MUST write immediately)
+1. **After any decision, fix, gotcha, or non-trivial code trace (>3 symbols):** write the atomic note right then, before doing anything else.
+2. **Before any context-heavy operation** (large refactors, multi-file edits, long log analysis, reading big files): checkpoint first. Compaction is likely to follow and you will lose unsaved context.
+3. **When the user signals closure** ("done", "that's all", "thanks", "wrap up", "goodbye"): execute the **Session Closure Protocol** (see below).
+4. **When the topic changes substantially:** summarize the previous topic before moving on.
+5. **When validated by the user** ("save this", "remember this", "note that"): trigger the **Comprehensive Knowledge Persistence Protocol** detailed below.
+
+### Soft triggers (should write within the next turn)
+6. **At milestones** in long tasks (after each completed sub-task): update a single `Checkpoint` note for the session.
+7. **After every 10-15 tool calls** in a long session: write or update a checkpoint, even if no specific milestone was reached. This is your safety net against compaction.
+
+### Session Closure Protocol
+When the user signals closure or the session is ending, execute these steps in order:
+1. **Write all pending atomic notes first** (decisions, fixes, gotchas, code maps discovered during the session).
+2. **Update the session note** with the full template (Section 8).
+3. **Verify every written note** is searchable by title.
+4. **Sync the fallback buffer** (`.agent-memory/pending-notes.md`) if it exists.
+5. **Update Serena's `notebook-index`** memory with any new important notes.
+6. **Only then** respond to the user that the session is closed.
 
 ### Explicit Human Validation Gate ("save this", "remember this", "note that")
 The user uses trigger phrases like `"save this"`, `"remember this"`, or `"note that"` to signal that the preceding response, architectural trace, or solution has been reviewed and validated as correct.
