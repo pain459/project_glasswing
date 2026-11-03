@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Sun,
   Moon as MoonIcon,
@@ -238,49 +238,242 @@ function MoonPhase({ fraction, illumination }: { fraction: number; illumination:
   );
 }
 
-// ─── Day Arc Timeline ────────────────────────────────────────────────
+// ─── Day Arc — Solar & Moon Brightness Spectrum ──────────────────────
+// Renders below the solar/lunar grid as a shared block. Two horizontal bars:
+// one for solar brightness across 24h, one for moon visibility. Hovering
+// shows a tooltip with the exact time and sky condition.
 
-function DayArc({ solar }: { solar: SolarData }) {
-  const sunriseMin = solar.sunrise
-    ? new Date(solar.sunrise).getHours() * 60 + new Date(solar.sunrise).getMinutes()
-    : 360;
-  const sunsetMin = solar.sunset
-    ? new Date(solar.sunset).getHours() * 60 + new Date(solar.sunset).getMinutes()
-    : 1080;
+interface ArcMarker {
+  pct: number;
+  label: string;
+}
+
+function minFromIso(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function pct(min: number): number {
+  return (min / 1440) * 100;
+}
+
+function getSkyPhase(min: number, solar: SolarData): string {
+  const sr = minFromIso(solar.sunrise);
+  const ss = minFromIso(solar.sunset);
+  const civilM = minFromIso(solar.civil_twilight_morning_end);
+  const civilE = minFromIso(solar.civil_twilight_evening_start);
+  const nautM = minFromIso(solar.nautical_twilight_morning_end);
+  const nautE = minFromIso(solar.nautical_twilight_evening_start);
+  const astroM = minFromIso(solar.astronomical_twilight_morning_end);
+  const astroE = minFromIso(solar.astronomical_twilight_evening_start);
+  if (sr != null && ss != null && min >= sr && min <= ss) return "Daylight";
+  if (civilM != null && sr != null && min >= civilM && min < sr) return "Civil twilight";
+  if (civilE != null && ss != null && min > ss && min <= civilE) return "Civil twilight";
+  if (nautM != null && civilM != null && min >= nautM && min < civilM) return "Nautical twilight";
+  if (nautE != null && civilE != null && min > civilE && min <= nautE) return "Nautical twilight";
+  if (astroM != null && nautM != null && min >= astroM && min < nautM) return "Astronomical twilight";
+  if (astroE != null && nautE != null && min > nautE && min <= astroE) return "Astronomical twilight";
+  return "Night";
+}
+
+function ArcTooltip({
+  visible,
+  left,
+  timeStr,
+  detail,
+}: {
+  visible: boolean;
+  left: number;
+  timeStr: string;
+  detail: string;
+}) {
+  if (!visible) return null;
+  return (
+    <div
+      className="absolute bottom-full mb-1 px-2 py-1 rounded text-[10px] whitespace-nowrap pointer-events-none z-10"
+      style={{
+        left: `${left}%`,
+        transform: "translateX(-50%)",
+        background: "var(--sky-card)",
+        border: "1px solid var(--sky-border)",
+        color: "var(--sky-text)",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+      }}
+    >
+      <div className="font-semibold">{timeStr}</div>
+      <div style={{ color: "var(--sky-muted)" }}>{detail}</div>
+    </div>
+  );
+}
+
+function SolarArc({ solar }: { solar: SolarData }) {
+  const [hover, setHover] = useState<{ visible: boolean; left: number; min: number }>({
+    visible: false,
+    left: 0,
+    min: 0,
+  });
+
+  const sr = minFromIso(solar.sunrise);
+  const ss = minFromIso(solar.sunset);
+  const noon = minFromIso(solar.solar_noon);
   const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+  const civilM = minFromIso(solar.civil_twilight_morning_end);
+  const civilE = minFromIso(solar.civil_twilight_evening_start);
+  const nautM = minFromIso(solar.nautical_twilight_morning_end);
+  const nautE = minFromIso(solar.nautical_twilight_evening_start);
+  const astroM = minFromIso(solar.astronomical_twilight_morning_end);
+  const astroE = minFromIso(solar.astronomical_twilight_evening_start);
 
-  const range = 1200;
-  const offset = 300;
+  const stops: string[] = [];
+  if (sr != null && ss != null) {
+    stops.push("rgba(15,23,42,1) 0%");
+    if (astroM != null) stops.push(`rgba(30,41,59,1) ${pct(astroM)}%`);
+    if (nautM != null) stops.push(`rgba(51,65,85,1) ${pct(nautM)}%`);
+    if (civilM != null) stops.push(`rgba(120,80,40,1) ${pct(civilM)}%`);
+    stops.push(`rgba(245,158,11,1) ${pct(sr)}%`);
+    if (noon != null) stops.push(`rgba(253,224,71,1) ${pct(noon)}%`);
+    stops.push(`rgba(245,158,11,1) ${pct(ss)}%`);
+    if (civilE != null) stops.push(`rgba(120,80,40,1) ${pct(civilE)}%`);
+    if (nautE != null) stops.push(`rgba(51,65,85,1) ${pct(nautE)}%`);
+    if (astroE != null) stops.push(`rgba(30,41,59,1) ${pct(astroE)}%`);
+    stops.push("rgba(15,23,42,1) 100%");
+  }
+  const gradient = stops.length > 1 ? `linear-gradient(to right, ${stops.join(", ")})` : undefined;
 
-  const startPct = Math.max(0, ((sunriseMin - offset) / range) * 100);
-  const endPct = Math.min(100, ((sunsetMin - offset) / range) * 100);
-  const nowPct = Math.max(0, Math.min(100, ((nowMin - offset) / range) * 100));
+  const markers: ArcMarker[] = [];
+  if (sr != null) markers.push({ pct: pct(sr), label: formatTime(solar.sunrise) });
+  if (noon != null) markers.push({ pct: pct(noon), label: formatTime(solar.solar_noon) });
+  if (ss != null) markers.push({ pct: pct(ss), label: formatTime(solar.sunset) });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const leftPct = (x / rect.width) * 100;
+    const min = Math.round((leftPct / 100) * 1440);
+    setHover({ visible: true, left: leftPct, min });
+  };
+
+  const timeStr = hover.visible
+    ? `${String(Math.floor(hover.min / 60)).padStart(2, "0")}:${String(hover.min % 60).padStart(2, "0")}`
+    : "";
+  const phaseStr = hover.visible ? getSkyPhase(hover.min, solar) : "";
 
   return (
-    <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--sky-divider)" }}>
-      <div className="relative h-1 rounded-full" style={{ background: "var(--sky-arc-track)" }}>
+    <div>
+      <div className="relative">
         <div
-          className="absolute top-0 left-0 h-full rounded-full"
-          style={{
-            left: `${startPct}%`,
-            width: `${Math.max(endPct - startPct, 0)}%`,
-            background: "var(--sky-arc-fill)",
-          }}
+          className="h-3 rounded-full cursor-crosshair"
+          style={{ background: gradient || "var(--sky-arc-track)" }}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => setHover({ visible: false, left: 0, min: 0 })}
         />
-        <div
-          className="absolute top-1/2 -translate-y-1/2 w-1 h-2.5 rounded-full -ml-0.5"
-          style={{ left: `${nowPct}%`, background: "var(--sky-arc-marker)" }}
-        />
+        <div className="absolute top-0" style={{ left: `${pct(nowMin)}%` }}>
+          <div className="w-0.5 h-3.5 rounded-full mx-auto" style={{ background: "var(--sky-arc-marker)" }} />
+        </div>
+        <ArcTooltip visible={hover.visible} left={hover.left} timeStr={timeStr} detail={phaseStr} />
       </div>
-      <div className="flex justify-between mt-1.5">
-        <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
-          <Sunrise className="w-3 h-3 inline mr-1" />
-          {formatTime(solar.sunrise)}
-        </span>
-        <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
-          <Sunset className="w-3 h-3 inline mr-1" />
-          {formatTime(solar.sunset)}
-        </span>
+      <div className="relative mt-2" style={{ height: "28px" }}>
+        {markers.map((m, i) => (
+          <div key={i} className="absolute -translate-x-1/2 text-center" style={{ left: `${m.pct}%` }}>
+            <div className="w-1.5 h-1.5 rounded-full mx-auto" style={{ background: "var(--sky-accent)" }} />
+            <span className="text-[9px] mt-0.5 block" style={{ color: "var(--sky-muted)" }}>{m.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MoonArc({ lunar }: { lunar: LunarData }) {
+  const [hover, setHover] = useState<{ visible: boolean; left: number; min: number }>({
+    visible: false,
+    left: 0,
+    min: 0,
+  });
+
+  const mr = minFromIso(lunar.moonrise);
+  const ms = minFromIso(lunar.moonset);
+  const culmination = minFromIso(lunar.lunar_culmination);
+  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+
+  const stops: string[] = [];
+  if (mr != null && ms != null) {
+    if (mr < ms) {
+      stops.push("rgba(30,41,59,0.3) 0%");
+      stops.push(`rgba(30,41,59,0.3) ${pct(mr)}%`);
+      stops.push(`rgba(196,181,253,0.6) ${pct(mr)}%`);
+      if (culmination != null) stops.push(`rgba(196,181,253,0.9) ${pct(culmination)}%`);
+      stops.push(`rgba(196,181,253,0.6) ${pct(ms)}%`);
+      stops.push(`rgba(30,41,59,0.3) ${pct(ms)}%`);
+      stops.push("rgba(30,41,59,0.3) 100%");
+    } else {
+      // Moon sets before rising (crosses midnight)
+      stops.push(`rgba(196,181,253,0.6) 0%`);
+      stops.push(`rgba(30,41,59,0.3) ${pct(ms)}%`);
+      stops.push(`rgba(30,41,59,0.3) ${pct(mr)}%`);
+      stops.push(`rgba(196,181,253,0.6) ${pct(mr)}%`);
+      stops.push("rgba(196,181,253,0.6) 100%");
+    }
+  } else if (mr != null) {
+    stops.push("rgba(30,41,59,0.3) 0%");
+    stops.push(`rgba(196,181,253,0.7) ${pct(mr)}%`);
+    stops.push("rgba(196,181,253,0.7) 100%");
+  } else if (ms != null) {
+    stops.push("rgba(196,181,253,0.7) 0%");
+    stops.push(`rgba(30,41,59,0.3) ${pct(ms)}%`);
+    stops.push("rgba(30,41,59,0.3) 100%");
+  } else {
+    stops.push("rgba(30,41,59,0.3) 0%");
+    stops.push("rgba(30,41,59,0.3) 100%");
+  }
+
+  const gradient = `linear-gradient(to right, ${stops.join(", ")})`;
+
+  const markers: ArcMarker[] = [];
+  if (mr != null) markers.push({ pct: pct(mr), label: formatTime(lunar.moonrise) });
+  if (ms != null) markers.push({ pct: pct(ms), label: formatTime(lunar.moonset) });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const leftPct = (x / rect.width) * 100;
+    const min = Math.round((leftPct / 100) * 1440);
+    setHover({ visible: true, left: leftPct, min });
+  };
+
+  const timeStr = hover.visible
+    ? `${String(Math.floor(hover.min / 60)).padStart(2, "0")}:${String(hover.min % 60).padStart(2, "0")}`
+    : "";
+  const moonVisible = hover.visible
+    ? ((mr != null && ms != null)
+        ? (mr < ms ? (hover.min >= mr && hover.min <= ms) : !(hover.min > ms && hover.min < mr))
+        : (mr != null && hover.min >= mr) || (ms != null && hover.min < ms))
+      ? "Above horizon"
+      : "Below horizon"
+    : "";
+
+  return (
+    <div>
+      <div className="relative">
+        <div
+          className="h-3 rounded-full cursor-crosshair"
+          style={{ background: gradient }}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => setHover({ visible: false, left: 0, min: 0 })}
+        />
+        <div className="absolute top-0" style={{ left: `${pct(nowMin)}%` }}>
+          <div className="w-0.5 h-3.5 rounded-full mx-auto" style={{ background: "var(--sky-arc-marker)" }} />
+        </div>
+        <ArcTooltip visible={hover.visible} left={hover.left} timeStr={timeStr} detail={moonVisible} />
+      </div>
+      <div className="relative mt-2" style={{ height: "28px" }}>
+        {markers.map((m, i) => (
+          <div key={i} className="absolute -translate-x-1/2 text-center" style={{ left: `${m.pct}%` }}>
+            <div className="w-1.5 h-1.5 rounded-full mx-auto" style={{ background: "#c4b5fd" }} />
+            <span className="text-[9px] mt-0.5 block" style={{ color: "var(--sky-muted)" }}>{m.label}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -593,8 +786,6 @@ export default function Dashboard() {
                 </div>
               </>
             )}
-
-            <DayArc solar={data.solar} />
           </div>
         </div>
 
@@ -729,6 +920,48 @@ export default function Dashboard() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Day Arc — Solar & Moon Brightness ───────────────────── */}
+      <div className="sky-card">
+        <div className="p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Sun className="w-3.5 h-3.5" style={{ color: sunUp ? "#fbbf24" : "var(--sky-muted)" }} />
+            <MoonIcon className="w-3.5 h-3.5" style={{ color: "#c4b5fd" }} />
+            <span className="section-label">Day Arc</span>
+          </div>
+
+          {/* Solar arc */}
+          <div className="mb-1">
+            <span className="text-[10px] font-medium" style={{ color: "var(--sky-muted)" }}>
+              Solar brightness
+            </span>
+          </div>
+          <SolarArc solar={data.solar} />
+
+          {/* Moon arc */}
+          <div className="mt-4 mb-1">
+            <span className="text-[10px] font-medium" style={{ color: "var(--sky-muted)" }}>
+              Moon visibility
+            </span>
+          </div>
+          <MoonArc lunar={data.lunar} />
+
+          {/* Legend */}
+          <div className="flex items-center justify-between mt-3 pt-3" style={{ borderTop: "1px solid var(--sky-divider)" }}>
+            <span className="text-[9px]" style={{ color: "var(--sky-muted)" }}>
+              <Sunrise className="w-3 h-3 inline mr-1 -mt-0.5" />
+              Sunrise
+            </span>
+            <span className="text-[9px]" style={{ color: "var(--sky-muted)" }}>
+              Solar noon
+            </span>
+            <span className="text-[9px]" style={{ color: "var(--sky-muted)" }}>
+              <Sunset className="w-3 h-3 inline mr-1 -mt-0.5" />
+              Sunset
+            </span>
           </div>
         </div>
       </div>
