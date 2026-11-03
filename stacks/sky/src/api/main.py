@@ -465,6 +465,30 @@ async def get_moon_standstill(
     )
 
 
+# ─── Panchang (Vedic Calendar) ─────────────────────────────────────────────
+
+@app.get("/api/v1/sky/panchang")
+async def get_panchang(
+    date: str = Query("today"),
+    days: int = Query(1, ge=1, le=60),
+    location_id: Optional[str] = Query(None),
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+    timezone_str: Optional[str] = Query("Asia/Kolkata"),
+):
+    """Get Vedic Panchang for a single date or a range of dates."""
+    target_date = _resolve_date(date)
+    loc = _resolve_location(location_id, latitude, longitude, timezone_str)
+    if days == 1:
+        data = sky_service.get_panchang(target_date, loc)
+    else:
+        data = sky_service.get_panchang_range(target_date, days, loc)
+    return ApiResponse(
+        data=data,
+        metadata=_calc_metadata(target_date, loc),
+    )
+
+
 # ─── Helper functions ───────────────────────────────────────────────────────
 
 def _resolve_location(location_id, latitude, longitude, timezone_str):

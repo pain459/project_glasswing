@@ -23,6 +23,7 @@ import {
   X,
   Navigation,
   Clock,
+  ScrollText,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -428,9 +429,81 @@ interface LunarDataExtended extends LunarData {
   };
 }
 
+// ─── Panchang types ────────────────────────────────────────────────
+
+interface PanchangTithi {
+  tithi_number: number;
+  tithi_name: string;
+  paksha: string;
+  elongation_deg: number;
+  progress_percent: number;
+}
+
+interface PanchangNakshatra {
+  nakshatra: string;
+  nakshatra_index: number;
+  symbol: string;
+  ruler: string;
+  progress_percent: number;
+}
+
+interface PanchangYoga {
+  yoga: string;
+  yoga_index: number;
+  progress_percent: number;
+}
+
+interface PanchangKarana {
+  karana: string;
+  karana_index: number;
+}
+
+interface PanchangVara {
+  name: string;
+  sanskrit: string;
+}
+
+interface PanchangRashi {
+  sidereal_lon_deg: number;
+  rashi: string;
+  rashi_symbol: string;
+}
+
+interface PanchangSun extends PanchangRashi {
+  tropical_lon_deg: number;
+}
+
+interface PanchangMoon extends PanchangRashi {}
+
+interface PanchangMuhurtaWindow {
+  start: string;
+  end: string;
+  duration_minutes: number;
+}
+
+interface PanchangMuhurta {
+  abhijit: PanchangMuhurtaWindow | null;
+  aghora: PanchangMuhurtaWindow | null;
+}
+
+interface PanchangDay {
+  date: string;
+  vara: PanchangVara;
+  tithi: PanchangTithi;
+  nakshatra: PanchangNakshatra;
+  yoga: PanchangYoga;
+  karana: PanchangKarana;
+  ayanamsha_deg: number;
+  sun: PanchangSun;
+  moon: PanchangMoon;
+  rahu: PanchangRashi;
+  ketu: PanchangRashi;
+  muhurta: PanchangMuhurta;
+}
+
 // ─── Tab definitions ────────────────────────────────────────────────
 
-type TabKey = "daily" | "planets" | "calendar" | "stories" | "iss" | "events";
+type TabKey = "daily" | "planets" | "calendar" | "stories" | "iss" | "events" | "panchang";
 
 const TABS: Array<{ key: TabKey; label: string; icon: React.ReactNode }> = [
   { key: "daily", label: "Daily Sky", icon: <Sun className="w-3.5 h-3.5" /> },
@@ -439,6 +512,7 @@ const TABS: Array<{ key: TabKey; label: string; icon: React.ReactNode }> = [
   { key: "stories", label: "Stories", icon: <BookOpen className="w-3.5 h-3.5" /> },
   { key: "iss", label: "ISS", icon: <Satellite className="w-3.5 h-3.5" /> },
   { key: "events", label: "Events", icon: <Sparkles className="w-3.5 h-3.5" /> },
+  { key: "panchang", label: "Panchang", icon: <ScrollText className="w-3.5 h-3.5" /> },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -805,6 +879,10 @@ export default function Dashboard() {
   const [zodiacData, setZodiacData] = useState<ZodiacData | null>(null);
   const [moonStandstillData, setMoonStandstillData] = useState<MoonStandstillData | null>(null);
 
+  // Panchang
+  const [panchangData, setPanchangData] = useState<PanchangDay[] | null>(null);
+  const [selectedPanchangDate, setSelectedPanchangDate] = useState<string>("");
+
   // Location management
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
@@ -945,6 +1023,12 @@ export default function Dashboard() {
     fetch(`/api/v1/sky/moon/standstill?date=${currentDate}`)
       .then(r => r.json())
       .then(json => { if (!cancelled) setMoonStandstillData(json.data); })
+      .catch(() => {});
+
+    // Panchang (28 days for the 4-week table)
+    fetch(`/api/v1/sky/panchang?date=${currentDate}&days=28${selectedLocationId ? `&location_id=${selectedLocationId}` : ""}`)
+      .then(r => r.json())
+      .then(json => { if (!cancelled && json.data) setPanchangData(json.data); })
       .catch(() => {});
 
     // Locations
@@ -3134,6 +3218,207 @@ export default function Dashboard() {
               </div>
             )}
 
+          </div>
+        )}
+
+        {/* ── Panchang Tab ──────────────────────────────────────── */}
+        {activeTab === "panchang" && (
+          <div className="space-y-4">
+            {/* Date Selector */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <ScrollText className="w-3.5 h-3.5" style={{ color: "#f59e0b" }} />
+                  <span className="section-label">Panchang</span>
+                  <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                    Vedic Calendar &bull; 4 Weeks
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-center gap-3">
+                  <input
+                    type="date"
+                    value={selectedPanchangDate || currentDate}
+                    onChange={(e) => setSelectedPanchangDate(e.target.value)}
+                    className="rounded-lg px-3 py-2 text-xs border"
+                    style={{
+                      background: "var(--sky-card)",
+                      color: "var(--sky-text)",
+                      borderColor: "var(--sky-border)",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Today&apos;s Detailed Panchang */}
+            {panchangData && panchangData.length > 0 && (() => {
+              const todayPanchang = panchangData.find(
+                (d) => d.date === (selectedPanchangDate || currentDate)
+              );
+              if (!todayPanchang) return null;
+
+              return (
+                <div className="sky-card">
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="section-label">
+                        {new Date(todayPanchang.date + "T00:00:00").toLocaleDateString("en-IN", {
+                          weekday: "long", year: "numeric", month: "long", day: "numeric",
+                        })}
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: "var(--sky-accent)", color: "#fff" }}>
+                        {todayPanchang.vara.sanskrit}
+                      </span>
+                    </div>
+
+                    {/* Five Elements Grid */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      {/* Tithi */}
+                      <div className="rounded-lg p-3 border" style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}>
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Tithi</div>
+                        <div className="text-xs font-semibold" style={{ color: "var(--sky-text)" }}>{todayPanchang.tithi.tithi_name}</div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>{todayPanchang.tithi.paksha} Paksha &bull; Day {todayPanchang.tithi.tithi_number}</div>
+                      </div>
+
+                      {/* Nakshatra */}
+                      <div className="rounded-lg p-3 border" style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}>
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Nakshatra</div>
+                        <div className="text-xs font-semibold" style={{ color: "var(--sky-text)" }}>{todayPanchang.nakshatra.symbol} {todayPanchang.nakshatra.nakshatra}</div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>Ruler: {todayPanchang.nakshatra.ruler}</div>
+                      </div>
+
+                      {/* Yoga */}
+                      <div className="rounded-lg p-3 border" style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}>
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Yoga</div>
+                        <div className="text-xs font-semibold" style={{ color: "var(--sky-text)" }}>{todayPanchang.yoga.yoga}</div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>#{todayPanchang.yoga.yoga_index}</div>
+                      </div>
+
+                      {/* Karana */}
+                      <div className="rounded-lg p-3 border" style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}>
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Karana</div>
+                        <div className="text-xs font-semibold" style={{ color: "var(--sky-text)" }}>{todayPanchang.karana.karana}</div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>#{todayPanchang.karana.karana_index}</div>
+                      </div>
+                    </div>
+
+                    {/* Sun & Moon Rashi */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="rounded-lg p-3 border" style={{ background: "var(--sky-sun-bg)", borderColor: "var(--sky-sun-border)" }}>
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Sun</div>
+                        <div className="text-xs font-semibold" style={{ color: "var(--sky-text)" }}>{todayPanchang.sun.rashi_symbol} {todayPanchang.sun.rashi}</div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>{todayPanchang.sun.sidereal_lon_deg.toFixed(1)}&deg; sidereal</div>
+                      </div>
+                      <div className="rounded-lg p-3 border" style={{ background: "var(--sky-moon-bg)", borderColor: "var(--sky-moon-border)" }}>
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Moon</div>
+                        <div className="text-xs font-semibold" style={{ color: "var(--sky-text)" }}>{todayPanchang.moon.rashi_symbol} {todayPanchang.moon.rashi}</div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>{todayPanchang.moon.sidereal_lon_deg.toFixed(1)}&deg; sidereal</div>
+                      </div>
+                    </div>
+
+                    {/* Rahu & Ketu */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="rounded-lg p-3 border" style={{ background: "rgba(139,92,246,0.08)", borderColor: "rgba(139,92,246,0.2)" }}>
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Rahu</div>
+                        <div className="text-xs font-semibold" style={{ color: "var(--sky-text)" }}>{todayPanchang.rahu.rashi_symbol} {todayPanchang.rahu.rashi}</div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>{todayPanchang.rahu.sidereal_lon_deg.toFixed(1)}&deg;</div>
+                      </div>
+                      <div className="rounded-lg p-3 border" style={{ background: "rgba(139,92,246,0.08)", borderColor: "rgba(139,92,246,0.2)" }}>
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Ketu</div>
+                        <div className="text-xs font-semibold" style={{ color: "var(--sky-text)" }}>{todayPanchang.ketu.rashi_symbol} {todayPanchang.ketu.rashi}</div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>{todayPanchang.ketu.sidereal_lon_deg.toFixed(1)}&deg;</div>
+                      </div>
+                    </div>
+
+                    {/* Muhurta Windows */}
+                    <div className="rounded-lg p-3 border" style={{ background: "rgba(245,158,11,0.08)", borderColor: "rgba(245,158,11,0.2)" }}>
+                      <div className="text-[9px] uppercase tracking-wider mb-2" style={{ color: "var(--sky-muted)" }}>Muhurta</div>
+                      <div className="space-y-2">
+                        {todayPanchang.muhurta.abhijit && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px]" style={{ color: "var(--sky-text)" }}>Abhijit</span>
+                            <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                              {new Date(todayPanchang.muhurta.abhijit.start).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                              &ndash;
+                              {new Date(todayPanchang.muhurta.abhijit.end).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
+                        )}
+                        {todayPanchang.muhurta.aghora && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px]" style={{ color: "var(--sky-text)" }}>Aghora</span>
+                            <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                              {new Date(todayPanchang.muhurta.aghora.start).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                              &ndash;
+                              {new Date(todayPanchang.muhurta.aghora.end).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 4-Week Consolidated Table */}
+            {panchangData && panchangData.length > 0 && (
+              <div className="sky-card">
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Calendar className="w-3.5 h-3.5" style={{ color: "#f59e0b" }} />
+                    <span className="section-label">4-Week Overview</span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[10px]">
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid var(--sky-border)" }}>
+                          <th className="text-left py-2 px-1 font-medium" style={{ color: "var(--sky-muted)" }}>Date</th>
+                          <th className="text-left py-2 px-1 font-medium" style={{ color: "var(--sky-muted)" }}>Vara</th>
+                          <th className="text-left py-2 px-1 font-medium" style={{ color: "var(--sky-muted)" }}>Tithi</th>
+                          <th className="text-left py-2 px-1 font-medium" style={{ color: "var(--sky-muted)" }}>Nakshatra</th>
+                          <th className="text-left py-2 px-1 font-medium" style={{ color: "var(--sky-muted)" }}>Yoga</th>
+                          <th className="text-left py-2 px-1 font-medium" style={{ color: "var(--sky-muted)" }}>Karana</th>
+                          <th className="text-left py-2 px-1 font-medium" style={{ color: "var(--sky-muted)" }}>Sun</th>
+                          <th className="text-left py-2 px-1 font-medium" style={{ color: "var(--sky-muted)" }}>Moon</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {panchangData.map((day) => {
+                          const isToday = day.date === currentDate;
+                          const isSelected = day.date === (selectedPanchangDate || currentDate);
+                          return (
+                            <tr
+                              key={day.date}
+                              className="cursor-pointer hover:opacity-80"
+                              style={{
+                                borderBottom: "1px solid rgba(255,255,255,0.04)",
+                                background: isSelected ? "rgba(245,158,11,0.1)" : isToday ? "rgba(59,130,246,0.08)" : "transparent",
+                              }}
+                              onClick={() => setSelectedPanchangDate(day.date)}
+                            >
+                              <td className="py-2 px-1" style={{ color: isToday ? "#3b82f6" : "var(--sky-text)" }}>
+                                {new Date(day.date + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short" })}
+                                {isToday && <span className="ml-1 text-[8px]" style={{ color: "#3b82f6" }}>TODAY</span>}
+                              </td>
+                              <td className="py-2 px-1" style={{ color: "var(--sky-muted)" }}>{day.vara.sanskrit.slice(0, 3)}</td>
+                              <td className="py-2 px-1" style={{ color: "var(--sky-text)" }}>{day.tithi.tithi_name.split(" ").slice(-1)[0]}</td>
+                              <td className="py-2 px-1" style={{ color: "var(--sky-text)" }}>{day.nakshatra.symbol} {day.nakshatra.nakshatra.slice(0, 6)}</td>
+                              <td className="py-2 px-1" style={{ color: "var(--sky-footer-text)" }}>{day.yoga.yoga.slice(0, 7)}</td>
+                              <td className="py-2 px-1" style={{ color: "var(--sky-footer-text)" }}>{day.karana.karana.slice(0, 5)}</td>
+                              <td className="py-2 px-1" style={{ color: "var(--sky-muted)" }}>{day.sun.rashi_symbol}</td>
+                              <td className="py-2 px-1" style={{ color: "var(--sky-muted)" }}>{day.moon.rashi_symbol}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

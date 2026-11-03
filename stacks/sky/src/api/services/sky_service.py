@@ -29,6 +29,7 @@ from core.season_calendar import compute_season_events, get_season_calendar, get
 from core.sky_stories import generate_sky_story
 from core.stars import StarService
 from core.messier import MessierService
+from core.panchang import PanchangService
 from api.models.schemas import SystemStatusResponse
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,7 @@ class SkyService:
         self.events = None
         self.stars = None
         self.messier = None
+        self.panchang = None
         self.iss = None
         self._start_time = None
         self._is_ready = False
@@ -69,6 +71,7 @@ class SkyService:
         self.events = EventsService(self.ephemeris_mgr.loaded_kernel)
         self.stars = StarService(self.ephemeris_mgr.loaded_kernel)
         self.messier = MessierService(self.ephemeris_mgr.loaded_kernel)
+        self.panchang = PanchangService(self.ephemeris_mgr.loaded_kernel)
 
         # Initialize ISS satellite tracking
         try:
@@ -508,3 +511,39 @@ class SkyService:
         local_date = self._get_local_date(date, location=None) if False else \
             self._get_local_date(date, __import__('zoneinfo').ZoneInfo("Asia/Kolkata"))
         return self.events.get_moon_standstill_info(self.ts, local_date)
+
+    # ─── Panchang ──────────────────────────────────────────────────────
+
+    def get_panchang(self, date: datetime, location: ObserverLocation) -> dict:
+        """Get the Vedic Panchang for a single date."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        local_date = self._get_local_date(date, location.tz)
+
+        # Get solar data for sunrise/sunset/solar_noon (needed for muhurta)
+        solar_data = self.get_solar_data(date, location)
+
+        return self.panchang.compute_with_muhurta(
+            self.ts, local_date,
+            location.latitude_deg, location.longitude_deg,
+            location.elevation_m,
+            sunrise=solar_data.get("sunrise"),
+            sunset=solar_data.get("sunset"),
+            solar_noon=solar_data.get("solar_noon"),
+        )
+
+    def get_panchang_range(
+        self, start_date: datetime, days: int, location: ObserverLocation
+    ) -> list:
+        """Get Panchang for a range of dates (for the 4-week table)."""
+        results = []
+        for i in range(days):
+            day = start_date + timedelta(days=i)
+            try:
+                panchang = self.get_panchang(day, location)
+                results.append(panchang)
+            except Exception as e:
+                logger.debug("Panchang failed for %s: %s", day, e)
+                results.append({"date": day.strftime("%Y-%m-%d"), "error": str(e)})
+        return results
