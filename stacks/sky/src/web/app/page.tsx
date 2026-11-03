@@ -1913,92 +1913,271 @@ export default function Dashboard() {
         {/* ──── ISS Tab ──── */}
         {activeTab === "iss" && (
           <div className="space-y-4">
-            {issData && issData.status === "available" ? (
-              <div className="sky-card">
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Satellite className="w-3.5 h-3.5" style={{ color: "#34d399" }} />
-                    <span className="section-label">ISS Visibility</span>
-                    {issData.current_position?.is_above_horizon && (
-                      <span className="text-[9px] font-semibold" style={{ color: "#34d399" }}>
-                        ● Visible now
-                      </span>
-                    )}
-                    <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
-                      Next 48h
-                    </span>
+            {issData && issData.status === "available" ? (() => {
+              const issAbove = issData.current_position?.is_above_horizon ?? false;
+
+              // Classify pass quality by max elevation
+              const getPassQuality = (maxElev: number) => {
+                if (maxElev >= 60) return { label: "Excellent", color: "#34d399", bg: "rgba(52,211,153,0.12)", border: "rgba(52,211,153,0.3)" };
+                if (maxElev >= 40) return { label: "Good", color: "#60a5fa", bg: "rgba(96,165,250,0.12)", border: "rgba(96,165,250,0.3)" };
+                if (maxElev >= 20) return { label: "Fair", color: "#fbbf24", bg: "rgba(251,191,36,0.12)", border: "rgba(251,191,36,0.3)" };
+                return { label: "Low", color: "var(--sky-muted)", bg: "var(--sky-planet-bg)", border: "var(--sky-planet-border)" };
+              };
+
+              // Sort passes chronologically for the timeline view
+              const sortedPasses = [...issData.passes].sort(
+                (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+              );
+
+              // Find the best pass (highest elevation)
+              const bestPass = issData.passes.length > 0 ? issData.passes[0] : null;
+              const bestQuality = bestPass ? getPassQuality(bestPass.max_elevation_deg) : null;
+
+              // Count passes by quality tier
+              const excellentCount = issData.passes.filter(p => p.max_elevation_deg >= 60).length;
+              const goodCount = issData.passes.filter(p => p.max_elevation_deg >= 40 && p.max_elevation_deg < 60).length;
+
+              return (
+                <>
+                  {/* ── Status Header Card ── */}
+                  <div className="sky-card">
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Satellite className="w-3.5 h-3.5" style={{ color: issAbove ? "#34d399" : "var(--sky-muted)" }} />
+                        <span className="section-label">ISS Tracking</span>
+                        {issAbove && (
+                          <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full" style={{ background: "rgba(52,211,153,0.15)", color: "#34d399" }}>
+                            ● VISIBLE NOW
+                          </span>
+                        )}
+                        <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                          Next 48h · {issData.total_passes} passes
+                        </span>
+                      </div>
+
+                      {/* Current position bar */}
+                      {issData.current_position && (
+                        <div
+                          className="rounded-lg p-3 mb-3 border"
+                          style={{
+                            background: issAbove ? "rgba(52,211,153,0.08)" : "var(--sky-planet-bg)",
+                            borderColor: issAbove ? "rgba(52,211,153,0.3)" : "var(--sky-planet-border)",
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-medium" style={{ color: issAbove ? "#34d399" : "var(--sky-muted)" }}>
+                                {issAbove ? "In View" : "Below Horizon"}
+                              </span>
+                              <span className="text-[9px]" style={{ color: "var(--sky-muted)" }}>
+                                Alt {issData.current_position.altitude_deg.toFixed(1)}°
+                              </span>
+                              <span className="text-[9px]" style={{ color: "var(--sky-muted)" }}>
+                                · {issData.current_position.direction}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                                {(issData.current_position.distance_km / 1000).toFixed(1)}k km away
+                              </span>
+                              <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                                ~27,600 km/h
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Quick stats row */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="rounded-lg p-2.5 text-center" style={{ background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.15)" }}>
+                          <div className="text-lg font-bold" style={{ color: "#34d399" }}>{excellentCount}</div>
+                          <div className="text-[9px]" style={{ color: "var(--sky-muted)" }}>Excellent</div>
+                        </div>
+                        <div className="rounded-lg p-2.5 text-center" style={{ background: "rgba(96,165,250,0.06)", border: "1px solid rgba(96,165,250,0.15)" }}>
+                          <div className="text-lg font-bold" style={{ color: "#60a5fa" }}>{goodCount}</div>
+                          <div className="text-[9px]" style={{ color: "var(--sky-muted)" }}>Good</div>
+                        </div>
+                        <div className="rounded-lg p-2.5 text-center" style={{ background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.15)" }}>
+                          <div className="text-lg font-bold" style={{ color: "#fbbf24" }}>{issData.total_passes - excellentCount - goodCount}</div>
+                          <div className="text-[9px]" style={{ color: "var(--sky-muted)" }}>Fair/Low</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Current position */}
-                  {issData.current_position && (
-                    <div
-                      className="rounded-lg p-3 mb-3 border"
-                      style={{
-                        background: issData.current_position.is_above_horizon ? "var(--sky-visible-bg)" : "var(--sky-planet-bg)",
-                        borderColor: issData.current_position.is_above_horizon ? "var(--sky-visible-border)" : "var(--sky-planet-border)",
-                      }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>
-                            {issData.current_position.is_above_horizon ? "🛰 In view" : "🛰 Below horizon"}
-                          </span>
-                          <span className="text-[9px] ml-2" style={{ color: "var(--sky-muted)" }}>
-                            Alt {issData.current_position.altitude_deg.toFixed(1)}° · {issData.current_position.direction}
+                  {/* ── Best Pass Highlight ── */}
+                  {bestPass && bestQuality && (
+                    <div className="sky-card" style={{ border: `1px solid ${bestQuality.border}` }}>
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Telescope className="w-3.5 h-3.5" style={{ color: bestQuality.color }} />
+                          <span className="section-label">Best Upcoming Pass</span>
+                          <span className="text-[9px] px-2 py-0.5 rounded-full font-semibold" style={{ background: bestQuality.bg, color: bestQuality.color }}>
+                            {bestQuality.label.toUpperCase()}
                           </span>
                         </div>
-                        <span className="text-[9px]" style={{ color: "var(--sky-muted)" }}>
-                          {(issData.current_position.distance_km / 1000).toFixed(1)}k km
-                        </span>
+                        <div className="rounded-lg p-3" style={{ background: bestQuality.bg }}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div>
+                              <div className="text-[12px] font-semibold" style={{ color: "var(--sky-text)" }}>
+                                Max Elevation {bestPass.max_elevation_deg}°
+                              </div>
+                              <div className="text-[10px] mt-0.5" style={{ color: "var(--sky-muted)" }}>
+                                {new Date(bestPass.start_time).toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" })}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-[11px] font-medium" style={{ color: bestQuality.color }}>
+                                {new Date(bestPass.start_time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                              </div>
+                              <div className="text-[9px] mt-0.5" style={{ color: "var(--sky-muted)" }}>
+                                {bestPass.duration_minutes.toFixed(0)} min duration
+                              </div>
+                            </div>
+                          </div>
+                          {/* Elevation arc visualization */}
+                          <div className="flex items-center gap-3 mt-2">
+                            <span className="text-[9px]" style={{ color: "var(--sky-muted)" }}>from {bestPass.direction}</span>
+                            <div className="flex-1">
+                              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                                <div
+                                  className="h-full rounded-full"
+                                  style={{
+                                    width: `${Math.min(bestPass.max_elevation_deg, 90)}%`,
+                                    background: `linear-gradient(90deg, transparent, ${bestQuality.color})`,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            <span className="text-[9px]" style={{ color: bestQuality.color }}>
+                              {bestPass.max_elevation_deg}°
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Upcoming passes */}
-                  {issData.passes.length > 0 ? (
-                    <div className="space-y-1.5">
-                      {issData.passes.slice(0, 5).map((pass, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center gap-2.5 rounded-lg px-3 py-2 border"
-                          style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>
-                                Max {pass.max_elevation_deg}°
-                              </span>
-                              <span className="text-[9px]" style={{ color: "var(--sky-muted)" }}>
-                                {pass.duration_minutes.toFixed(0)} min
-                              </span>
-                              <span className="text-[9px]" style={{ color: "var(--sky-muted)" }}>
-                                from {pass.direction}
-                              </span>
-                            </div>
-                            <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
-                              {new Date(pass.start_time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                              {" – "}
-                              {new Date(pass.end_time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                              {" · "}
-                              {new Date(pass.start_time).toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" })}
-                            </span>
-                          </div>
+                  {/* ── Pass Timeline ── */}
+                  <div className="sky-card">
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Calendar className="w-3.5 h-3.5" style={{ color: "var(--sky-accent)" }} />
+                        <span className="section-label">Pass Timeline</span>
+                        <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                          Chronological order
+                        </span>
+                      </div>
+
+                      {sortedPasses.length > 0 ? (
+                        <div className="space-y-2">
+                          {sortedPasses.map((pass, idx) => {
+                            const quality = getPassQuality(pass.max_elevation_deg);
+                            const passDate = new Date(pass.start_time);
+                            const isToday = passDate.toDateString() === new Date().toDateString();
+
+                            return (
+                              <div
+                                key={idx}
+                                className="flex items-center gap-3 rounded-lg px-3 py-2.5 border"
+                                style={{
+                                  background: quality.bg,
+                                  borderColor: quality.border,
+                                }}
+                              >
+                                {/* Quality indicator bar */}
+                                <div
+                                  className="w-1 rounded-full flex-shrink-0"
+                                  style={{
+                                    height: "28px",
+                                    background: quality.color,
+                                    opacity: 0.6,
+                                  }}
+                                />
+
+                                {/* Pass details */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] font-semibold" style={{ color: quality.color }}>
+                                      {pass.max_elevation_deg}°
+                                    </span>
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: quality.bg, color: quality.color }}>
+                                      {quality.label}
+                                    </span>
+                                    {isToday && (
+                                      <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(99,102,241,0.12)", color: "#818cf8" }}>
+                                        TODAY
+                                      </span>
+                                    )}
+                                    <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                                      {passDate.toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                                      {passDate.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                                      {" – "}
+                                      {new Date(pass.end_time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                                    </span>
+                                    <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                                      {pass.duration_minutes.toFixed(0)}m
+                                    </span>
+                                    <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                                      from {pass.direction}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      ))}
-                      {issData.total_passes > 5 && (
-                        <div className="text-center text-[9px] pt-1" style={{ color: "var(--sky-muted)" }}>
-                          +{issData.total_passes - 5} more passes
+                      ) : (
+                        <div className="text-center py-4 text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                          No visible passes in the next 48 hours
                         </div>
                       )}
                     </div>
-                  ) : (
-                    <div className="text-center py-4 text-[10px]" style={{ color: "var(--sky-muted)" }}>
-                      No visible passes in the next 48 hours
+                  </div>
+
+                  {/* ── ISS Info Card ── */}
+                  <div className="sky-card">
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Info className="w-3.5 h-3.5" style={{ color: "var(--sky-muted)" }} />
+                        <span className="section-label">About the ISS</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="flex items-center justify-between py-1.5">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Orbit Altitude</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>~408 km</span>
+                        </div>
+                        <div className="flex items-center justify-between py-1.5">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Orbital Speed</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>~27,600 km/h</span>
+                        </div>
+                        <div className="flex items-center justify-between py-1.5">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Orbit Period</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>~92 min</span>
+                        </div>
+                        <div className="flex items-center justify-between py-1.5">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Inclination</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>51.6°</span>
+                        </div>
+                        <div className="flex items-center justify-between py-1.5">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Crew</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>7 astronauts</span>
+                        </div>
+                        <div className="flex items-center justify-between py-1.5">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Orbits/Day</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>~16</span>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            ) : (
+                  </div>
+                </>
+              );
+            })() : (
               <div className="sky-card">
                 <div className="p-4">
                   <div className="flex items-center gap-2 mb-3">
