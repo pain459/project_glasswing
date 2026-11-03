@@ -489,6 +489,140 @@ async def get_panchang(
     )
 
 
+@app.get("/api/v1/sky/panchang/enriched")
+async def get_panchang_enriched(
+    date: str = Query("today"),
+    location_id: Optional[str] = Query(None),
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+    timezone_str: Optional[str] = Query("Asia/Kolkata"),
+):
+    """Get enriched Panchang data combining Skytoday computations with
+    Panchangam feed data.
+
+    Returns our computed Panchang plus any additional data from the
+    Panchangam service (festivals, Ekadashi names, hora, tarabalam, etc.).
+    """
+    import asyncio
+    import requests as req_lib
+
+    target_date = _resolve_date(date)
+    loc = _resolve_location(location_id, latitude, longitude, timezone_str)
+
+    # Get our computed Panchang
+    panchang_data = sky_service.get_panchang(target_date, loc)
+
+    # Get solar data for additional context
+    solar_data = sky_service.get_solar_data(target_date, loc)
+    lunar_data = sky_service.get_lunar_data(target_date, loc)
+
+    # Try to fetch Panchangam feed data
+    panchangam_data = None
+    city = _get_city_for_location(loc)
+    date_str = target_date.strftime("%Y-%m-%d")
+
+    try:
+        # Run blocking requests in a thread pool to avoid blocking the event loop
+        panchangam_data = await asyncio.to_thread(
+            _fetch_panchangam_feed_sync, city, date_str
+        )
+    except Exception as e:
+        logger.debug("Panchangam feed fetch failed: %s", e)
+
+    # Merge data
+    enriched = {
+        "skytoday": panchang_data,
+        "solar": {
+            "sunrise": solar_data.get("sunrise"),
+            "sunset": solar_data.get("sunset"),
+            "solar_noon": solar_data.get("solar_noon"),
+            "civil_twilight_begin": solar_data.get("civil_twilight_begin"),
+            "civil_twilight_end": solar_data.get("civil_twilight_end"),
+            "nautical_twilight_begin": solar_data.get("nautical_twilight_begin"),
+            "nautical_twilight_end": solar_data.get("nautical_twilight_end"),
+            "astronomical_twilight_begin": solar_data.get("astronomical_twilight_begin"),
+            "astronomical_twilight_end": solar_data.get("astronomical_twilight_end"),
+        },
+        "lunar": {
+            "moonrise": lunar_data.get("moonrise"),
+            "moonset": lunar_data.get("moonset"),
+            "phase_name": lunar_data.get("phase_name"),
+            "illumination_percent": lunar_data.get("illumination_percent"),
+        },
+        "panchangam": panchangam_data,
+        "panchangam_available": panchangam_data is not None,
+    }
+
+    return ApiResponse(
+        data=enriched,
+        metadata=_calc_metadata(target_date, loc),
+    )
+
+
+def _get_city_for_location(loc: ObserverLocation) -> str:
+    """Map an ObserverLocation to a Panchangam feed city name."""
+    city_map = {
+        "Hyderabad": "Hyderabad",
+        "Vijayawada": "Vijayawada",
+        "Visakhapatnam": "Visakhapatnam",
+        "Tirupati": "Tirupati",
+        "Bengaluru": "Bengaluru",
+        "Chennai": "Chennai",
+        "Mumbai": "Mumbai",
+        "Delhi": "Delhi",
+        "Kolkata": "Kolkata",
+        "Pune": "Pune",
+        "Ahmedabad": "Ahmedabad",
+        "Jaipur": "Jaipur",
+        "Lucknow": "Lucknow",
+        "Kochi": "Kochi",
+        "Goa": "Goa",
+    }
+    # Try exact match first
+    if loc.name in city_map:
+        return city_map[loc.name]
+    # Try partial match
+    for key, val in city_map.items():
+        if key.lower() in loc.name.lower() or loc.name.lower() in key.lower():
+            return val
+    # Default to Hyderabad for India, otherwise try latitude/longitude match
+    if 15 < loc.latitude_deg < 25 and 70 < loc.longitude_deg < 90:
+        return "Hyderabad"
+    return "Hyderabad"  # Default
+
+
+def _fetch_panchangam_feed_sync(city: str, date_str: str) -> Optional[dict]:
+    """Fetch Panchangam feed data for a city and date (synchronous).
+
+    Tries the local Panchangam container first, then the remote server.
+    Returns the day's data if found, None otherwise.
+    """
+    import requests as req_lib
+
+    feed_filename = f"{city}.json"
+    local_url = f"http://glasswing-panchangam:80/feeds/{feed_filename}"
+    remote_url = f"https://panchangam.astrochaganti.com/feeds/{feed_filename}"
+
+    for url in [local_url, remote_url]:
+        try:
+            resp = req_lib.get(url, timeout=10.0)
+            if resp.status_code == 200:
+                data = resp.json()
+                # Find the specific date
+                if data.get("days"):
+                    for day in data["days"]:
+                        if day.get("date") == date_str:
+                            return day
+                    # If date not found, return the first day as fallback
+                    if data["days"]:
+                        return data["days"][0]
+                return data
+        except Exception:
+            continue
+
+    return None
+
+
 # ─── Helper functions ───────────────────────────────────────────────────────
 
 def _resolve_location(location_id, latitude, longitude, timezone_str):

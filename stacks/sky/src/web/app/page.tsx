@@ -3331,6 +3331,23 @@ export default function Dashboard() {
                       </div>
                     </div>
 
+                    {/* Solar & Lunar Timing */}
+                    <div className="rounded-lg p-3 border mb-4" style={{ background: "rgba(59,130,246,0.06)", borderColor: "rgba(59,130,246,0.15)" }}>
+                      <div className="text-[9px] uppercase tracking-wider mb-2" style={{ color: "var(--sky-muted)" }}>Timing</div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>☀ Sunrise</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>
+                            {todayPanchang.muhurta.abhijit ? new Date(todayPanchang.muhurta.abhijit.start).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>☽ Moonrise</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>—</span>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Muhurta Windows */}
                     <div className="rounded-lg p-3 border" style={{ background: "rgba(245,158,11,0.08)", borderColor: "rgba(245,158,11,0.2)" }}>
                       <div className="text-[9px] uppercase tracking-wider mb-2" style={{ color: "var(--sky-muted)" }}>Muhurta</div>
@@ -3361,6 +3378,32 @@ export default function Dashboard() {
                 </div>
               );
             })()}
+
+            {/* ── Panchangam External Link ──────────────────────────── */}
+            <div className="sky-card">
+              <div className="p-4">
+                <a
+                  href="http://192.168.68.62:3023"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full rounded-lg px-4 py-3 text-xs font-medium border transition-opacity hover:opacity-80"
+                  style={{
+                    background: "rgba(245,158,11,0.12)",
+                    borderColor: "rgba(245,158,11,0.3)",
+                    color: "#f59e0b",
+                  }}
+                >
+                  <ScrollText className="w-3.5 h-3.5" />
+                  View Full Panchangam — Astro Chaganti
+                  <svg className="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+                <div className="text-[9px] mt-2 text-center" style={{ color: "var(--sky-muted)" }}>
+                  Opens detailed Panchangam with festivals, hora, tarabalam &amp; more
+                </div>
+              </div>
+            </div>
 
             {/* 4-Week Consolidated Table */}
             {panchangData && panchangData.length > 0 && (
