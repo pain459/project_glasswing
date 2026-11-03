@@ -473,7 +473,8 @@ def _resolve_location(location_id, latitude, longitude, timezone_str):
     if location_id:
         loc = location_service.get_location(location_id)
         if loc:
-            return ObserverLocation(**loc)
+            loc_copy = {k: v for k, v in loc.items() if k != "id"}
+            return ObserverLocation(**loc_copy)
     if latitude is not None and longitude is not None:
         return ObserverLocation(
             name="Custom",

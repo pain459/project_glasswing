@@ -18,6 +18,11 @@ import {
   Globe,
   BookOpen,
   Satellite,
+  ChevronDown,
+  Plus,
+  X,
+  Navigation,
+  Clock,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -246,6 +251,56 @@ interface ISSData {
   };
   passes: ISSPass[];
   total_passes: number;
+}
+
+// ─── Location Types ──────────────────────────────────────────────────
+
+interface LocationData {
+  id: number;
+  name: string;
+  latitude_deg: number;
+  longitude_deg: number;
+  elevation_m: number;
+  timezone: string;
+}
+
+interface NewLocationForm {
+  name: string;
+  latitude: number;
+  longitude: number;
+  elevation: number;
+  timezone: string;
+}
+
+// ─── Dark Sky Planner Types ──────────────────────────────────────────
+
+interface DarkSkyHour {
+  hour_local: number;
+  classification: string;
+  code: number;
+}
+
+// ─── Planet Detail Types ─────────────────────────────────────────────
+
+interface PlanetDetailData {
+  name: string;
+  altitude_deg: number;
+  azimuth_deg: number;
+  is_above_horizon: boolean;
+  distance_au: number;
+  magnitude: number;
+  elongation_deg?: number;
+  phase_angle_deg?: number;
+  illuminated_fraction?: number;
+  ra_hours?: number;
+  dec_deg?: number;
+  constellation?: string;
+  rise_time?: string | null;
+  set_time?: string | null;
+  culmination_time?: string | null;
+  angular_diameter_arcsec?: number;
+  is_retrograde?: boolean;
+  airmass?: number;
 }
 
 // ─── Planet Tonight Types ────────────────────────────────────────────
@@ -749,6 +804,23 @@ export default function Dashboard() {
   const [oppositionData, setOppositionData] = useState<OppositionData[] | null>(null);
   const [zodiacData, setZodiacData] = useState<ZodiacData | null>(null);
   const [moonStandstillData, setMoonStandstillData] = useState<MoonStandstillData | null>(null);
+
+  // Location management
+  const [locations, setLocations] = useState<LocationData[]>([]);
+  const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showNewLocationForm, setShowNewLocationForm] = useState(false);
+  const [newLocation, setNewLocation] = useState<NewLocationForm>({
+    name: "", latitude: 17.3850, longitude: 78.4867, elevation: 542, timezone: "Asia/Kolkata",
+  });
+
+  // Planet detail
+  const [selectedPlanet, setSelectedPlanet] = useState<string | null>(null);
+  const [planetDetail, setPlanetDetail] = useState<PlanetDetailData | null>(null);
+
+  // Dark sky planner
+  const [darkSkyHours, setDarkSkyHours] = useState<DarkSkyHour[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(getToday());
@@ -757,9 +829,11 @@ export default function Dashboard() {
     setLoading(true);
     setError(null);
     try {
-      const [dailyRes, arcRes] = await Promise.all([
-        fetch(`/api/v1/sky/daily?date=${dateStr}`),
-        fetch(`/api/v1/sky/arc?date=${dateStr}`),
+      const locParam = selectedLocationId ? `&location_id=${selectedLocationId}` : "";
+      const [dailyRes, arcRes, darkRes] = await Promise.all([
+        fetch(`/api/v1/sky/daily?date=${dateStr}${locParam}`),
+        fetch(`/api/v1/sky/arc?date=${dateStr}${locParam}`),
+        fetch(`/api/v1/sky/daily?date=${dateStr}${locParam}`),
       ]);
       if (!dailyRes.ok) throw new Error(`API ${dailyRes.status}`);
       const dailyJson = await dailyRes.json();
@@ -768,12 +842,16 @@ export default function Dashboard() {
         const arcJson = await arcRes.json();
         setArcData(arcJson.data);
       }
+      // Extract dark sky hours from daily response
+      if (dailyJson.data?.sky_events?.dark_twilight_classification) {
+        setDarkSkyHours(dailyJson.data.sky_events.dark_twilight_classification);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedLocationId]);
 
   useEffect(() => {
     fetchData(currentDate);
@@ -855,8 +933,92 @@ export default function Dashboard() {
       .then(json => { if (!cancelled) setMoonStandstillData(json.data); })
       .catch(() => {});
 
+    // Locations
+    fetch("/api/v1/locations")
+      .then(r => r.json())
+      .then(json => {
+        if (!cancelled && json.data?.locations) {
+          setLocations(json.data.locations);
+          if (json.data.locations.length > 0) {
+            setSelectedLocationId(json.data.locations[0].id);
+          }
+        }
+      })
+      .catch(() => {});
+
     return () => { cancelled = true; };
   }, [currentDate]);
+
+  // Fetch planet detail when selectedPlanet changes
+  useEffect(() => {
+    if (!selectedPlanet) {
+      setPlanetDetail(null);
+      return;
+    }
+    fetch(`/api/v1/planets/${selectedPlanet}?date=${currentDate}${selectedLocationId ? `&location_id=${selectedLocationId}` : ""}`)
+      .then(r => r.json())
+      .then(json => { setPlanetDetail(json.data); })
+      .catch(() => { setPlanetDetail(null); });
+  }, [selectedPlanet, currentDate, selectedLocationId]);
+
+  // Re-fetch ISS and planet-tonight when location changes
+  useEffect(() => {
+    if (!selectedLocationId) return;
+    fetch(`/api/v1/sky/iss?location_id=${selectedLocationId}`)
+      .then(r => r.json())
+      .then(json => { setIssData(json.data); })
+      .catch(() => {});
+    fetch(`/api/v1/sky/planets/tonight?date=${currentDate}&location_id=${selectedLocationId}`)
+      .then(r => r.json())
+      .then(json => { setPlanetTonightData(json.data); })
+      .catch(() => {});
+  }, [selectedLocationId]);
+
+  // Fetch locations when location picker opens
+  useEffect(() => {
+    if (!showLocationPicker) return;
+    fetch("/api/v1/locations")
+      .then(r => r.json())
+      .then(json => {
+        if (json.data?.locations) {
+          setLocations(json.data.locations);
+        }
+      })
+      .catch(() => {});
+  }, [showLocationPicker]);
+
+  const handleCreateLocation = async () => {
+    try {
+      const res = await fetch("/api/v1/locations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newLocation.name,
+          latitude_deg: newLocation.latitude,
+          longitude_deg: newLocation.longitude,
+          elevation_m: newLocation.elevation,
+          timezone: newLocation.timezone,
+        }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setSelectedLocationId(json.data.location.id);
+        setShowNewLocationForm(false);
+        setNewLocation({ name: "", latitude: 17.3850, longitude: 78.4867, elevation: 542, timezone: "Asia/Kolkata" });
+        // Refresh data for new location
+        fetchData(currentDate);
+      }
+    } catch (err) {
+      console.error("Failed to create location:", err);
+    }
+  };
+
+  const handleSelectLocation = (locId: number) => {
+    setSelectedLocationId(locId);
+    setShowLocationPicker(false);
+    // Refresh data for selected location
+    fetchData(currentDate);
+  };
 
   const goPrevDay = () => setCurrentDate(shiftDate(currentDate, -1));
   const goNextDay = () => setCurrentDate(shiftDate(currentDate, 1));
@@ -910,12 +1072,125 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center justify-center gap-1.5 text-[11px]" style={{ color: "var(--sky-muted)" }}>
           <MapPin className="w-3 h-3" />
-          <span>{data.location.name}</span>
+          <button
+            onClick={() => setShowLocationPicker(!showLocationPicker)}
+            className="flex items-center gap-1 underline underline-offset-2 hover:opacity-80 transition-opacity"
+            style={{ color: "var(--sky-muted)" }}
+          >
+            <span>{data.location.name}</span>
+            <ChevronDown className="w-3 h-3" />
+          </button>
           <span style={{ color: "var(--sky-footer-text)" }}>&middot;</span>
           <span className="font-mono text-[10px]">
             {data.location.latitude.toFixed(2)}&deg;N {data.location.longitude.toFixed(2)}&deg;E
           </span>
         </div>
+
+        {/* ── Location Picker Dropdown ──────────────────────────────── */}
+        {showLocationPicker && (
+          <div className="sky-card mt-2" style={{ maxWidth: "400px", margin: "0.5rem auto", position: "relative" }}>
+            <button
+              onClick={() => setShowLocationPicker(false)}
+              className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+              style={{ color: "var(--sky-muted)" }}
+              title="Close"
+            >
+              <X className="w-3 h-3" />
+            </button>
+            <div className="p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <MapPin className="w-3.5 h-3.5" style={{ color: "var(--sky-accent)" }} />
+                <span className="text-[11px] font-semibold" style={{ color: "var(--sky-text)" }}>Observing Location</span>
+              </div>
+
+              {/* Saved locations */}
+              {locations.length > 0 && (
+                <div className="space-y-1 mb-3">
+                  {locations.map(loc => (
+                    <button
+                      key={loc.id}
+                      onClick={() => handleSelectLocation(loc.id)}
+                      className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border text-left transition-all"
+                      style={{
+                        background: selectedLocationId === loc.id ? "rgba(99,102,241,0.1)" : "var(--sky-planet-bg)",
+                        borderColor: selectedLocationId === loc.id ? "rgba(99,102,241,0.3)" : "var(--sky-planet-border)",
+                      }}
+                    >
+                      <Navigation className="w-3 h-3 flex-shrink-0" style={{ color: selectedLocationId === loc.id ? "#818cf8" : "var(--sky-muted)" }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>{loc.name}</div>
+                        <div className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                          {loc.latitude_deg.toFixed(2)}&deg;N {loc.longitude_deg.toFixed(2)}&deg;E · {loc.timezone}
+                        </div>
+                      </div>
+                      {selectedLocationId === loc.id && (
+                        <span className="text-[8px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(99,102,241,0.15)", color: "#818cf8" }}>
+                          ACTIVE
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* New location form toggle */}
+              {!showNewLocationForm ? (
+                <button
+                  onClick={() => setShowNewLocationForm(true)}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed text-[10px] transition-all hover:opacity-80"
+                  style={{ borderColor: "var(--sky-muted)", color: "var(--sky-muted)" }}
+                >
+                  <Plus className="w-3 h-3" />
+                  Add New Location
+                </button>
+              ) : (
+                <div className="rounded-lg p-3 border space-y-2" style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}>
+                  <div className="text-[10px] font-medium mb-1" style={{ color: "var(--sky-text)" }}>New Location</div>
+                  <input
+                    type="text"
+                    placeholder="City name"
+                    value={newLocation.name}
+                    onChange={e => setNewLocation({ ...newLocation, name: e.target.value })}
+                    className="w-full text-[10px] px-2 py-1.5 rounded border"
+                    style={{ background: "var(--sky-date-btn-bg)", color: "var(--sky-text)", borderColor: "var(--sky-date-btn-border)" }}
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="number" step="0.0001" placeholder="Latitude" value={newLocation.latitude}
+                      onChange={e => setNewLocation({ ...newLocation, latitude: parseFloat(e.target.value) || 0 })}
+                      className="text-[10px] px-2 py-1.5 rounded border"
+                      style={{ background: "var(--sky-date-btn-bg)", color: "var(--sky-text)", borderColor: "var(--sky-date-btn-border)" }} />
+                    <input type="number" step="0.0001" placeholder="Longitude" value={newLocation.longitude}
+                      onChange={e => setNewLocation({ ...newLocation, longitude: parseFloat(e.target.value) || 0 })}
+                      className="text-[10px] px-2 py-1.5 rounded border"
+                      style={{ background: "var(--sky-date-btn-bg)", color: "var(--sky-text)", borderColor: "var(--sky-date-btn-border)" }} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="number" placeholder="Elevation (m)" value={newLocation.elevation}
+                      onChange={e => setNewLocation({ ...newLocation, elevation: parseFloat(e.target.value) || 0 })}
+                      className="text-[10px] px-2 py-1.5 rounded border"
+                      style={{ background: "var(--sky-date-btn-bg)", color: "var(--sky-text)", borderColor: "var(--sky-date-btn-border)" }} />
+                    <input type="text" placeholder="Timezone" value={newLocation.timezone}
+                      onChange={e => setNewLocation({ ...newLocation, timezone: e.target.value })}
+                      className="text-[10px] px-2 py-1.5 rounded border"
+                      style={{ background: "var(--sky-date-btn-bg)", color: "var(--sky-text)", borderColor: "var(--sky-date-btn-border)" }} />
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={handleCreateLocation}
+                      className="flex-1 text-[10px] px-2 py-1.5 rounded font-medium"
+                      style={{ background: "var(--sky-accent)", color: "#fff" }}>
+                      Save
+                    </button>
+                    <button onClick={() => setShowNewLocationForm(false)}
+                      className="flex-1 text-[10px] px-2 py-1.5 rounded border"
+                      style={{ borderColor: "var(--sky-muted)", color: "var(--sky-muted)" }}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Tab Bar ─────────────────────────────────────────────── */}
@@ -1353,6 +1628,36 @@ export default function Dashboard() {
                       </div>
                     </>
                   )}
+
+                  {/* Moon Nodes */}
+                  {data.lunar.upcoming_nodes && data.lunar.upcoming_nodes.length > 0 && (
+                    <>
+                      <div className="my-2 sky-divider" />
+                      <div className="text-[10px] font-medium mb-1.5" style={{ color: "var(--sky-muted)" }}>Moon Nodes</div>
+                      <div className="space-y-1">
+                        {data.lunar.upcoming_nodes.map((node, i) => (
+                          <div key={i} className="flex items-center justify-between py-1">
+                            <div className="flex items-center gap-1.5">
+                              <span style={{
+                                color: node.type.toLowerCase() === "ascending" ? "#34d399" : "#60a5fa",
+                              }}>
+                                {node.type.toLowerCase() === "ascending" ? "▲" : "▼"}
+                              </span>
+                              <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                                {node.type.charAt(0).toUpperCase() + node.type.slice(1)} Node
+                              </span>
+                            </div>
+                            <span className="text-[10px]" style={{ color: "var(--sky-footer-text)" }}>
+                              {formatTime(node.datetime_utc)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[9px] mt-1.5" style={{ color: "var(--sky-footer-text)" }}>
+                        Node crossings are prerequisites for eclipses
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -1445,9 +1750,28 @@ export default function Dashboard() {
                 <div className="p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Eye className="w-3.5 h-3.5" style={{ color: "#818cf8" }} />
-                    <span className="section-label">Dark Sky Windows</span>
+                    <span className="section-label">Dark Sky Planner</span>
                     <span className="text-[10px] ml-auto" style={{ color: "var(--sky-muted)" }}>Local time · Best observing hours</span>
                   </div>
+
+                  {/* Summary stats */}
+                  {(() => {
+                    const twData = data.sky_events.dark_twilight_classification;
+                    const nightBlocks = twData.filter(t => t.code <= 1).length;
+                    const twilightBlocks = twData.filter(t => t.code >= 2 && t.code <= 3).length;
+                    return (
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="rounded-lg p-2.5 text-center" style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.2)" }}>
+                          <div className="text-lg font-bold" style={{ color: "#818cf8" }}>{nightBlocks * 3}h</div>
+                          <div className="text-[9px]" style={{ color: "var(--sky-muted)" }}>Dark / Night</div>
+                        </div>
+                        <div className="rounded-lg p-2.5 text-center" style={{ background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)" }}>
+                          <div className="text-lg font-bold" style={{ color: "#f59e0b" }}>{twilightBlocks * 3}h</div>
+                          <div className="text-[9px]" style={{ color: "var(--sky-muted)" }}>Twilight</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="grid grid-cols-12 gap-1">
                     {data.sky_events.dark_twilight_classification.map((tw, i) => {
@@ -1548,10 +1872,19 @@ export default function Dashboard() {
                       return (
                         <div
                           key={planet.name}
-                          className="rounded-lg p-3 border"
+                          className="rounded-lg p-3 border cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => {
+                            if (selectedPlanet === planet.name) {
+                              setSelectedPlanet(null);
+                            } else {
+                              setSelectedPlanet(planet.name);
+                            }
+                          }}
                           style={{
                             background: planet.is_above_horizon ? "var(--sky-visible-bg)" : "var(--sky-planet-bg)",
-                            borderColor: planet.is_above_horizon ? "var(--sky-visible-border)" : "var(--sky-planet-border)",
+                            borderColor: selectedPlanet === planet.name
+                              ? "rgba(99,102,241,0.5)"
+                              : planet.is_above_horizon ? "var(--sky-visible-border)" : "var(--sky-planet-border)",
                           }}
                         >
                           {/* Header: symbol, name, badges, horizon status */}
@@ -1571,6 +1904,9 @@ export default function Dashboard() {
                             </div>
                             <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
                               {planet.is_above_horizon ? "Above horizon" : "Below horizon"}
+                            </span>
+                            <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                              {selectedPlanet === planet.name ? "▾ click to collapse" : "▸ click for detail"}
                             </span>
                           </div>
 
@@ -1716,6 +2052,134 @@ export default function Dashboard() {
                 )}
               </div>
             </div>
+
+            {/* ── Planet Deep-Dive Panel ── */}
+            {selectedPlanet && planetDetail && (
+              <div className="sky-card" style={{ border: "1px solid rgba(99,102,241,0.4)" }}>
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Telescope className="w-3.5 h-3.5" style={{ color: "#818cf8" }} />
+                    <span className="section-label">{planetDetail.name} — Deep Dive</span>
+                    <span className={planetDetail.is_above_horizon ? "status-dot-on" : "status-dot-off"} />
+                    <button
+                      onClick={() => setSelectedPlanet(null)}
+                      className="ml-auto w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+                      style={{ color: "var(--sky-muted)" }}
+                      title="Close detail"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Position */}
+                    <div className="rounded-lg p-3" style={{ background: "var(--sky-planet-bg)", border: "1px solid var(--sky-planet-border)" }}>
+                      <div className="text-[9px] font-semibold mb-2" style={{ color: "var(--sky-accent)" }}>POSITION</div>
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Altitude</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>
+                            {planetDetail.altitude_deg != null ? `${planetDetail.altitude_deg.toFixed(1)}°` : "—"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Azimuth</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>
+                            {planetDetail.azimuth_deg != null ? `${planetDetail.azimuth_deg.toFixed(0)}°` : "—"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>RA</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>
+                            {planetDetail.ra_hours != null ? `${planetDetail.ra_hours.toFixed(2)}h` : "—"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Dec</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>
+                            {planetDetail.dec_deg != null ? `${planetDetail.dec_deg >= 0 ? "+" : ""}${planetDetail.dec_deg.toFixed(2)}°` : "—"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Airmass</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>
+                            {planetDetail.airmass != null ? `${planetDetail.airmass.toFixed(2)}` : "—"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Physical */}
+                    <div className="rounded-lg p-3" style={{ background: "var(--sky-planet-bg)", border: "1px solid var(--sky-planet-border)" }}>
+                      <div className="text-[9px] font-semibold mb-2" style={{ color: "var(--sky-accent)" }}>PHYSICAL</div>
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Distance</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>
+                            {planetDetail.distance_au != null ? `${planetDetail.distance_au.toFixed(4)} AU` : "—"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Magnitude</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>
+                            {planetDetail.magnitude != null ? `${planetDetail.magnitude.toFixed(1)}` : "—"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Angular Size</span>
+                          <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>
+                            {planetDetail.angular_diameter_arcsec != null ? `${planetDetail.angular_diameter_arcsec.toFixed(1)}″` : "—"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Motion</span>
+                          <span className="text-[10px] font-medium" style={{
+                            color: planetDetail.is_retrograde ? "#f87171" : "#34d399",
+                          }}>
+                            {planetDetail.is_retrograde ? "↺ Retrograde" : "→ Direct"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>Visibility</span>
+                          <span className="text-[10px] font-medium" style={{
+                            color: planetDetail.is_above_horizon ? "#34d399" : "var(--sky-muted)",
+                          }}>
+                            {planetDetail.is_above_horizon ? "Above horizon" : "Below horizon"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Elongation & phase info if available */}
+                  {(planetDetail.elongation_deg != null || planetDetail.phase_angle_deg != null || planetDetail.illuminated_fraction != null) && (
+                    <div className="mt-3 rounded-lg p-3" style={{ background: "var(--sky-planet-bg)", border: "1px solid var(--sky-planet-border)" }}>
+                      <div className="text-[9px] font-semibold mb-2" style={{ color: "var(--sky-accent)" }}>GEOMETRY</div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {planetDetail.elongation_deg != null && (
+                          <div className="text-center">
+                            <div className="text-[9px]" style={{ color: "var(--sky-muted)" }}>Elongation</div>
+                            <div className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>{planetDetail.elongation_deg.toFixed(1)}°</div>
+                          </div>
+                        )}
+                        {planetDetail.phase_angle_deg != null && (
+                          <div className="text-center">
+                            <div className="text-[9px]" style={{ color: "var(--sky-muted)" }}>Phase Angle</div>
+                            <div className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>{planetDetail.phase_angle_deg.toFixed(1)}°</div>
+                          </div>
+                        )}
+                        {planetDetail.illuminated_fraction != null && (
+                          <div className="text-center">
+                            <div className="text-[9px]" style={{ color: "var(--sky-muted)" }}>Illuminated</div>
+                            <div className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>{(planetDetail.illuminated_fraction * 100).toFixed(1)}%</div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
