@@ -306,7 +306,7 @@ When a project epic or milestone is fully complete, archive its notebook with `u
 ---
 
 ## 9. Data Handling: What Must Never Be Stored
-These rules apply to **every** Open Notebook note and source **and every Serena memory**. Before writing, strip or mask the following. If in doubt, leave it out and contact the platform operator's security team.
+These rules apply to **every** Open Notebook note and source **and every Serena memory**. Before writing, strip or mask the following. If in doubt, leave it out.
 
 **Always blocked, everywhere:**
 - Passwords, API keys, tokens, encryption keys, credentialed connection strings, or any other secret.
