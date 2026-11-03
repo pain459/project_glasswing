@@ -192,28 +192,32 @@ class EventsService:
         {"name": "Ophiuchus", "ra_min": 16.0, "ra_max": 18.5, "dec_min": -20, "dec_max": 10},
     ]
 
+    def _get_constellation_for_radec(self, ra_hours: float, dec_deg: float) -> str:
+        """Look up the constellation for a given RA/Dec position."""
+        for c in self.CONSTELLATIONS:
+            if c["ra_min"] < c["ra_max"]:
+                if c["ra_min"] <= ra_hours < c["ra_max"]:
+                    if c["dec_min"] <= dec_deg <= c["dec_max"]:
+                        return c["name"]
+            else:
+                if ra_hours >= c["ra_min"] or ra_hours < c["ra_max"]:
+                    if c["dec_min"] <= dec_deg <= c["dec_max"]:
+                        return c["name"]
+        return "Unknown"
+
     def get_moon_constellation(self, ts, dt: datetime) -> str:
         """Get the constellation the Moon is in at a given time."""
         t = ts.from_datetime(dt)
         geo = self.earth.at(t).observe(self.moon)
         ra, dec, _ = geo.radec()
+        return self._get_constellation_for_radec(ra.hours, dec.degrees)
 
-        ra_h = ra.hours
-        dec_d = dec.degrees
-
-        for c in self.CONSTELLATIONS:
-            # Handle RA wrap-around for constellations that cross 0h
-            if c["ra_min"] < c["ra_max"]:
-                if c["ra_min"] <= ra_h < c["ra_max"]:
-                    if c["dec_min"] <= dec_d <= c["dec_max"]:
-                        return c["name"]
-            else:
-                # Wraps around 0h (e.g., Aquarius 23.8 to 2.5)
-                if ra_h >= c["ra_min"] or ra_h < c["ra_max"]:
-                    if c["dec_min"] <= dec_d <= c["dec_max"]:
-                        return c["name"]
-
-        return "Unknown"
+    def get_sun_constellation(self, ts, dt: datetime) -> str:
+        """Get the constellation the Sun is in at a given time."""
+        t = ts.from_datetime(dt)
+        geo = self.earth.at(t).observe(self.sun)
+        ra, dec, _ = geo.radec()
+        return self._get_constellation_for_radec(ra.hours, dec.degrees)
 
     def get_moon_distance_info(self, ts, dt: datetime) -> dict:
         """Get moon distance and context (supermoon, micromoon)."""
@@ -468,6 +472,7 @@ class EventsService:
         solar_decl = self.get_solar_declination(ts, ref_dt)
         moon_const = self.get_moon_constellation(ts, ref_dt)
         moon_dist = self.get_moon_distance_info(ts, ref_dt)
+        sun_const = self.get_sun_constellation(ts, ref_dt)
 
         return {
             "milky_way": milky_way,
@@ -475,6 +480,7 @@ class EventsService:
             "active_shower_count": len(showers),
             "facts": facts,
             "solar_declination": solar_decl,
+            "sun_constellation": sun_const,
             "moon_constellation": moon_const,
             "moon_distance": moon_dist,
         }

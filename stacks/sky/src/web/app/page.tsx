@@ -32,16 +32,28 @@ interface SolarData {
   astronomical_twilight_evening_start: string | null;
   polar_day: boolean;
   polar_night: boolean;
+  golden_hour?: {
+    morning: { start: string; end: string };
+    evening: { start: string; end: string };
+  };
+  blue_hour?: {
+    morning: { start: string; end: string };
+    evening: { start: string; end: string };
+  };
   current_position?: {
     altitude_deg: number;
     azimuth_deg: number;
+    distance_au: number;
     is_above_horizon: boolean;
   };
 }
 
 interface PlanetData {
   name: string;
+  ra_hours?: number;
+  dec_deg?: number;
   altitude_deg: number;
+  azimuth_deg?: number;
   is_above_horizon: boolean;
   distance_au?: number;
 }
@@ -81,6 +93,7 @@ interface SkyEvents {
     season: string;
     day_of_year: number;
   };
+  sun_constellation?: string;
   moon_constellation?: string;
   moon_distance?: {
     distance_km: number;
@@ -96,8 +109,11 @@ interface LunarData {
   phase_fraction: number;
   illuminated_fraction: number;
   illumination_percent: number;
+  phase_angle_deg?: number;
   current_position?: {
     altitude_deg: number;
+    azimuth_deg?: number;
+    distance_km?: number;
     is_above_horizon: boolean;
   };
   upcoming_phases?: Array<{
@@ -433,6 +449,37 @@ export default function Dashboard() {
               </span>
             </div>
 
+            {data.solar.golden_hour && (
+              <>
+                <div className="my-2 sky-divider" />
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Golden Hour</span>
+                  <span className="row-value">
+                    {formatTime(data.solar.golden_hour.morning.start)} &mdash; {formatTime(data.solar.golden_hour.morning.end)}
+                    <span className="text-[9px] ml-1" style={{ color: "var(--sky-footer-text)" }}>AM</span>
+                    &nbsp;·&nbsp;
+                    {formatTime(data.solar.golden_hour.evening.start)} &mdash; {formatTime(data.solar.golden_hour.evening.end)}
+                    <span className="text-[9px] ml-1" style={{ color: "var(--sky-footer-text)" }}>PM</span>
+                  </span>
+                </div>
+              </>
+            )}
+
+            {data.solar.blue_hour && (
+              <>
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Blue Hour</span>
+                  <span className="row-value">
+                    {formatTime(data.solar.blue_hour.morning.start)} &mdash; {formatTime(data.solar.blue_hour.morning.end)}
+                    <span className="text-[9px] ml-1" style={{ color: "var(--sky-footer-text)" }}>AM</span>
+                    &nbsp;·&nbsp;
+                    {formatTime(data.solar.blue_hour.evening.start)} &mdash; {formatTime(data.solar.blue_hour.evening.end)}
+                    <span className="text-[9px] ml-1" style={{ color: "var(--sky-footer-text)" }}>PM</span>
+                  </span>
+                </div>
+              </>
+            )}
+
             {data.solar.current_position && (
               <>
                 <div className="my-2 sky-divider" />
@@ -440,6 +487,18 @@ export default function Dashboard() {
                   <span className="row-label">Altitude</span>
                   <span className="row-value">
                     {data.solar.current_position.altitude_deg.toFixed(1)}&deg;
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Azimuth</span>
+                  <span className="row-value">
+                    {data.solar.current_position.azimuth_deg.toFixed(1)}&deg;
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Distance</span>
+                  <span className="row-value">
+                    {(data.solar.current_position.distance_au * 149_597_870.7 / 1_000_000).toFixed(2)}M km
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-1.5">
@@ -468,12 +527,34 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Right Ascension</span>
+                  <span className="row-value">
+                    {data.sky_events.solar_declination.right_ascension_hours.toFixed(2)}h
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Eq. of Time</span>
+                  <span className="row-value">
+                    {data.sky_events.solar_declination.equation_of_time_minutes >= 0 ? "+" : ""}{data.sky_events.solar_declination.equation_of_time_minutes.toFixed(1)} min
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-1.5">
                   <span className="row-label">Season</span>
                   <span className="row-value capitalize">{data.sky_events.solar_declination.season}</span>
                 </div>
                 <div className="flex items-center justify-between py-1.5">
                   <span className="row-label">Day of Year</span>
                   <span className="row-value">{data.sky_events.solar_declination.day_of_year}</span>
+                </div>
+              </>
+            )}
+
+            {data.sky_events?.sun_constellation && (
+              <>
+                <div className="my-2 sky-divider" />
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Sun Constellation</span>
+                  <span className="row-value">{data.sky_events.sun_constellation}</span>
                 </div>
               </>
             )}
@@ -503,6 +584,11 @@ export default function Dashboard() {
                 </p>
                 <p className="text-[10px] mt-0.5" style={{ color: "var(--sky-muted)" }}>
                   {data.lunar.illumination_percent.toFixed(0)}% illuminated
+                  {data.lunar.phase_angle_deg != null && (
+                    <span className="ml-1" style={{ color: "var(--sky-footer-text)" }}>
+                      · {data.lunar.phase_angle_deg.toFixed(1)}° phase
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
@@ -525,6 +611,22 @@ export default function Dashboard() {
                   <span className="row-label">Altitude</span>
                   <span className="row-value">
                     {data.lunar.current_position.altitude_deg.toFixed(1)}&deg;
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Azimuth</span>
+                  <span className="row-value">
+                    {data.lunar.current_position.azimuth_deg != null
+                      ? `${data.lunar.current_position.azimuth_deg.toFixed(1)}°`
+                      : "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Distance</span>
+                  <span className="row-value">
+                    {data.lunar.current_position.distance_km != null
+                      ? `${(data.lunar.current_position.distance_km / 1000).toFixed(0)}k km`
+                      : "—"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-1.5">
@@ -555,6 +657,12 @@ export default function Dashboard() {
 
             {data.sky_events?.moon_distance && (
               <>
+                <div className="flex items-center justify-between py-1.5">
+                  <span className="row-label">Angular Size</span>
+                  <span className="row-value">
+                    {data.sky_events.moon_distance.angular_diameter_arcmin.toFixed(1)}′
+                  </span>
+                </div>
                 <div className="flex items-center justify-between py-1.5">
                   <span className="row-label">Distance</span>
                   <span className="row-value">
@@ -655,14 +763,62 @@ export default function Dashboard() {
                 <p className="text-[10px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>
                   {planet.altitude_deg.toFixed(0)}&deg;
                 </p>
+                {planet.distance_au != null && (
+                  <p className="text-[9px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>
+                    {planet.distance_au.toFixed(2)} AU
+                  </p>
+                )}
                 <div className="mt-1">
                   <span className={planet.is_above_horizon ? "status-dot-on" : "status-dot-off"} />
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Planet detail rows */}
+          <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--sky-divider)" }}>
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+              {data.planets.map((planet) => (
+                <div key={`detail-${planet.name}`} className="text-center">
+                  <p className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                    {planet.ra_hours != null ? `${planet.ra_hours.toFixed(1)}h` : "—"}
+                  </p>
+                  <p className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                    {planet.dec_deg != null ? `${planet.dec_deg >= 0 ? "+" : ""}${planet.dec_deg.toFixed(1)}°` : "—"}
+                  </p>
+                  <p className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                    {planet.azimuth_deg != null ? `${planet.azimuth_deg.toFixed(0)}°` : "—"}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="text-[8px] mt-1 text-center uppercase tracking-wider" style={{ color: "var(--sky-footer-text)" }}>
+              RA · Dec · Az
+            </p>
+          </div>
         </div>
       </div>
+
+      {/* ── Astronomical Darkness ─────────────────────────────────── */}
+      {data.solar.astronomical_twilight_evening_start && data.solar.astronomical_twilight_morning_end && (
+        <div className="sky-card">
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <EyeOff className="w-3.5 h-3.5" style={{ color: "#6366f1" }} />
+              <span className="section-label">Astronomical Darkness</span>
+            </div>
+            <div className="flex items-center justify-between py-1.5">
+              <span className="row-label">Dark Sky Window</span>
+              <span className="row-value">
+                {formatTime(data.solar.astronomical_twilight_evening_start)} &mdash; {formatTime(data.solar.astronomical_twilight_morning_end)}
+              </span>
+            </div>
+            <p className="text-[10px] mt-1" style={{ color: "var(--sky-footer-text)" }}>
+              Period when the sky is fully dark (Sun &gt;18° below horizon)
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Milky Way Events ────────────────────────────────────── */}
       {data.sky_events?.milky_way && (
