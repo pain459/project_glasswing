@@ -178,8 +178,9 @@ def compute_observing_conditions(raw: dict) -> dict:
     # ── Dew risk ──
     dew_risk = _compute_dew_risk(humidity, temperature, dew_point)
 
-    # ── Seeing estimate (based on wind & pressure stability proxy) ──
-    seeing = _estimate_seeing(wind_speed, wind_gusts, pressure)
+    # ── Seeing estimate (based on wind, pressure, and sky clarity) ──
+    seeing = _estimate_seeing(wind_speed, wind_gusts, pressure,
+                              transparency, weather_code)
 
     # ── Recommendations ──
     recommendations = _generate_recommendations(rating, transparency,
@@ -329,10 +330,24 @@ def _compute_dew_risk(humidity: float, temperature: float,
 
 
 def _estimate_seeing(wind_speed: float, wind_gusts: float,
-                     pressure: float) -> str:
-    """Rough seeing estimate based on wind and pressure."""
+                     pressure: float, transparency: int,
+                     weather_code: int) -> str:
+    """Rough seeing estimate based on wind, pressure, and sky clarity.
+
+    Seeing is only meaningful when the sky is actually observable.
+    Heavy cloud cover, precipitation, and adverse weather codes all
+    degrade effective seeing regardless of wind conditions.
+    """
     if wind_speed < 0:
         return "unknown"
+
+    # If the sky is not observable, seeing is moot
+    if weather_code in BAD_OBSERVING_CODES:
+        return "poor"
+    if transparency < 30:
+        return "poor"
+    if transparency < 55:
+        return "fair"
 
     # High wind = poor seeing (atmospheric turbulence)
     if wind_gusts > 50:
