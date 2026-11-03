@@ -681,6 +681,168 @@ class EventsService:
 
         return events
 
+    # ─── Planetary Conjunctions ────────────────────────────────────────
+
+    def get_planetary_conjunctions(
+        self, ts, from_date: datetime, days: int = 30, max_separation_deg: float = 5.0
+    ) -> list:
+        """Find planetary conjunctions (two planets within max_separation_deg) over N days.
+
+        Returns list of {date, planet_a, planet_b, separation_deg}.
+        """
+        from core.planetary import PLANET_EPHEMERIS_KEY, PLANET_DISPLAY
+
+        conjunctions = []
+        day = from_date.replace(hour=12, minute=0, second=0, microsecond=0)
+        end = day + timedelta(days=days)
+
+        # Pairs of planets to check
+        planet_keys = ["mercury", "venus", "mars", "jupiter", "saturn"]
+        pairs = []
+        for i in range(len(planet_keys)):
+            for j in range(i + 1, len(planet_keys)):
+                pairs.append((planet_keys[i], planet_keys[j]))
+
+        # Track which pairs already had a conjunction to avoid daily duplicates
+        active_conjunctions: dict[tuple, str] = {}
+
+        while day <= end:
+            t = ts.from_datetime(day)
+            earth = self.eph["earth"]
+
+            for pk_a, pk_b in pairs:
+                try:
+                    eph_a = PLANET_EPHEMERIS_KEY.get(pk_a, pk_a)
+                    eph_b = PLANET_EPHEMERIS_KEY.get(pk_b, pk_b)
+                    vec_a = earth.at(t).observe(self.eph[eph_a])
+                    vec_b = earth.at(t).observe(self.eph[eph_b])
+                    sep = vec_a.separation_from(vec_b).degrees
+
+                    if sep <= max_separation_deg:
+                        pair_key = (pk_a, pk_b)
+                        display_a = PLANET_DISPLAY.get(pk_a, pk_a.title())
+                        display_b = PLANET_DISPLAY.get(pk_b, pk_b.title())
+                        date_str = day.strftime("%Y-%m-%d")
+
+                        if pair_key in active_conjunctions:
+                            # Update the end date of existing conjunction
+                            for conj in conjunctions:
+                                if conj["planet_a"] == display_a and conj["planet_b"] == display_b:
+                                    conj["end"] = date_str
+                                    break
+                        else:
+                            active_conjunctions[pair_key] = date_str
+                            conjunctions.append({
+                                "date": date_str,
+                                "planet_a": display_a,
+                                "planet_b": display_b,
+                                "separation_deg": round(sep, 1),
+                                "end": date_str,
+                            })
+                    else:
+                        active_conjunctions.pop((pk_a, pk_b), None)
+                except Exception:
+                    pass
+
+            day += timedelta(days=1)
+
+        return conjunctions
+
+    # ─── Eclipse Predictions ───────────────────────────────────────────
+
+    def get_upcoming_eclipses(
+        self, ts, from_date: datetime, days: int = 180
+    ) -> list:
+        """Find upcoming solar and lunar eclipses over N days.
+
+        Skyfield 1.55 lacks a dedicated eclipse function, so we detect
+        eclipses by finding full/new moons that occur within ~18° of a
+        lunar node (the eclipse limit).
+        """
+        try:
+            from skyfield.almanac import moon_phases, find_discrete, MOON_PHASES
+            from skyfield import almanac
+
+            t_from = ts.from_datetime(from_date)
+            t_to = ts.from_datetime(from_date + timedelta(days=days))
+
+            # Find all moon phases in the window
+            phase_func = moon_phases(self.eph)
+            phase_func.step_days = 0.25
+            times_arr, values_arr = find_discrete(t_from, t_to, phase_func)
+
+            # Pre-compute lunar nodes for the extended window
+            node_func = almanac.moon_nodes(self.eph)
+            node_from = ts.from_datetime(from_date - timedelta(days=10))
+            node_to = ts.from_datetime(from_date + timedelta(days=days + 10))
+            try:
+                node_times, node_kinds = find_discrete(node_from, node_to, node_func)
+            except Exception:
+                return []
+
+            results = []
+            eclipse_limit = 18.0
+            earth = self.eph["earth"]
+
+            for i in range(len(times_arr)):
+                t = times_arr[i]
+                v = int(values_arr[i])
+                dt_utc = t.utc_datetime()
+
+                # 0 = New Moon (solar eclipse candidate), 2 = Full Moon (lunar eclipse candidate)
+                if v not in (0, 2):
+                    continue
+
+                moon_vec = earth.at(t).observe(self.moon)
+
+                # Find minimum angular distance to any lunar node within ±14 days
+                min_node_distance = 999.0
+                for j in range(len(node_times)):
+                    nt = node_times[j]
+                    if abs((t.tt - nt.tt)) > 14:
+                        continue
+                    moon_at_node = earth.at(nt).observe(self.moon)
+                    node_sep = moon_vec.separation_from(moon_at_node).degrees
+                    if node_sep < min_node_distance:
+                        min_node_distance = node_sep
+
+                if min_node_distance > eclipse_limit:
+                    continue
+
+                if v == 0:
+                    if min_node_distance < 1.5:
+                        title = "Total Solar Eclipse"
+                    elif min_node_distance < 3.5:
+                        title = "Annular Solar Eclipse"
+                    else:
+                        title = "Partial Solar Eclipse"
+                    results.append({
+                        "date": dt_utc.strftime("%Y-%m-%d"),
+                        "type": "solar_eclipse",
+                        "title": title,
+                        "description": f"At {dt_utc.strftime('%H:%M')} UTC",
+                        "icon": "🌞",
+                    })
+                elif v == 2:
+                    if min_node_distance < 2.5:
+                        title = "Total Lunar Eclipse"
+                    elif min_node_distance < 5.0:
+                        title = "Partial Lunar Eclipse"
+                    else:
+                        title = "Penumbral Lunar Eclipse"
+                    results.append({
+                        "date": dt_utc.strftime("%Y-%m-%d"),
+                        "type": "lunar_eclipse",
+                        "title": title,
+                        "description": f"At {dt_utc.strftime('%H:%M')} UTC",
+                        "icon": "🌙",
+                    })
+
+            return results
+        except Exception as e:
+            logger.debug("Eclipse lookup failed: %s", e)
+            return []
+
     def _moon_phase_emoji(self, phase_val: int) -> str:
         # Skyfield MOON_PHASES: 0=New, 1=First Quarter, 2=Full, 3=Last Quarter
         # Using intuitive emojis: crescent for quarter phases, not half-moon

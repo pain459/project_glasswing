@@ -365,6 +365,28 @@ async def get_sky_story(
     )
 
 
+@app.get("/api/v1/sky/conjunctions")
+async def get_planetary_conjunctions(
+    days: int = Query(30, ge=1, le=365),
+):
+    """Get upcoming planetary conjunctions."""
+    conjunctions = sky_service.get_planetary_conjunctions(days=days)
+    return ApiResponse(
+        data=conjunctions,
+    )
+
+
+@app.get("/api/v1/sky/eclipses")
+async def get_upcoming_eclipses(
+    days: int = Query(180, ge=1, le=730),
+):
+    """Get upcoming solar and lunar eclipses."""
+    eclipses = sky_service.get_upcoming_eclipses(days=days)
+    return ApiResponse(
+        data=eclipses,
+    )
+
+
 # ─── Helper functions ───────────────────────────────────────────────────────
 
 def _resolve_location(location_id, latitude, longitude, timezone_str):

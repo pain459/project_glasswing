@@ -143,6 +143,39 @@ class PlanetaryService:
             2 * math.atan(radius_km / distance_km)
         ) * 3600
 
+        # Apparent magnitude (V-band) via H + 5*log10(d*r)
+        sun = self.eph["sun"]
+        # Approximate absolute magnitudes (V-band) for inner + outer planets
+        _H = {
+            "mercury": -0.42, "venus": -4.40,
+            "mars barycenter": -1.52, "jupiter barycenter": -9.40,
+            "saturn barycenter": -8.88, "uranus barycenter": -7.19,
+            "neptune barycenter": -6.87,
+        }
+        try:
+            eph_key = PLANET_EPHEMERIS_KEY.get(planet_name_lower, planet_name_lower)
+            planet_body = self.eph[eph_key]
+            d = geo_pos.distance().au  # Earth-planet distance
+            r = planet_body.at(t).observe(sun).distance().au  # Sun-planet distance
+            H_val = _H.get(eph_key)
+            if H_val is not None:
+                mag = H_val + 5 * math.log10(d * r)
+            else:
+                mag = None
+        except Exception:
+            mag = None
+
+        # Retrograde check: compare RA now vs 2 days ago
+        is_retrograde = False
+        try:
+            t_past = ts.from_datetime(dt - timedelta(days=2))
+            geo_past = earth.at(t_past).observe(planet)
+            ra_past, _, _ = geo_past.radec()
+            # If RA decreased, planet is retrograde
+            is_retrograde = bool(ra.hours < ra_past.hours)
+        except Exception:
+            pass
+
         return {
             "name": PLANET_DISPLAY.get(planet_name_lower, planet_name),
             "ra_hours": round(ra.hours, 4),
@@ -152,6 +185,8 @@ class PlanetaryService:
             "distance_au": round(distance.au, 4),
             "is_above_horizon": bool(alt.degrees > 0),
             "angular_diameter_arcsec": round(angular_diam_arcsec, 2),
+            "magnitude": round(mag, 2) if mag is not None else None,
+            "is_retrograde": is_retrograde,
         }
 
     def get_planet_rise_set(

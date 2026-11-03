@@ -63,6 +63,8 @@ interface PlanetData {
   distance_au?: number;
   angular_diameter_arcsec?: number;
   constellation?: string;
+  magnitude?: number | null;
+  is_retrograde?: boolean;
   rise?: string | null;
   set?: string | null;
   culmination?: string | null;
@@ -131,6 +133,7 @@ interface LunarData {
   illuminated_fraction: number;
   illumination_percent: number;
   phase_angle_deg?: number;
+  elongation_deg?: number;
   current_position?: {
     altitude_deg: number;
     azimuth_deg?: number;
@@ -179,6 +182,22 @@ interface UpcomingEvent {
 
 interface UpcomingEventsData {
   events: UpcomingEvent[];
+}
+
+interface ConjunctionData {
+  date: string;
+  planet_a: string;
+  planet_b: string;
+  separation_deg: number;
+  end: string;
+}
+
+interface EclipseData {
+  date: string;
+  type: string;
+  title: string;
+  description: string;
+  icon: string;
 }
 
 interface ISSPass {
@@ -629,6 +648,8 @@ export default function Dashboard() {
   const [planetTonightData, setPlanetTonightData] = useState<PlanetTonightData | null>(null);
   const [seasonCalendarData, setSeasonCalendarData] = useState<SeasonCalendarData | null>(null);
   const [skyStoryData, setSkyStoryData] = useState<SkyStoryData | null>(null);
+  const [conjunctionData, setConjunctionData] = useState<ConjunctionData[] | null>(null);
+  const [eclipseData, setEclipseData] = useState<EclipseData[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(getToday());
@@ -691,6 +712,18 @@ export default function Dashboard() {
     fetch(`/api/v1/sky/story?date=${currentDate}`)
       .then(r => r.json())
       .then(json => { if (!cancelled) setSkyStoryData(json.data); })
+      .catch(() => {});
+
+    // Planetary conjunctions
+    fetch("/api/v1/sky/conjunctions?days=30")
+      .then(r => r.json())
+      .then(json => { if (!cancelled) setConjunctionData(json.data); })
+      .catch(() => {});
+
+    // Upcoming eclipses
+    fetch("/api/v1/sky/eclipses?days=180")
+      .then(r => r.json())
+      .then(json => { if (!cancelled) setEclipseData(json.data); })
       .catch(() => {});
 
     return () => { cancelled = true; };
@@ -980,6 +1013,13 @@ export default function Dashboard() {
                     </div>
                   )}
 
+                  {data.lunar.elongation_deg != null && (
+                    <div className="flex items-center justify-between py-1.5">
+                      <span className="row-label">Sun Elongation</span>
+                      <span className="row-value">{data.lunar.elongation_deg.toFixed(1)}°</span>
+                    </div>
+                  )}
+
                   {data.lunar.current_position && (
                     <>
                       <div className="my-2 sky-divider" />
@@ -1132,6 +1172,85 @@ export default function Dashboard() {
               </div>
             )}
 
+            {/* Dark Sky Windows */}
+            {data.sky_events?.dark_twilight_classification && (
+              <div className="sky-card">
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Eye className="w-3.5 h-3.5" style={{ color: "#818cf8" }} />
+                    <span className="section-label">Dark Sky Windows</span>
+                    <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>Best observing hours</span>
+                  </div>
+
+                  <div className="grid grid-cols-12 gap-1">
+                    {data.sky_events.dark_twilight_classification.map((tw, i) => {
+                      const code = tw.code;
+                      const labels = ["Night", "Astronomical", "Nautical", "Civil", "Day"];
+                      const colors = ["#312e81", "#4338ca", "#6366f1", "#f59e0b", "#fbbf24"];
+                      const bgColors = ["rgba(49,46,129,0.4)", "rgba(67,56,202,0.3)", "rgba(99,102,241,0.2)", "rgba(245,158,11,0.15)", "rgba(251,191,36,0.1)"];
+                      const isNight = code <= 1;
+                      return (
+                        <div
+                          key={i}
+                          className="rounded text-center py-2 border"
+                          style={{
+                            background: bgColors[code] || "transparent",
+                            borderColor: isNight ? "rgba(99,102,241,0.3)" : "transparent",
+                          }}
+                        >
+                          <span className="text-[9px]" style={{ color: colors[code] || "var(--sky-muted)" }}>
+                            {String(tw.hour_utc).padStart(2, "0")}:00
+                          </span>
+                          <div className="mt-1">
+                            <span
+                              className="text-[8px] px-1 py-0.5 rounded-full"
+                              style={{
+                                background: isNight ? "rgba(52,211,153,0.2)" : "transparent",
+                                color: isNight ? "#34d399" : colors[code] || "var(--sky-muted)",
+                                fontWeight: isNight ? 600 : 400,
+                              }}
+                            >
+                              {labels[code] || "Unknown"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <p className="text-[9px] mt-2" style={{ color: "var(--sky-footer-text)" }}>
+                    Green = best for deep sky · Yellow = daylight · Blue = twilight
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Daily Astronomy Facts */}
+            {data.sky_events?.facts && data.sky_events.facts.length > 0 && (
+              <div className="sky-card">
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-3.5 h-3.5" style={{ color: "#fbbf24" }} />
+                    <span className="section-label">Did You Know?</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {data.sky_events.facts.map((fact, i) => (
+                      <div
+                        key={i}
+                        className="rounded-lg p-2.5 border"
+                        style={{ background: "rgba(251,191,36,0.05)", borderColor: "rgba(251,191,36,0.15)" }}
+                      >
+                        <p className="text-[11px] leading-relaxed" style={{ color: "var(--sky-muted)" }}>
+                          {fact.fact}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
@@ -1273,7 +1392,7 @@ export default function Dashboard() {
                             </div>
                           </div>
 
-                          {/* Physical: distance, angular diameter */}
+                          {/* Physical: distance, angular diameter, magnitude, retrograde */}
                           <div className="grid grid-cols-2 gap-2 mb-2" style={{ borderTop: "1px solid var(--sky-divider)", paddingTop: "6px" }}>
                             <div>
                               <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Distance</span>
@@ -1285,6 +1404,22 @@ export default function Dashboard() {
                               <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Angular Size</span>
                               <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
                                 {raw?.angular_diameter_arcsec != null ? `${raw.angular_diameter_arcsec.toFixed(1)}″` : "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Magnitude</span>
+                              <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                                {raw?.magnitude != null ? ` ${raw.magnitude.toFixed(1)}` : "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Motion</span>
+                              <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                                {raw?.is_retrograde ? (
+                                  <span style={{ color: "#f87171" }}>↺ Retrograde</span>
+                                ) : (
+                                  <span style={{ color: "#34d399" }}>→ Direct</span>
+                                )}
                               </p>
                             </div>
                           </div>
@@ -1727,6 +1862,84 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+
+            {/* Planetary Conjunctions */}
+            {conjunctionData && conjunctionData.length > 0 && (
+              <div className="sky-card">
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Globe className="w-3.5 h-3.5" style={{ color: "#60a5fa" }} />
+                    <span className="section-label">Planetary Conjunctions</span>
+                    <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>Next 30 days</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {conjunctionData.map((conj, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-lg p-3 border"
+                        style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>
+                            {conj.planet_a} &amp; {conj.planet_b}
+                          </span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(96,165,250,0.15)", color: "#60a5fa" }}>
+                            {conj.separation_deg.toFixed(1)}° apart
+                          </span>
+                        </div>
+                        <p className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                          {conj.date.slice(5)} → {conj.end.slice(5)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Upcoming Eclipses */}
+            {eclipseData && eclipseData.length > 0 && (
+              <div className="sky-card">
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <MoonIcon className="w-3.5 h-3.5" style={{ color: "#f87171" }} />
+                    <span className="section-label">Upcoming Eclipses</span>
+                    <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>Next 6 months</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {eclipseData.map((eclipse, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-lg p-3 border"
+                        style={{
+                          background: eclipse.type === "solar_eclipse" ? "rgba(251,191,36,0.05)" : "rgba(139,92,246,0.05)",
+                          borderColor: eclipse.type === "solar_eclipse" ? "rgba(251,191,36,0.15)" : "rgba(139,92,246,0.15)",
+                        }}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-lg">{eclipse.icon}</span>
+                          <div>
+                            <p className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>
+                              {eclipse.title}
+                            </p>
+                            <p className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                              {new Date(eclipse.date + "T00:00:00").toLocaleDateString("en-IN", {
+                                weekday: "short", month: "short", day: "numeric", year: "numeric",
+                              })}
+                              {" · "}
+                              {eclipse.description}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>
         )}
       </div>

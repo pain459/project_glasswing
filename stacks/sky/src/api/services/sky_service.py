@@ -332,6 +332,30 @@ class SkyService:
         """Get equinox/solstice calendar."""
         return get_season_calendar(year)
 
+    def get_planetary_conjunctions(self, days: int = 30) -> list:
+        """Get upcoming planetary conjunctions."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        from_date = datetime.now(timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        return self.events.get_planetary_conjunctions(
+            self.ts, from_date, days=days, max_separation_deg=5.0
+        )
+
+    def get_upcoming_eclipses(self, days: int = 180) -> list:
+        """Get upcoming solar and lunar eclipses."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        from_date = datetime.now(timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        return self.events.get_upcoming_eclipses(
+            self.ts, from_date, days=days
+        )
+
     def get_sky_story(self, date: datetime, location: ObserverLocation) -> dict:
         """Generate a kid-friendly sky story for the given date."""
         if not self._is_ready:

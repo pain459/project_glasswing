@@ -214,6 +214,19 @@ class LunarService:
 
         return nodes
 
+    def get_moon_elongation(self, ts, dt: datetime) -> float:
+        """Get the angular separation between Moon and Sun in degrees."""
+        try:
+            t = ts.from_datetime(dt)
+            earth = self.eph["earth"]
+            sun = self.eph["sun"]
+            moon_vec = earth.at(t).observe(self.moon)
+            sun_vec = earth.at(t).observe(sun)
+            elongation = moon_vec.separation_from(sun_vec)
+            return round(elongation.degrees, 1)
+        except Exception:
+            return 0.0
+
     def get_full_lunar_data(
         self, ts, latitude: float, longitude: float,
         date: datetime, elevation: float = 0.0,
@@ -234,6 +247,9 @@ class LunarService:
         culmination = self.get_lunar_culmination(ts, latitude, longitude, date, elevation)
         if culmination:
             result["lunar_culmination"] = culmination
+
+        # Add moon elongation from Sun
+        result["elongation_deg"] = self.get_moon_elongation(ts, ref_dt)
 
         if current_dt:
             result["current_position"] = self.get_moon_position(
