@@ -6,6 +6,7 @@ events, and system status.
 """
 
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -16,6 +17,8 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -30,6 +33,16 @@ from api.services.location_service import LocationService
 from core.coordinates import ObserverLocation
 
 logger = logging.getLogger(__name__)
+
+# ─── Database ───────────────────────────────────────────────────────────────
+
+DATABASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql://sky:sky@glasswing-sky-postgres:5432/sky",
+)
+
+db_engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+SessionLocal = sessionmaker(bind=db_engine, autocommit=False, autoflush=False)
 
 # Global services (initialized on startup)
 sky_service: SkyService = None
@@ -54,12 +67,23 @@ async def lifespan(app: FastAPI):
 
     logger.info("Initializing Skytoday API...")
 
+    # ── Database ─────────────────────────────────────────────────────
+    from api.models.database import Base  # noqa: F811
+
+    try:
+        Base.metadata.create_all(bind=db_engine)
+        logger.info("Database tables ensured via metadata.create_all")
+    except Exception as exc:
+        logger.warning("Could not create tables at startup: %s", exc)
+
+    db_session = SessionLocal()
+
     # Initialize the sky service (loads ephemeris, creates time system)
     sky_service = SkyService(ephemeris_data_dir="/app/data/ephemeris")
     sky_service.initialize()
 
-    # Initialize location service
-    location_service = LocationService()
+    # Initialize location service with DB session
+    location_service = LocationService(db=db_session)
     # Seed default location
     default_loc = get_default_location()
     location_service.ensure_default_location(default_loc)
@@ -462,6 +486,46 @@ async def get_moon_standstill(
     standstill = sky_service.get_moon_standstill(target_date)
     return ApiResponse(
         data=standstill,
+    )
+
+
+# ─── Milky Way Visibility ───────────────────────────────────────────────
+
+@app.get("/api/v1/sky/milkyway")
+async def get_milkyway_visibility(
+    date: str = Query("today"),
+    location_id: Optional[str] = Query(None),
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+    timezone_str: Optional[str] = Query("Asia/Kolkata"),
+):
+    """Get Milky Way visibility rating and optimal viewing window."""
+    target_date = _resolve_date(date)
+    loc = _resolve_location(location_id, latitude, longitude, timezone_str)
+    milkyway = sky_service.get_milkyway_visibility(target_date, loc)
+    return ApiResponse(
+        data=milkyway,
+        metadata=_calc_metadata(target_date, loc),
+    )
+
+
+# ─── Observation Planning ───────────────────────────────────────────────
+
+@app.get("/api/v1/sky/tonight")
+async def get_observable_tonight(
+    date: str = Query("today"),
+    location_id: Optional[str] = Query(None),
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+    timezone_str: Optional[str] = Query("Asia/Kolkata"),
+):
+    """Get ranked list of observable targets for tonight."""
+    target_date = _resolve_date(date)
+    loc = _resolve_location(location_id, latitude, longitude, timezone_str)
+    observable = sky_service.get_observable_tonight(target_date, loc)
+    return ApiResponse(
+        data=observable,
+        metadata=_calc_metadata(target_date, loc),
     )
 
 

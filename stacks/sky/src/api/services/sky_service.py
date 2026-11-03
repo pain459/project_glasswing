@@ -30,6 +30,8 @@ from core.sky_stories import generate_sky_story
 from core.stars import StarService
 from core.messier import MessierService
 from core.panchang import PanchangService
+from core.milkyway import MilkyWayService
+from core.observation import ObservationService
 from api.models.schemas import SystemStatusResponse
 
 logger = logging.getLogger(__name__)
@@ -48,6 +50,8 @@ class SkyService:
         self.stars = None
         self.messier = None
         self.panchang = None
+        self.milkyway = None
+        self.observation = None
         self.iss = None
         self._start_time = None
         self._is_ready = False
@@ -72,6 +76,15 @@ class SkyService:
         self.stars = StarService(self.ephemeris_mgr.loaded_kernel)
         self.messier = MessierService(self.ephemeris_mgr.loaded_kernel)
         self.panchang = PanchangService(self.ephemeris_mgr.loaded_kernel)
+        self.milkyway = MilkyWayService(self.ephemeris_mgr.loaded_kernel)
+        self.observation = ObservationService(
+            self.ephemeris_mgr.loaded_kernel,
+            self.planetary,
+            self.solar,
+            self.lunar,
+            self.stars,
+            self.messier,
+        )
 
         # Initialize ISS satellite tracking
         try:
@@ -547,3 +560,54 @@ class SkyService:
                 logger.debug("Panchang failed for %s: %s", day, e)
                 results.append({"date": day.strftime("%Y-%m-%d"), "error": str(e)})
         return results
+
+    # ─── Milky Way ─────────────────────────────────────────────────────
+
+    def get_milkyway_visibility(self, date: datetime, location: ObserverLocation) -> dict:
+        """Get Milky Way visibility rating for a date and location."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        obs_dt = self._get_observation_time(date, location.tz)
+        local_date = self._get_local_date(date, location.tz)
+
+        rating = self.milkyway.get_visibility_rating(
+            self.ts, obs_dt,
+            location.latitude_deg, location.longitude_deg,
+            location.elevation_m,
+        )
+        riseset = self.milkyway.get_galactic_center_riseset(
+            self.ts, local_date,
+            location.latitude_deg, location.longitude_deg,
+            location.elevation_m,
+        )
+        best_window = self.milkyway.get_best_viewing_window(
+            self.ts, local_date,
+            location.latitude_deg, location.longitude_deg,
+            location.elevation_m,
+        )
+        seasonal = self.milkyway.get_seasonal_visibility(
+            obs_dt.month, location.latitude_deg
+        )
+
+        return {
+            "rating": rating,
+            "riseset": riseset,
+            "best_viewing_window": best_window,
+            "seasonal": seasonal,
+        }
+
+    # ─── Observation Planning ──────────────────────────────────────────
+
+    def get_observable_tonight(self, date: datetime, location: ObserverLocation) -> dict:
+        """Get ranked list of observable targets for tonight."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        local_date = self._get_local_date(date, location.tz)
+
+        return self.observation.get_observable_tonight(
+            self.ts, local_date,
+            location.latitude_deg, location.longitude_deg,
+            location.elevation_m,
+        )
