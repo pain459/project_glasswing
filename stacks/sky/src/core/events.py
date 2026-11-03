@@ -539,6 +539,158 @@ class EventsService:
             logger.debug("Dark/twilight classification failed: %s", e)
             return []
 
+    # ─── Upcoming Events (4-week horizon) ─────────────────────────────
+
+    def get_upcoming_events(
+        self,
+        ts,
+        from_date: datetime,
+        latitude: float,
+        longitude: float,
+        elevation: float = 0.0,
+        days: int = 28,
+    ) -> list:
+        """Return upcoming astronomical events for the next *days* days.
+
+        Each event: {date, type, title, description, icon}
+        Types: moon_phase, meteor_shower, season, supermoon, micromoon, fact
+        """
+        from skyfield.almanac import moon_phases, find_discrete, seasons, SEASONS, MOON_PHASES
+
+        events: list[dict] = []
+
+        # ── Moon phases ──────────────────────────────────────────────
+        t_from = ts.from_datetime(from_date)
+        t_to = ts.from_datetime(from_date + timedelta(days=days))
+        try:
+            phase_func = moon_phases(self.eph)
+            phase_func.step_days = 1.0 / 4.0
+            times_arr, values_arr = find_discrete(t_from, t_to, phase_func)
+            for i in range(len(times_arr)):
+                t = times_arr[i]
+                v = int(values_arr[i])
+                phase_label = MOON_PHASES[v] if 0 <= v < len(MOON_PHASES) else "Unknown"
+                dt_utc = t.utc_datetime()
+                events.append({
+                    "date": dt_utc.strftime("%Y-%m-%d"),
+                    "type": "moon_phase",
+                    "title": phase_label,
+                    "description": f"{phase_label} at {dt_utc.strftime('%H:%M')} UTC",
+                    "icon": self._moon_phase_emoji(v),
+                })
+        except Exception as e:
+            logger.debug("Moon phases lookup failed: %s", e)
+
+        # ── Season events (equinoxes/solstices) ──────────────────────
+        try:
+            season_func = seasons(self.eph)
+            season_times, season_vals = find_discrete(t_from, t_to, season_func)
+            for i in range(len(season_times)):
+                t = season_times[i]
+                v = int(season_vals[i])
+                season_name = SEASONS[v] if 0 <= v < len(SEASONS) else "Unknown"
+                dt_utc = t.utc_datetime()
+                events.append({
+                    "date": dt_utc.strftime("%Y-%m-%d"),
+                    "type": "season",
+                    "title": season_name,
+                    "description": f"{season_name} at {dt_utc.strftime('%H:%M')} UTC",
+                    "icon": self._season_emoji(season_name),
+                })
+        except Exception as e:
+            logger.debug("Season events lookup failed: %s", e)
+
+        # ── Meteor shower peaks ──────────────────────────────────────
+        for shower in METEOR_SHOWERS:
+            peak_date = datetime.strptime(shower["peak"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            if from_date <= peak_date <= from_date + timedelta(days=days):
+                events.append({
+                    "date": shower["peak"],
+                    "type": "meteor_shower",
+                    "title": f"{shower['name']} Peak",
+                    "description": f"ZHR ~{shower['zhr']} meteors/hr · Active {shower['start']} to {shower['end']}",
+                    "icon": "☄️",
+                })
+
+        # ── Supermoon / Micromoon days ───────────────────────────────
+        # Collect all flagged days, then keep only the most extreme in each
+        # contiguous cluster (closest to perigee for supermoon, farthest for
+        # micromoon).
+        supermoon_candidates: list[dict] = []
+        micromoon_candidates: list[dict] = []
+        for d in range(days):
+            check_date = from_date + timedelta(days=d)
+            ref_dt = check_date.replace(hour=12, minute=0, second=0, microsecond=0)
+            moon_info = self.get_moon_distance_info(ts, ref_dt)
+            if moon_info["distance_label"] == "supermoon":
+                supermoon_candidates.append({
+                    "date": check_date.strftime("%Y-%m-%d"),
+                    "distance_km": moon_info["distance_km"],
+                })
+            elif moon_info["distance_label"] == "micromoon":
+                micromoon_candidates.append({
+                    "date": check_date.strftime("%Y-%m-%d"),
+                    "distance_km": moon_info["distance_km"],
+                })
+
+        # Keep only the most extreme day per contiguous cluster
+        def _pick_best(candidates: list[dict], minimize: bool) -> list[dict]:
+            if not candidates:
+                return []
+            clusters: list[list[dict]] = []
+            current: list[dict] = [candidates[0]]
+            for c in candidates[1:]:
+                prev_date = datetime.strptime(current[-1]["date"], "%Y-%m-%d")
+                curr_date = datetime.strptime(c["date"], "%Y-%m-%d")
+                if (curr_date - prev_date).days <= 2:
+                    current.append(c)
+                else:
+                    clusters.append(current)
+                    current = [c]
+            clusters.append(current)
+            result = []
+            for cluster in clusters:
+                best = min(cluster, key=lambda x: x["distance_km"]) if minimize else max(cluster, key=lambda x: x["distance_km"])
+                result.append(best)
+            return result
+
+        best_supermoons = _pick_best(supermoon_candidates, minimize=True)
+        best_micromoons = _pick_best(micromoon_candidates, minimize=False)
+
+        for sm in best_supermoons:
+            events.append({
+                "date": sm["date"],
+                "type": "supermoon",
+                "title": "Supermoon",
+                "description": f"Moon at {sm['distance_km']:,.0f} km (near perigee)",
+                "icon": "🌕",
+            })
+        for mm in best_micromoons:
+            events.append({
+                "date": mm["date"],
+                "type": "micromoon",
+                "title": "Micromoon",
+                "description": f"Moon at {mm['distance_km']:,.0f} km (near apogee)",
+                "icon": "🌑",
+            })
+
+        # ── Sort by date, then type priority ─────────────────────────
+        type_order = {"season": 0, "moon_phase": 1, "supermoon": 2, "micromoon": 3,
+                      "meteor_shower": 4, "fact": 5}
+        events.sort(key=lambda e: (e["date"], type_order.get(e["type"], 9)))
+
+        return events
+
+    def _moon_phase_emoji(self, phase_val: int) -> str:
+        emojis = {0: "🌑", 1: "🌒", 2: "🌓", 3: "🌔", 4: "🌕",
+                  5: "🌖", 6: "🌗", 7: "🌘"}
+        return emojis.get(phase_val, "🌕")
+
+    def _season_emoji(self, name: str) -> str:
+        emojis = {"Spring Equinox": "🌸", "Summer Solstice": "☀️",
+                  "Autumnal Equinox": "🍂", "Winter Solstice": "❄️"}
+        return emojis.get(name, "🌍")
+
     # ─── Combined Sky Events ──────────────────────────────────────────
 
     def get_sky_events(

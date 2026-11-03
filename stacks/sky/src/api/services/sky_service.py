@@ -222,3 +222,25 @@ class SkyService:
             "solar": solar_arc,
             "lunar": lunar_arc,
         }
+
+    def get_upcoming_events(self, days: int = 28) -> list:
+        """Get upcoming astronomical events for the next *days* days."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        loc = ObserverLocation(
+            name="Hyderabad",
+            latitude_deg=17.3850,
+            longitude_deg=78.4867,
+            elevation_m=542.0,
+            timezone="Asia/Kolkata",
+        )
+        from_date = datetime.now(timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+
+        return self.events.get_upcoming_events(
+            self.ts, from_date,
+            loc.latitude_deg, loc.longitude_deg,
+            loc.elevation_m, days
+        )

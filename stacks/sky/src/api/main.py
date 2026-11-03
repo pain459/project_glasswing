@@ -279,6 +279,20 @@ async def get_altitude_arcs(
     )
 
 
+# ─── Upcoming astronomical events ───────────────────────────────────────────
+
+@app.get("/api/v1/sky/events/upcoming")
+async def get_upcoming_events(
+    days: int = Query(28, ge=1, le=60),
+):
+    """Get upcoming astronomical events for the next *days* days."""
+    events = sky_service.get_upcoming_events(days)
+    return ApiResponse(
+        data={"events": events, "days": days},
+        metadata=None,
+    )
+
+
 # ─── Helper functions ───────────────────────────────────────────────────────
 
 def _resolve_location(location_id, latitude, longitude, timezone_str):

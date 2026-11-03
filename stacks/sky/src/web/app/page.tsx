@@ -165,6 +165,18 @@ interface AltitudePoint {
   distance_km?: number;
 }
 
+interface UpcomingEvent {
+  date: string;
+  type: string;
+  title: string;
+  description: string;
+  icon: string;
+}
+
+interface UpcomingEventsData {
+  events: UpcomingEvent[];
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────
 
 function formatTime(isoString: string | null): string {
@@ -513,6 +525,7 @@ function ErrorState({ message }: { message: string }) {
 export default function Dashboard() {
   const [data, setData] = useState<DailySkyData | null>(null);
   const [arcData, setArcData] = useState<{ solar: AltitudePoint[]; lunar: AltitudePoint[] } | null>(null);
+  const [eventsData, setEventsData] = useState<UpcomingEventsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(getToday());
@@ -542,6 +555,16 @@ export default function Dashboard() {
   useEffect(() => {
     fetchData(currentDate);
   }, [currentDate, fetchData]);
+
+  // Fetch upcoming events once on mount (independent of selected date)
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/v1/sky/events/upcoming?days=28")
+      .then(r => r.json())
+      .then(json => { if (!cancelled) setEventsData(json.data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const goPrevDay = () => setCurrentDate(shiftDate(currentDate, -1));
   const goNextDay = () => setCurrentDate(shiftDate(currentDate, 1));
@@ -972,6 +995,79 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── Upcoming Astronomical Events (4 weeks) ────────────────── */}
+      {eventsData && eventsData.events.length > 0 && (
+        <div className="sky-card">
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-3.5 h-3.5" style={{ color: "#fbbf24" }} />
+              <span className="section-label">Upcoming Events</span>
+              <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                Next 4 weeks
+              </span>
+            </div>
+
+            <div className="space-y-0">
+              {(() => {
+                const today = getToday();
+                const weeks: Record<string, UpcomingEvent[]> = {};
+                for (const ev of eventsData.events) {
+                  const evDate = new Date(ev.date + "T00:00:00");
+                  const todayDate = new Date(today + "T00:00:00");
+                  const diffDays = Math.round((evDate.getTime() - todayDate.getTime()) / 86400000);
+                  const weekNum = Math.floor(diffDays / 7) + 1;
+                  const weekLabel = weekNum === 1 ? "This week" : `Week ${weekNum}`;
+                  if (!weeks[weekLabel]) weeks[weekLabel] = [];
+                  weeks[weekLabel].push(ev);
+                }
+
+                return Object.entries(weeks).map(([weekLabel, weekEvents]) => (
+                  <div key={weekLabel} className="mb-3 last:mb-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: "var(--sky-muted)" }}>
+                        {weekLabel}
+                      </span>
+                      <div className="flex-1 h-px" style={{ background: "var(--sky-divider)" }} />
+                    </div>
+                    <div className="space-y-1.5">
+                      {weekEvents.map((ev, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-start gap-2.5 rounded-lg px-3 py-2 border transition-colors"
+                          style={{
+                            background: "var(--sky-planet-bg)",
+                            borderColor: "var(--sky-planet-border)",
+                          }}
+                        >
+                          <span className="text-base leading-none mt-0.5">{ev.icon}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>
+                                {ev.title}
+                              </span>
+                              <span className="text-[9px] flex-shrink-0" style={{ color: "var(--sky-muted)" }}>
+                                {new Date(ev.date + "T00:00:00").toLocaleDateString("en-IN", {
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                })}
+                              </span>
+                            </div>
+                            <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                              {ev.description}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Upcoming Moon Phases ────────────────────────────────── */}
       {data.lunar.upcoming_phases && data.lunar.upcoming_phases.length > 0 && (
