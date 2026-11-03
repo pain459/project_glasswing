@@ -1075,126 +1075,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Planets Grid (compact) */}
-            <div className="sky-card">
-              <div className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Telescope className="w-3.5 h-3.5" style={{ color: "var(--sky-muted)" }} />
-                  <span className="section-label">Planets</span>
-                </div>
-
-                <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                  {data.planets.map((planet) => (
-                    <div
-                      key={planet.name}
-                      className="rounded-lg p-2.5 text-center border transition-colors"
-                      style={{
-                        background: planet.is_above_horizon ? "var(--sky-visible-bg)" : "var(--sky-planet-bg)",
-                        borderColor: planet.is_above_horizon ? "var(--sky-visible-border)" : "var(--sky-planet-border)",
-                        opacity: planet.is_above_horizon ? 1 : 0.4,
-                      }}
-                    >
-                      <span className="text-sm leading-none">{PLANET_SYMBOLS[planet.name] || "\u25CF"}</span>
-                      <p className="text-[10px] font-medium mt-1.5" style={{ color: "var(--sky-muted)" }}>{planet.name}</p>
-                      <p className="text-[10px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>{planet.altitude_deg.toFixed(0)}&deg;</p>
-                      {planet.distance_au != null && (
-                        <p className="text-[9px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>{planet.distance_au.toFixed(2)} AU</p>
-                      )}
-                      <div className="mt-1">
-                        <span className={planet.is_above_horizon ? "status-dot-on" : "status-dot-off"} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Planet detail rows */}
-                <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--sky-divider)" }}>
-                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                    {data.planets.map((planet) => (
-                      <div key={`detail-${planet.name}`} className="text-center">
-                        <p className="text-[10px]" style={{ color: "var(--sky-detail-text)" }}>
-                          {planet.ra_hours != null ? `${planet.ra_hours.toFixed(1)}h` : "—"}
-                        </p>
-                        <p className="text-[10px]" style={{ color: "var(--sky-detail-text)" }}>
-                          {planet.dec_deg != null ? `${planet.dec_deg >= 0 ? "+" : ""}${planet.dec_deg.toFixed(1)}°` : "—"}
-                        </p>
-                        <p className="text-[10px]" style={{ color: "var(--sky-detail-text)" }}>
-                          {planet.azimuth_deg != null ? `${planet.azimuth_deg.toFixed(0)}°` : "—"}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-[9px] mt-1 text-center uppercase tracking-wider" style={{ color: "var(--sky-detail-text)" }}>
-                    RA · Dec · Az
-                  </p>
-                </div>
-
-                {/* Planet rise/set/culmination times */}
-                <div className="mt-3 pt-3" style={{ borderTop: "1px solid var(--sky-divider)" }}>
-                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                    {data.planets.map((planet) => (
-                      <div key={`rise-${planet.name}`} className="text-center">
-                        <p className="text-[10px]" style={{ color: "var(--sky-detail-text)" }}>{planet.rise ? formatTime(planet.rise) : "—"}</p>
-                        <p className="text-[10px]" style={{ color: "var(--sky-detail-text)" }}>{planet.set ? formatTime(planet.set) : "—"}</p>
-                        <p className="text-[10px]" style={{ color: "var(--sky-detail-text)" }}>{planet.culmination ? formatTime(planet.culmination) : "—"}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-[9px] mt-1 text-center uppercase tracking-wider" style={{ color: "var(--sky-detail-text)" }}>
-                    Rise · Set · Culmination
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Astronomical Darkness */}
-            {data.solar.astronomical_twilight_evening_start && data.solar.astronomical_twilight_morning_end && (
-              <div className="sky-card">
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <EyeOff className="w-3.5 h-3.5" style={{ color: "#6366f1" }} />
-                    <span className="section-label">Astronomical Darkness</span>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5">
-                    <span className="row-label">Dark Sky Window</span>
-                    <span className="row-value">
-                      {formatTime(data.solar.astronomical_twilight_evening_start)} &mdash; {formatTime(data.solar.astronomical_twilight_morning_end)}
-                    </span>
-                  </div>
-                  <p className="text-[10px] mt-1" style={{ color: "var(--sky-footer-text)" }}>
-                    Period when the sky is fully dark (Sun &gt;18° below horizon)
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Dark/Twilight Classification */}
-            {data.sky_events?.dark_twilight_classification && data.sky_events.dark_twilight_classification.length > 0 && (
-              <div className="sky-card">
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <EyeOff className="w-3.5 h-3.5" style={{ color: "#6366f1" }} />
-                    <span className="section-label">Sky Brightness</span>
-                  </div>
-                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-1">
-                    {data.sky_events.dark_twilight_classification.map((cls, idx) => (
-                      <div key={idx} className="rounded p-2 text-center border" style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}>
-                        <p className="text-[10px] font-medium" style={{ color: "var(--sky-brightness-text)" }}>
-                          {String(cls.hour_utc).padStart(2, "0")}:00
-                        </p>
-                        <p className="text-[9px] mt-0.5" style={{ color: "var(--sky-brightness-label)" }}>
-                          {cls.classification === "Night" ? "Dark" : cls.classification}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-[9px] mt-2 text-center" style={{ color: "var(--sky-footer-text)" }}>
-                    Hourly sky brightness classification (UTC)
-                  </p>
-                </div>
-              </div>
-            )}
-
             {/* Milky Way */}
             {data.sky_events?.milky_way && (
               <div className="sky-card">
@@ -1246,60 +1126,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Upcoming Moon Phases */}
-            {data.lunar.upcoming_phases && data.lunar.upcoming_phases.length > 0 && (
-              <div className="sky-card">
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <MoonIcon className="w-3.5 h-3.5" style={{ color: "#c4b5fd" }} />
-                    <span className="section-label">Upcoming Moon Phases</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {data.lunar.upcoming_phases.map((phase, idx) => (
-                      <div key={idx} className="rounded-lg p-3 text-center border" style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}>
-                        <p className="text-[10px] font-medium row-value">{phase.phase}</p>
-                        <p className="text-[9px] mt-1" style={{ color: "var(--sky-muted)" }}>
-                          {new Date(phase.datetime_utc).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
-                        </p>
-                        <p className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
-                          {new Date(phase.datetime_utc).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Upcoming Moon Nodes */}
-            {data.lunar.upcoming_nodes && data.lunar.upcoming_nodes.length > 0 && (
-              <div className="sky-card">
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <MoonIcon className="w-3.5 h-3.5" style={{ color: "#c4b5fd" }} />
-                    <span className="section-label">Moon Nodes</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {data.lunar.upcoming_nodes.map((node, idx) => (
-                      <div key={idx} className="rounded-lg p-3 text-center border" style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}>
-                        <p className="text-[10px] font-medium row-value">{node.type}</p>
-                        <p className="text-[9px] mt-1" style={{ color: "var(--sky-muted)" }}>
-                          {new Date(node.datetime_utc).toLocaleDateString("en-IN", { month: "short", day: "numeric" })}
-                        </p>
-                        <p className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
-                          {new Date(node.datetime_utc).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-[9px] mt-2 text-center" style={{ color: "var(--sky-footer-text)" }}>
-                    Moon crosses the ecliptic — eclipse windows
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -1324,7 +1150,11 @@ export default function Dashboard() {
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {planetTonightData.planets.map((planet) => (
+                    {planetTonightData.planets.map((planet) => {
+                      // Merge in raw coordinates from daily sky data
+                      const raw = data.planets.find(p => p.name === planet.name);
+
+                      return (
                       <div
                         key={planet.name}
                         className="rounded-lg p-3 border"
@@ -1351,7 +1181,7 @@ export default function Dashboard() {
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 mb-2">
+                        <div className="grid grid-cols-3 gap-2 mb-2">
                           <div>
                             <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Rise</span>
                             <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
@@ -1364,13 +1194,50 @@ export default function Dashboard() {
                               {planet.set ? formatTime(planet.set) : "—"}
                             </p>
                           </div>
+                          <div>
+                            <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Culmination</span>
+                            <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                              {raw?.culmination ? formatTime(raw.culmination) : "—"}
+                            </p>
+                          </div>
                         </div>
+
+                        <div className="grid grid-cols-3 gap-2 mb-2" style={{ borderTop: "1px solid var(--sky-divider)", paddingTop: "6px" }}>
+                          <div>
+                            <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>RA</span>
+                            <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                              {raw?.ra_hours != null ? `${raw.ra_hours.toFixed(1)}h` : "—"}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Dec</span>
+                            <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                              {raw?.dec_deg != null ? `${raw.dec_deg >= 0 ? "+" : ""}${raw.dec_deg.toFixed(1)}°` : "—"}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Az</span>
+                            <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                              {raw?.azimuth_deg != null ? `${raw.azimuth_deg.toFixed(0)}°` : "—"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {raw?.distance_au != null && (
+                          <div className="mb-2">
+                            <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Distance</span>
+                            <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                              {raw.distance_au.toFixed(2)} AU
+                            </p>
+                          </div>
+                        )}
 
                         <p className="text-[10px] leading-relaxed" style={{ color: "var(--sky-muted)" }}>
                           {planet.comment}
                         </p>
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 )}
               </div>
@@ -1464,41 +1331,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Next Season Event (from daily data) */}
-            {data.sky_events?.next_season_event && data.sky_events.next_season_event.datetime_utc && (
-              <div className="sky-card">
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Sun className="w-3.5 h-3.5" style={{ color: "#fbbf24" }} />
-                    <span className="section-label">Next Season Event</span>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5">
-                    <span className="row-label">Event</span>
-                    <span className="row-value capitalize">{data.sky_events.next_season_event.event}</span>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5">
-                    <span className="row-label">Date</span>
-                    <span className="row-value">
-                      {new Date(data.sky_events.next_season_event.datetime_utc).toLocaleDateString("en-IN", {
-                        month: "short", day: "numeric", year: "numeric",
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5">
-                    <span className="row-label">Time</span>
-                    <span className="row-value">
-                      {new Date(data.sky_events.next_season_event.datetime_utc).toLocaleTimeString("en-IN", {
-                        hour: "2-digit", minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between py-1.5">
-                    <span className="row-label">Days Away</span>
-                    <span className="row-value">{data.sky_events.next_season_event.days_away}</span>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
