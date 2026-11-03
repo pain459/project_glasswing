@@ -919,63 +919,59 @@ function ErrorState({ message }: { message: string }) {
 function AltitudeArcChart({ points, color, label }: { points: AltitudePoint[]; color: string; label: string }) {
   const [hovered, setHovered] = useState<number | null>(null);
 
-  const chartHeight = 120;
-  const chartWidth = 100; // percent
-  const padding = { top: 10, bottom: 24, left: 32, right: 8 };
+  const W = 600;
+  const H = 160;
+  const pad = { top: 16, right: 16, bottom: 30, left: 40 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
 
-  // Compute scale: altitude ranges from -90 to +90, but we only show -10 to max(90, maxAltitude)
-  const maxAlt = Math.max(90, ...points.map(p => Math.max(p.altitude, 0)));
+  const maxAlt = 90;
   const minAlt = -10;
   const range = maxAlt - minAlt;
 
-  const toY = (alt: number) => {
-    const clamped = Math.max(minAlt, Math.min(maxAlt, alt));
-    return padding.top + (1 - (clamped - minAlt) / range) * (chartHeight - padding.top - padding.bottom);
-  };
+  const toY = (alt: number) =>
+    pad.top + (1 - (Math.max(minAlt, Math.min(maxAlt, alt)) - minAlt) / range) * plotH;
+  const toX = (hour: number) =>
+    pad.left + (hour / 23) * plotW;
 
-  const toX = (hour: number) => {
-    return padding.left + (hour / 24) * (100 - padding.left - padding.right);
-  };
+  const pathD = points.map((p, i) =>
+    `${i === 0 ? "M" : "L"}${toX(p.hour).toFixed(1)},${toY(p.altitude).toFixed(1)}`
+  ).join(" ");
 
-  // Build SVG path
-  const pathD = points.map((p, i) => {
-    const x = toX(p.hour);
-    const y = toY(p.altitude);
-    return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(" ");
-
-  // Horizon line
   const horizonY = toY(0);
 
   return (
-    <div className="relative" style={{ height: chartHeight }}>
-      <svg
-        viewBox={`0 0 100 ${chartHeight}`}
-        className="w-full"
-        style={{ height: chartHeight }}
-        preserveAspectRatio="none"
-      >
-        {/* Background fill above horizon */}
+    <div className="relative w-full" style={{ aspectRatio: `${W}/${H}`, minHeight: 140 }}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full">
+        {/* Night sky band (below horizon) */}
         <rect
-          x={0} y={horizonY}
-          width={100} height={chartHeight - horizonY}
-          fill="rgba(59,130,246,0.03)"
+          x={pad.left} y={horizonY}
+          width={plotW} height={H - horizonY - pad.bottom}
+          fill="rgba(30,41,59,0.25)"
+          rx={2}
+        />
+        {/* Day sky band (above horizon) */}
+        <rect
+          x={pad.left} y={pad.top}
+          width={plotW} height={horizonY - pad.top}
+          fill="rgba(59,130,246,0.04)"
+          rx={2}
         />
 
         {/* Horizon line */}
         <line
-          x1={padding.left} y1={horizonY}
-          x2={100 - padding.right} y2={horizonY}
-          stroke="rgba(255,255,255,0.1)"
-          strokeWidth="0.3"
-          strokeDasharray="2,2"
+          x1={pad.left} y1={horizonY}
+          x2={W - pad.right} y2={horizonY}
+          stroke="rgba(148,163,184,0.35)"
+          strokeWidth={1}
+          strokeDasharray="6,4"
         />
 
-        {/* Area fill under curve (above horizon only) */}
+        {/* Area fill */}
         <path
           d={`${pathD} L${toX(points[points.length - 1].hour).toFixed(1)},${horizonY} L${toX(points[0].hour).toFixed(1)},${horizonY} Z`}
           fill={color}
-          opacity="0.08"
+          opacity={0.1}
         />
 
         {/* Arc line */}
@@ -983,51 +979,76 @@ function AltitudeArcChart({ points, color, label }: { points: AltitudePoint[]; c
           d={pathD}
           fill="none"
           stroke={color}
-          strokeWidth="0.6"
+          strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
         />
 
+        {/* Data dots */}
+        {points.map((p, i) => (
+          <circle
+            key={i}
+            cx={toX(p.hour)}
+            cy={toY(p.altitude)}
+            r={hovered === i ? 4 : 2.5}
+            fill={color}
+            stroke="rgba(15,23,42,0.8)"
+            strokeWidth={1}
+            style={{ transition: "r 0.15s" }}
+          />
+        ))}
+
         {/* Hour labels */}
-        {[0, 4, 8, 12, 16, 20].map(h => (
+        {[0, 4, 8, 12, 16, 20, 23].map(h => (
           <text
             key={h}
             x={toX(h)}
-            y={chartHeight - 4}
+            y={H - 6}
             textAnchor="middle"
-            fill="var(--sky-muted)"
-            fontSize="3"
+            fill="rgba(148,163,184,0.8)"
+            fontSize={11}
+            fontFamily="system-ui, sans-serif"
           >
             {h.toString().padStart(2, "0")}:00
           </text>
         ))}
 
         {/* Altitude labels */}
-        {[0, 30, 60, 90].filter(a => a <= maxAlt).map(a => (
+        {[0, 30, 60, 90].map(a => (
           <text
             key={a}
-            x={2}
-            y={toY(a) + 1}
-            fill="var(--sky-muted)"
-            fontSize="2.5"
+            x={pad.left - 6}
+            y={toY(a) + 4}
+            textAnchor="end"
+            fill="rgba(148,163,184,0.7)"
+            fontSize={10}
+            fontFamily="system-ui, sans-serif"
           >
             {a}°
           </text>
         ))}
+
+        {/* Altitude grid lines */}
+        {[30, 60, 90].map(a => (
+          <line
+            key={a}
+            x1={pad.left} y1={toY(a)}
+            x2={W - pad.right} y2={toY(a)}
+            stroke="rgba(148,163,184,0.08)"
+            strokeWidth={0.5}
+          />
+        ))}
       </svg>
 
-      {/* Hover overlay */}
-      <div
-        className="absolute inset-0"
-        style={{ pointerEvents: "auto" }}
-      >
+      {/* Hover overlay — positioned with percentages over the container */}
+      <div className="absolute inset-0" style={{ pointerEvents: "auto" }}>
         {points.map((p, i) => (
           <div
             key={i}
             className="absolute top-0 bottom-0"
             style={{
-              left: `${toX(p.hour)}%`,
-              width: `${100 / points.length}%`,
+              left: `${(toX(p.hour) / W) * 100}%`,
+              width: `${(plotW / 23 / W) * 100}%`,
               cursor: "crosshair",
             }}
             onMouseEnter={() => setHovered(i)}
@@ -1035,14 +1056,14 @@ function AltitudeArcChart({ points, color, label }: { points: AltitudePoint[]; c
           >
             {hovered === i && (
               <div
-                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 rounded text-[9px] whitespace-nowrap border z-10"
+                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 rounded-lg text-[10px] whitespace-nowrap border z-20 shadow-lg"
                 style={{
-                  background: "rgba(15,23,42,0.95)",
-                  borderColor: "rgba(255,255,255,0.1)",
+                  background: "rgba(15,23,42,0.96)",
+                  borderColor: "rgba(148,163,184,0.2)",
                   color: "var(--sky-text)",
                 }}
               >
-                <div className="font-semibold">{p.hour.toString().padStart(2, "0")}:00</div>
+                <div className="font-semibold mb-0.5">{p.hour.toString().padStart(2, "0")}:00</div>
                 <div style={{ color }}>
                   Alt: {p.altitude.toFixed(1)}° &nbsp; Az: {p.azimuth.toFixed(0)}°
                 </div>
@@ -1058,70 +1079,99 @@ function AltitudeArcChart({ points, color, label }: { points: AltitudePoint[]; c
 function CombinedArcChart({ solar, lunar }: { solar: AltitudePoint[]; lunar: AltitudePoint[] }) {
   const [hovered, setHovered] = useState<number | null>(null);
 
-  const chartHeight = 140;
-  const padding = { top: 10, bottom: 24, left: 32, right: 8 };
+  const W = 600;
+  const H = 180;
+  const pad = { top: 24, right: 16, bottom: 30, left: 40 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
 
   const maxAlt = 90;
   const minAlt = -10;
   const range = maxAlt - minAlt;
 
-  const toY = (alt: number) => {
-    const clamped = Math.max(minAlt, Math.min(maxAlt, alt));
-    return padding.top + (1 - (clamped - minAlt) / range) * (chartHeight - padding.top - padding.bottom);
-  };
-
-  const toX = (hour: number) => {
-    return padding.left + (hour / 24) * (100 - padding.left - padding.right);
-  };
+  const toY = (alt: number) =>
+    pad.top + (1 - (Math.max(minAlt, Math.min(maxAlt, alt)) - minAlt) / range) * plotH;
+  const toX = (hour: number) =>
+    pad.left + (hour / 23) * plotW;
 
   const makePath = (pts: AltitudePoint[]) =>
-    pts.map((p, i) => {
-      const x = toX(p.hour);
-      const y = toY(p.altitude);
-      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(" ");
+    pts.map((p, i) =>
+      `${i === 0 ? "M" : "L"}${toX(p.hour).toFixed(1)},${toY(p.altitude).toFixed(1)}`
+    ).join(" ");
 
   const horizonY = toY(0);
 
   return (
-    <div className="relative" style={{ height: chartHeight }}>
-      <svg
-        viewBox={`0 0 100 ${chartHeight}`}
-        className="w-full"
-        style={{ height: chartHeight }}
-        preserveAspectRatio="none"
-      >
-        {/* Background fill above horizon */}
+    <div className="relative w-full" style={{ aspectRatio: `${W}/${H}`, minHeight: 160 }}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-full">
+        {/* Night sky band */}
         <rect
-          x={0} y={horizonY}
-          width={100} height={chartHeight - horizonY}
-          fill="rgba(59,130,246,0.03)"
+          x={pad.left} y={horizonY}
+          width={plotW} height={H - horizonY - pad.bottom}
+          fill="rgba(30,41,59,0.25)"
+          rx={2}
+        />
+        {/* Day sky band */}
+        <rect
+          x={pad.left} y={pad.top}
+          width={plotW} height={horizonY - pad.top}
+          fill="rgba(59,130,246,0.04)"
+          rx={2}
         />
 
         {/* Horizon line */}
         <line
-          x1={padding.left} y1={horizonY}
-          x2={100 - padding.right} y2={horizonY}
-          stroke="rgba(255,255,255,0.1)"
-          strokeWidth="0.3"
-          strokeDasharray="2,2"
+          x1={pad.left} y1={horizonY}
+          x2={W - pad.right} y2={horizonY}
+          stroke="rgba(148,163,184,0.35)"
+          strokeWidth={1}
+          strokeDasharray="6,4"
         />
 
         {/* Sun arc */}
-        <path d={makePath(solar)} fill="none" stroke="#fbbf24" strokeWidth="0.6" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={makePath(solar)} fill="none" stroke="#fbbf24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Moon arc */}
-        <path d={makePath(lunar)} fill="none" stroke="#94a3b8" strokeWidth="0.6" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="3,1.5" />
+        <path d={makePath(lunar)} fill="none" stroke="#94a3b8" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" strokeDasharray="6,4" />
+
+        {/* Data dots — sun */}
+        {solar.map((p, i) => (
+          <circle
+            key={`s${i}`}
+            cx={toX(p.hour)}
+            cy={toY(p.altitude)}
+            r={hovered === i ? 4 : 2.5}
+            fill="#fbbf24"
+            stroke="rgba(15,23,42,0.8)"
+            strokeWidth={1}
+            style={{ transition: "r 0.15s" }}
+          />
+        ))}
+
+        {/* Data dots — moon */}
+        {lunar.map((p, i) => (
+          <circle
+            key={`m${i}`}
+            cx={toX(p.hour)}
+            cy={toY(p.altitude)}
+            r={hovered === i ? 4 : 2.5}
+            fill="#94a3b8"
+            stroke="rgba(15,23,42,0.8)"
+            strokeWidth={1}
+            style={{ transition: "r 0.15s" }}
+          />
+        ))}
 
         {/* Hour labels */}
-        {[0, 4, 8, 12, 16, 20].map(h => (
+        {[0, 4, 8, 12, 16, 20, 23].map(h => (
           <text
             key={h}
             x={toX(h)}
-            y={chartHeight - 4}
+            y={H - 6}
             textAnchor="middle"
-            fill="var(--sky-muted)"
-            fontSize="3"
+            fill="rgba(148,163,184,0.8)"
+            fontSize={11}
+            fontFamily="system-ui, sans-serif"
           >
             {h.toString().padStart(2, "0")}:00
           </text>
@@ -1131,20 +1181,33 @@ function CombinedArcChart({ solar, lunar }: { solar: AltitudePoint[]; lunar: Alt
         {[0, 30, 60, 90].map(a => (
           <text
             key={a}
-            x={2}
-            y={toY(a) + 1}
-            fill="var(--sky-muted)"
-            fontSize="2.5"
+            x={pad.left - 6}
+            y={toY(a) + 4}
+            textAnchor="end"
+            fill="rgba(148,163,184,0.7)"
+            fontSize={10}
+            fontFamily="system-ui, sans-serif"
           >
             {a}°
           </text>
         ))}
 
+        {/* Altitude grid lines */}
+        {[30, 60, 90].map(a => (
+          <line
+            key={a}
+            x1={pad.left} y1={toY(a)}
+            x2={W - pad.right} y2={toY(a)}
+            stroke="rgba(148,163,184,0.08)"
+            strokeWidth={0.5}
+          />
+        ))}
+
         {/* Legend */}
-        <circle cx={65} cy={6} r={1.5} fill="#fbbf24" />
-        <text x={68} y={7} fill="var(--sky-muted)" fontSize="2.5">Sun</text>
-        <circle cx={80} cy={6} r={1.5} fill="#94a3b8" />
-        <text x={83} y={7} fill="var(--sky-muted)" fontSize="2.5">Moon</text>
+        <circle cx={W - pad.right - 120} cy={pad.top - 10} r={3} fill="#fbbf24" />
+        <text x={W - pad.right - 114} y={pad.top - 6} fill="rgba(148,163,184,0.8)" fontSize={11} fontFamily="system-ui, sans-serif">Sun</text>
+        <circle cx={W - pad.right - 70} cy={pad.top - 10} r={3} fill="#94a3b8" />
+        <text x={W - pad.right - 64} y={pad.top - 6} fill="rgba(148,163,184,0.8)" fontSize={11} fontFamily="system-ui, sans-serif">Moon</text>
       </svg>
 
       {/* Hover overlay */}
@@ -1154,8 +1217,8 @@ function CombinedArcChart({ solar, lunar }: { solar: AltitudePoint[]; lunar: Alt
             key={i}
             className="absolute top-0 bottom-0"
             style={{
-              left: `${toX(p.hour)}%`,
-              width: `${100 / solar.length}%`,
+              left: `${(toX(p.hour) / W) * 100}%`,
+              width: `${(plotW / 23 / W) * 100}%`,
               cursor: "crosshair",
             }}
             onMouseEnter={() => setHovered(i)}
@@ -1163,14 +1226,14 @@ function CombinedArcChart({ solar, lunar }: { solar: AltitudePoint[]; lunar: Alt
           >
             {hovered === i && lunar[i] && (
               <div
-                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 rounded text-[9px] whitespace-nowrap border z-10"
+                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 rounded-lg text-[10px] whitespace-nowrap border z-20 shadow-lg"
                 style={{
-                  background: "rgba(15,23,42,0.95)",
-                  borderColor: "rgba(255,255,255,0.1)",
+                  background: "rgba(15,23,42,0.96)",
+                  borderColor: "rgba(148,163,184,0.2)",
                   color: "var(--sky-text)",
                 }}
               >
-                <div className="font-semibold">{p.hour.toString().padStart(2, "0")}:00</div>
+                <div className="font-semibold mb-0.5">{p.hour.toString().padStart(2, "0")}:00</div>
                 <div style={{ color: "#fbbf24" }}>☀ Sun: {p.altitude.toFixed(1)}°</div>
                 <div style={{ color: "#94a3b8" }}>☽ Moon: {lunar[i].altitude.toFixed(1)}°</div>
               </div>
