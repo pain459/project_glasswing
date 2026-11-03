@@ -682,8 +682,9 @@ class EventsService:
         return events
 
     def _moon_phase_emoji(self, phase_val: int) -> str:
-        emojis = {0: "🌑", 1: "🌒", 2: "🌓", 3: "🌔", 4: "🌕",
-                  5: "🌖", 6: "🌗", 7: "🌘"}
+        # Skyfield MOON_PHASES: 0=New, 1=First Quarter, 2=Full, 3=Last Quarter
+        # Using intuitive emojis: crescent for quarter phases, not half-moon
+        emojis = {0: "🌑", 1: "🌒", 2: "🌕", 3: "🌘"}
         return emojis.get(phase_val, "🌕")
 
     def _season_emoji(self, name: str) -> str:
