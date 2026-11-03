@@ -201,3 +201,24 @@ class SkyService:
             "visible_planets": planets["visible"],
             "sky_events": sky_events,
         }
+
+    def get_altitude_arcs(self, date: datetime, location: ObserverLocation) -> dict:
+        """Get hourly altitude arcs for sun and moon across the day."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        local_date = self._get_local_date(date, location.tz)
+
+        solar_arc = self.solar.get_altitude_arc(
+            self.ts, location.latitude_deg, location.longitude_deg,
+            local_date, location.elevation_m
+        )
+        lunar_arc = self.lunar.get_altitude_arc(
+            self.ts, location.latitude_deg, location.longitude_deg,
+            local_date, location.elevation_m
+        )
+
+        return {
+            "solar": solar_arc,
+            "lunar": lunar_arc,
+        }

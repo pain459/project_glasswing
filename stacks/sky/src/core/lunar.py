@@ -241,3 +241,29 @@ class LunarService:
             )
 
         return result
+
+    def get_altitude_arc(
+        self, ts, latitude: float, longitude: float,
+        date: datetime, elevation: float = 0.0,
+        interval_hours: int = 1
+    ) -> list:
+        """Return hourly moon altitude for the entire day.
+
+        Each entry: {"hour": int, "altitude": float, "azimuth": float, "distance_km": float}
+        """
+        observer = self._get_observer(latitude, longitude, elevation)
+        day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        points = []
+        for h in range(0, 24, interval_hours):
+            dt = day_start + timedelta(hours=h)
+            t = ts.from_datetime(dt)
+            moon_obs = observer.at(t).observe(self.moon)
+            apparent = moon_obs.apparent()
+            alt, az, distance = apparent.altaz()
+            points.append({
+                "hour": h,
+                "altitude": round(alt.degrees, 1),
+                "azimuth": round(az.degrees, 1),
+                "distance_km": round(distance.km, 0),
+            })
+        return points

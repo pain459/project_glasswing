@@ -258,6 +258,27 @@ async def get_daily_sky(
     )
 
 
+# ─── Altitude arcs ──────────────────────────────────────────────────────────
+
+@app.get("/api/v1/sky/arc")
+async def get_altitude_arcs(
+    date: str = Query("today"),
+    location_id: int = Query(None),
+    latitude: float = Query(None),
+    longitude: float = Query(None),
+    timezone: str = Query(None),
+):
+    """Get hourly altitude arcs for sun and moon across the day."""
+    loc = _resolve_location(location_id, latitude, longitude, timezone)
+    target_date = _resolve_date(date)
+
+    arcs = sky_service.get_altitude_arcs(target_date, loc)
+    return ApiResponse(
+        data=arcs,
+        metadata=_calc_metadata(target_date, loc),
+    )
+
+
 # ─── Helper functions ───────────────────────────────────────────────────────
 
 def _resolve_location(location_id, latitude, longitude, timezone_str):

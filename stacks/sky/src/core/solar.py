@@ -301,3 +301,25 @@ class SolarService:
             )
 
         return result
+
+    def get_altitude_arc(
+        self, ts, latitude: float, longitude: float,
+        date: datetime, elevation: float = 0.0,
+        interval_hours: int = 1
+    ) -> list:
+        """Return hourly solar altitude for the entire day.
+
+        Each entry: {"hour": int, "altitude": float, "azimuth": float}
+        """
+        observer = self._get_observer(latitude, longitude, elevation)
+        day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+        points = []
+        for h in range(0, 24, interval_hours):
+            dt = day_start + timedelta(hours=h)
+            alt, az, _ = self._compute_altitude_azimuth(ts, dt, observer)
+            points.append({
+                "hour": h,
+                "altitude": round(alt, 1),
+                "azimuth": round(az, 1),
+            })
+        return points
