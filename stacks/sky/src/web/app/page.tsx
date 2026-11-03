@@ -135,6 +135,30 @@ interface LunarData {
   illumination_percent: number;
   phase_angle_deg?: number;
   elongation_deg?: number;
+  moonrise_azimuth?: number | null;
+  moonset_azimuth?: number | null;
+  moonrise_direction?: string | null;
+  moonset_direction?: string | null;
+  lunar_age?: {
+    age_days: number | null;
+    cycle_days: number;
+    age_percent: number | null;
+    days_to_new_moon: number | null;
+  };
+  moon_luminance?: {
+    luminance_class: string;
+    luminance_label: string;
+    sky_impact: string;
+    deep_sky_friendly: boolean | null;
+    illumination_fraction: number | null;
+  };
+  perigee_apogee?: {
+    current_distance_km: number | null;
+    nearest_point: string;
+    days_to_nearest: number | null;
+    perigee_distance_km: number | null;
+    apogee_distance_km: number | null;
+  };
   current_position?: {
     altitude_deg: number;
     azimuth_deg?: number;
@@ -1094,9 +1118,10 @@ export default function Dashboard() {
                     <span className={moonUp ? "status-dot-on" : "status-dot-off"} />
                   </div>
 
+                  {/* Phase + Illumination */}
                   <div className="flex items-center gap-3 mb-2">
                     <MoonPhase fraction={data.lunar.phase_fraction} illumination={data.lunar.illumination_percent} />
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs font-medium row-value">{data.lunar.phase_name}</p>
                       <p className="text-[10px] mt-0.5" style={{ color: "var(--sky-muted)" }}>
                         {data.lunar.illumination_percent.toFixed(0)}% illuminated
@@ -1109,15 +1134,93 @@ export default function Dashboard() {
                     </div>
                   </div>
 
+                  {/* Lunar Age Progress Bar */}
+                  {data.lunar.lunar_age && (
+                    <div className="mt-2 mb-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                          Lunar Age: Day {data.lunar.lunar_age.age_days?.toFixed(1) ?? "—"} of {data.lunar.lunar_age.cycle_days.toFixed(1)}
+                        </span>
+                        <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                          {data.lunar.lunar_age.days_to_new_moon != null
+                            ? `${data.lunar.lunar_age.days_to_new_moon.toFixed(1)}d to New Moon`
+                            : ""}
+                        </span>
+                      </div>
+                      <div
+                        className="w-full rounded-full overflow-hidden"
+                        style={{ height: "4px", background: "rgba(196,181,253,0.15)" }}
+                      >
+                        <div
+                          className="rounded-full transition-all"
+                          style={{
+                            width: `${(data.lunar.lunar_age.age_percent ?? 0) * 100}%`,
+                            height: "100%",
+                            background: "linear-gradient(90deg, #6366f1, #c4b5fd)",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <div className="my-2 sky-divider" />
 
+                  {/* Moon Luminance / Sky Brightness */}
+                  {data.lunar.moon_luminance && (
+                    <>
+                      <div className="flex items-center justify-between py-1.5">
+                        <span className="row-label">Sky Brightness</span>
+                        <span className="flex items-center gap-1.5 row-value">
+                          {data.lunar.moon_luminance.deep_sky_friendly !== null && (
+                            data.lunar.moon_luminance.deep_sky_friendly
+                              ? <Eye className="w-3 h-3" style={{ color: "#34d399" }} />
+                              : <EyeOff className="w-3 h-3" style={{ color: "#f87171" }} />
+                          )}
+                          <span style={{
+                            color: data.lunar.moon_luminance.luminance_class === "excellent" ? "#34d399"
+                              : data.lunar.moon_luminance.luminance_class === "good" ? "#a3e635"
+                              : data.lunar.moon_luminance.luminance_class === "moderate" ? "#fbbf24"
+                              : data.lunar.moon_luminance.luminance_class === "bright" ? "#fb923c"
+                              : data.lunar.moon_luminance.luminance_class === "washed_out" ? "#f87171"
+                              : "var(--sky-muted)",
+                          }}>
+                            {data.lunar.moon_luminance.luminance_label}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-1">
+                        <span className="row-label">Deep-Sky</span>
+                        <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                          {data.lunar.moon_luminance.sky_impact}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="my-2 sky-divider" />
+
+                  {/* Rise / Set / Transit */}
                   <div className="flex items-center justify-between py-1.5">
                     <span className="row-label">Moonrise</span>
-                    <span className="row-value">{formatTime(data.lunar.moonrise)}</span>
+                    <span className="row-value">
+                      {formatTime(data.lunar.moonrise)}
+                      {data.lunar.moonrise_direction && (
+                        <span className="ml-1.5 text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                          {data.lunar.moonrise_direction}
+                        </span>
+                      )}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between py-1.5">
                     <span className="row-label">Moonset</span>
-                    <span className="row-value">{formatTime(data.lunar.moonset)}</span>
+                    <span className="row-value">
+                      {formatTime(data.lunar.moonset)}
+                      {data.lunar.moonset_direction && (
+                        <span className="ml-1.5 text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                          {data.lunar.moonset_direction}
+                        </span>
+                      )}
+                    </span>
                   </div>
                   {data.lunar.lunar_culmination && (
                     <div className="flex items-center justify-between py-1.5">
@@ -1133,6 +1236,41 @@ export default function Dashboard() {
                     </div>
                   )}
 
+                  {/* Perigee / Apogee */}
+                  {data.lunar.perigee_apogee && (
+                    <>
+                      <div className="my-2 sky-divider" />
+                      <div className="flex items-center justify-between py-1.5">
+                        <span className="row-label">Distance</span>
+                        <span className="row-value">
+                          {data.lunar.perigee_apogee.current_distance_km != null
+                            ? `${(data.lunar.perigee_apogee.current_distance_km / 1000).toFixed(1)}k km`
+                            : "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-1.5">
+                        <span className="row-label">Approaching</span>
+                        <span className="row-value">
+                          <span style={{
+                            color: data.lunar.perigee_apogee.nearest_point === "perigee" ? "#fbbf24"
+                              : data.lunar.perigee_apogee.nearest_point === "apogee" ? "#60a5fa"
+                              : "var(--sky-muted)",
+                          }}>
+                            {data.lunar.perigee_apogee.nearest_point === "perigee" ? "🌕 Perigee"
+                              : data.lunar.perigee_apogee.nearest_point === "apogee" ? "🌑 Apogee"
+                              : "—"}
+                          </span>
+                          {data.lunar.perigee_apogee.days_to_nearest != null && (
+                            <span className="ml-1 text-[9px]" style={{ color: "var(--sky-footer-text)" }}>
+                              in {data.lunar.perigee_apogee.days_to_nearest.toFixed(1)}d
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Current Position */}
                   {data.lunar.current_position && (
                     <>
                       <div className="my-2 sky-divider" />
@@ -1144,12 +1282,6 @@ export default function Dashboard() {
                         <span className="row-label">Azimuth</span>
                         <span className="row-value">
                           {data.lunar.current_position.azimuth_deg != null ? `${data.lunar.current_position.azimuth_deg.toFixed(1)}°` : "—"}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between py-1.5">
-                        <span className="row-label">Distance</span>
-                        <span className="row-value">
-                          {data.lunar.current_position.distance_km != null ? `${(data.lunar.current_position.distance_km / 1000).toFixed(0)}k km` : "—"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between py-1.5">
@@ -1172,6 +1304,7 @@ export default function Dashboard() {
                     </>
                   )}
 
+                  {/* Constellation + Angular Size */}
                   {data.sky_events?.moon_constellation && (
                     <>
                       <div className="my-2 sky-divider" />
@@ -1188,22 +1321,35 @@ export default function Dashboard() {
                         <span className="row-label">Angular Size</span>
                         <span className="row-value">{data.sky_events.moon_distance.angular_diameter_arcmin.toFixed(1)}′</span>
                       </div>
-                      <div className="flex items-center justify-between py-1.5">
-                        <span className="row-label">Distance</span>
-                        <span className="row-value">
-                          {(data.sky_events.moon_distance.distance_km / 1000).toFixed(0)}k km
-                          {data.sky_events.moon_distance.distance_label !== "normal" && (
-                            <span
-                              className="ml-1.5 text-[9px] px-1 py-0.5 rounded-full font-semibold uppercase"
-                              style={{
-                                background: data.sky_events.moon_distance.distance_label === "supermoon" ? "rgba(251,191,36,0.15)" : "rgba(96,165,250,0.15)",
-                                color: data.sky_events.moon_distance.distance_label === "supermoon" ? "#fbbf24" : "#60a5fa",
-                              }}
-                            >
-                              {data.sky_events.moon_distance.distance_label}
-                            </span>
-                          )}
-                        </span>
+                      {data.sky_events.moon_distance.distance_label !== "normal" && (
+                        <div className="flex items-center justify-between py-1.5">
+                          <span className="row-label">Distance Note</span>
+                          <span
+                            className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold uppercase"
+                            style={{
+                              background: data.sky_events.moon_distance.distance_label === "supermoon" ? "rgba(251,191,36,0.15)" : "rgba(96,165,250,0.15)",
+                              color: data.sky_events.moon_distance.distance_label === "supermoon" ? "#fbbf24" : "#60a5fa",
+                            }}
+                          >
+                            {data.sky_events.moon_distance.distance_label}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {/* Upcoming Phases */}
+                  {data.lunar.upcoming_phases && data.lunar.upcoming_phases.length > 0 && (
+                    <>
+                      <div className="my-2 sky-divider" />
+                      <div className="text-[10px] font-medium mb-1.5" style={{ color: "var(--sky-muted)" }}>Upcoming Phases</div>
+                      <div className="space-y-1">
+                        {data.lunar.upcoming_phases.map((ph, i) => (
+                          <div key={i} className="flex items-center justify-between py-1">
+                            <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>{ph.phase}</span>
+                            <span className="text-[10px]" style={{ color: "var(--sky-footer-text)" }}>{formatTime(ph.datetime_utc)}</span>
+                          </div>
+                        ))}
                       </div>
                     </>
                   )}
