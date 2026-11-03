@@ -1742,10 +1742,26 @@ export default function Dashboard() {
                   <div className="space-y-0">
                     {(() => {
                       const today = new Date();
-                      // Events are sorted chronologically by backend; find the next upcoming one
-                      const nextEventDate = seasonCalendarData.events.find(
-                        (e) => new Date(e.date + "T00:00:00") >= today
-                      )?.date ?? null;
+                      today.setHours(0, 0, 0, 0);
+
+                      // Build a flat, sorted list of all events with their dates
+                      const allEvents = seasonCalendarData.events
+                        .map((ev) => ({ ...ev, evDate: new Date(ev.date + "T00:00:00") }))
+                        .sort((a, b) => a.evDate.getTime() - b.evDate.getTime());
+
+                      // Find the next upcoming event (first event >= today)
+                      const nextEvent = allEvents.find((e) => e.evDate >= today);
+                      const nextEventDate = nextEvent?.date ?? null;
+
+                      // Find the current season: last event that occurred before today
+                      // (the one that started the current season period)
+                      let currentEventDate: string | null = null;
+                      for (let i = allEvents.length - 1; i >= 0; i--) {
+                        if (allEvents[i].evDate < today) {
+                          currentEventDate = allEvents[i].date;
+                          break;
+                        }
+                      }
 
                       const grouped: Record<string, SeasonEvent[]> = {};
                       for (const ev of seasonCalendarData.events) {
@@ -1765,15 +1781,20 @@ export default function Dashboard() {
                               const evDate = new Date(ev.date + "T00:00:00");
                               const isPast = evDate < today;
                               const isNext = ev.date === nextEventDate;
+                              const isCurrent = ev.date === currentEventDate;
 
                               return (
                                 <div
                                   key={idx}
                                   className="flex items-start gap-3 rounded-lg px-3 py-2.5 border transition-colors"
                                   style={{
-                                    background: isNext ? "var(--sky-visible-bg)" : isPast ? "var(--sky-planet-bg)" : "var(--sky-planet-bg)",
-                                    borderColor: isNext ? "var(--sky-visible-border)" : "var(--sky-planet-border)",
-                                    opacity: isPast ? 0.6 : 1,
+                                    background: isCurrent ? "rgba(99,102,241,0.08)"
+                                      : isNext ? "var(--sky-visible-bg)"
+                                      : "var(--sky-planet-bg)",
+                                    borderColor: isCurrent ? "rgba(99,102,241,0.35)"
+                                      : isNext ? "var(--sky-visible-border)"
+                                      : "var(--sky-planet-border)",
+                                    opacity: isPast && !isCurrent ? 0.55 : 1,
                                   }}
                                 >
                                   <span className="text-xl leading-none mt-0.5">{ev.emoji}</span>
@@ -1782,13 +1803,18 @@ export default function Dashboard() {
                                       <span className="text-[12px] font-semibold" style={{ color: "var(--sky-text)" }}>
                                         {ev.name}
                                       </span>
+                                      {isCurrent && (
+                                        <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: "rgba(99,102,241,0.15)", color: "#818cf8" }}>
+                                          CURRENT
+                                        </span>
+                                      )}
                                       {isNext && (
                                         <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: "rgba(16,185,129,0.15)", color: "#34d399" }}>
                                           NEXT
                                         </span>
                                       )}
                                       <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
-                                        {new Date(ev.date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" })}
+                                        {evDate.toLocaleDateString("en-IN", { weekday: "short", month: "short", day: "numeric" })}
                                       </span>
                                     </div>
                                     <p className="text-[10px] mt-0.5" style={{ color: "var(--sky-muted)" }}>
