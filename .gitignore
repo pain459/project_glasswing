@@ -9,3 +9,4 @@ stacks/*/compose.override.yaml
 stacks/*/repos.env
 /tests/__pycache__/*
 stacks/sky/data/ephemeris/
+.agent-memory/
