@@ -511,7 +511,10 @@ class EventsService:
         self, ts, latitude: float, longitude: float,
         date: datetime, elevation: float = 0.0
     ) -> list:
-        """Classify each 3-hour block of the day as dark/twilight/day."""
+        """Classify each 3-hour block of the day as dark/twilight/day.
+
+        Samples at local hours (0, 3, 6, … 21) using the timezone attached to *date*.
+        """
         topos = Topos(
             latitude_degrees=latitude,
             longitude_degrees=longitude,
@@ -522,7 +525,11 @@ class EventsService:
             dt_func = dark_twilight_day(self.eph, topos)
             classifications = []
             for hour in range(0, 24, 3):
-                sample_dt = date.replace(hour=hour, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
+                # Use the timezone already attached to *date* (local tz from _get_local_date)
+                if date.tzinfo is not None:
+                    sample_dt = date.replace(hour=hour, minute=0, second=0, microsecond=0)
+                else:
+                    sample_dt = date.replace(hour=hour, minute=0, second=0, microsecond=0, tzinfo=timezone.utc)
                 sample_t = ts.from_datetime(sample_dt)
                 val = dt_func(sample_t)
                 # Handle numpy scalar
@@ -530,7 +537,7 @@ class EventsService:
                     val = val.item()
                 label = TWILIGHTS.get(val, "Unknown")
                 classifications.append({
-                    "hour_utc": hour,
+                    "hour_local": hour,
                     "classification": label,
                     "code": int(val),
                 })

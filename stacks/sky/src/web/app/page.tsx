@@ -119,7 +119,7 @@ interface SkyEvents {
     days_away: number | null;
   };
   dark_twilight_classification?: Array<{
-    hour_utc: number;
+    hour_local: number;
     classification: string;
     code: number;
   }>;
@@ -1300,7 +1300,7 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2 mb-3">
                     <Eye className="w-3.5 h-3.5" style={{ color: "#818cf8" }} />
                     <span className="section-label">Dark Sky Windows</span>
-                    <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>Best observing hours</span>
+                    <span className="text-[10px] ml-auto" style={{ color: "var(--sky-muted)" }}>Local time · Best observing hours</span>
                   </div>
 
                   <div className="grid grid-cols-12 gap-1">
@@ -1319,12 +1319,12 @@ export default function Dashboard() {
                             borderColor: isNight ? "rgba(99,102,241,0.3)" : "transparent",
                           }}
                         >
-                          <span className="text-[9px]" style={{ color: colors[code] || "var(--sky-muted)" }}>
-                            {String(tw.hour_utc).padStart(2, "0")}:00
+                          <span className="text-[11px] font-medium" style={{ color: colors[code] || "var(--sky-muted)" }}>
+                            {String(tw.hour_local).padStart(2, "0")}:00
                           </span>
                           <div className="mt-1">
                             <span
-                              className="text-[8px] px-1 py-0.5 rounded-full"
+                              className="text-[10px] px-1 py-0.5 rounded-full"
                               style={{
                                 background: isNight ? "rgba(52,211,153,0.2)" : "transparent",
                                 color: isNight ? "#34d399" : colors[code] || "var(--sky-muted)",
@@ -1339,7 +1339,7 @@ export default function Dashboard() {
                     })}
                   </div>
 
-                  <p className="text-[9px] mt-2" style={{ color: "var(--sky-footer-text)" }}>
+                  <p className="text-[10px] mt-2" style={{ color: "var(--sky-footer-text)" }}>
                     Green = best for deep sky · Yellow = daylight · Blue = twilight
                   </p>
                 </div>
