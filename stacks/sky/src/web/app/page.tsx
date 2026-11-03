@@ -177,6 +177,29 @@ interface UpcomingEventsData {
   events: UpcomingEvent[];
 }
 
+interface ISSPass {
+  start_time: string;
+  max_elevation_time: string;
+  end_time: string;
+  max_elevation_deg: number;
+  duration_minutes: number;
+  approach_azimuth: number;
+  direction: string;
+}
+
+interface ISSData {
+  status: string;
+  current_position?: {
+    altitude_deg: number;
+    azimuth_deg: number;
+    distance_km: number;
+    is_above_horizon: boolean;
+    direction: string;
+  };
+  passes: ISSPass[];
+  total_passes: number;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────
 
 function formatTime(isoString: string | null): string {
@@ -526,6 +549,7 @@ export default function Dashboard() {
   const [data, setData] = useState<DailySkyData | null>(null);
   const [arcData, setArcData] = useState<{ solar: AltitudePoint[]; lunar: AltitudePoint[] } | null>(null);
   const [eventsData, setEventsData] = useState<UpcomingEventsData | null>(null);
+  const [issData, setIssData] = useState<ISSData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(getToday());
@@ -562,6 +586,16 @@ export default function Dashboard() {
     fetch("/api/v1/sky/events/upcoming?days=28")
       .then(r => r.json())
       .then(json => { if (!cancelled) setEventsData(json.data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // Fetch ISS data once on mount
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/v1/sky/iss")
+      .then(r => r.json())
+      .then(json => { if (!cancelled) setIssData(json.data); })
       .catch(() => {});
     return () => { cancelled = true; };
   }, []);
@@ -995,6 +1029,107 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── ISS Visibility ────────────────────────────────────────── */}
+      {issData && issData.status === "available" && (
+        <div className="sky-card">
+          <div className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Telescope className="w-3.5 h-3.5" style={{ color: "#34d399" }} />
+              <span className="section-label">ISS Visibility</span>
+              {issData.current_position?.is_above_horizon && (
+                <span className="text-[9px] font-semibold" style={{ color: "#34d399" }}>
+                  ● Visible now
+                </span>
+              )}
+              <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                Next 48h
+              </span>
+            </div>
+
+            {/* Current position */}
+            {issData.current_position && (
+              <div
+                className="rounded-lg p-3 mb-3 border"
+                style={{
+                  background: issData.current_position.is_above_horizon
+                    ? "var(--sky-visible-bg)"
+                    : "var(--sky-planet-bg)",
+                  borderColor: issData.current_position.is_above_horizon
+                    ? "var(--sky-visible-border)"
+                    : "var(--sky-planet-border)",
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-medium" style={{ color: "var(--sky-text)" }}>
+                      {issData.current_position.is_above_horizon ? "🛰 In view" : "🛰 Below horizon"}
+                    </span>
+                    <span className="text-[9px] ml-2" style={{ color: "var(--sky-muted)" }}>
+                      Alt {issData.current_position.altitude_deg.toFixed(1)}° · {issData.current_position.direction}
+                    </span>
+                  </div>
+                  <span className="text-[9px]" style={{ color: "var(--sky-muted)" }}>
+                    {(issData.current_position.distance_km / 1000).toFixed(1)}k km
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Upcoming passes */}
+            {issData.passes.length > 0 ? (
+              <div className="space-y-1.5">
+                {issData.passes.slice(0, 5).map((pass, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 border"
+                    style={{
+                      background: "var(--sky-planet-bg)",
+                      borderColor: "var(--sky-planet-border)",
+                    }}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>
+                          Max {pass.max_elevation_deg}°
+                        </span>
+                        <span className="text-[9px]" style={{ color: "var(--sky-muted)" }}>
+                          {pass.duration_minutes.toFixed(0)} min
+                        </span>
+                        <span className="text-[9px]" style={{ color: "var(--sky-muted)" }}>
+                          from {pass.direction}
+                        </span>
+                      </div>
+                      <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                        {new Date(pass.start_time).toLocaleTimeString("en-IN", {
+                          hour: "2-digit", minute: "2-digit"
+                        })}
+                        {" – "}
+                        {new Date(pass.end_time).toLocaleTimeString("en-IN", {
+                          hour: "2-digit", minute: "2-digit"
+                        })}
+                        {" · "}
+                        {new Date(pass.start_time).toLocaleDateString("en-IN", {
+                          weekday: "short", month: "short", day: "numeric"
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {issData.total_passes > 5 && (
+                  <div className="text-center text-[9px] pt-1" style={{ color: "var(--sky-muted)" }}>
+                    +{issData.total_passes - 5} more passes
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                No visible passes in the next 48 hours
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Upcoming Astronomical Events (4 weeks) ────────────────── */}
       {eventsData && eventsData.events.length > 0 && (

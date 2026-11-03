@@ -23,6 +23,7 @@ from core.solar import SolarService
 from core.lunar import LunarService
 from core.planetary import PlanetaryService
 from core.events import EventsService
+from core.satellite import create_iss_satellite, get_iss_visible_passes, get_iss_current_position
 from api.models.schemas import SystemStatusResponse
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ class SkyService:
         self.lunar = None
         self.planetary = None
         self.events = None
+        self.iss = None
         self._start_time = None
         self._is_ready = False
 
@@ -58,6 +60,14 @@ class SkyService:
         self.lunar = LunarService(self.ephemeris_mgr.loaded_kernel)
         self.planetary = PlanetaryService(self.ephemeris_mgr.loaded_kernel)
         self.events = EventsService(self.ephemeris_mgr.loaded_kernel)
+
+        # Initialize ISS satellite tracking
+        try:
+            self.iss = create_iss_satellite(self.ts)
+            logger.info("ISS satellite tracking initialized")
+        except Exception as e:
+            logger.warning("ISS satellite tracking failed: %s", e)
+            self.iss = None
 
         self._is_ready = True
         logger.info("SkyService initialized successfully")
@@ -244,3 +254,36 @@ class SkyService:
             loc.latitude_deg, loc.longitude_deg,
             loc.elevation_m, days
         )
+
+    def get_iss_data(self, location: Optional[ObserverLocation] = None) -> dict:
+        """Get current ISS position and upcoming visible passes."""
+        if not self._is_ready or self.iss is None:
+            return {"status": "unavailable", "passes": [], "current_position": None}
+
+        if location is None:
+            location = ObserverLocation(
+                name="Hyderabad",
+                latitude_deg=17.3850,
+                longitude_deg=78.4867,
+                elevation_m=542.0,
+                timezone="Asia/Kolkata",
+            )
+
+        current = get_iss_current_position(
+            self.ts, self.iss,
+            location.latitude_deg, location.longitude_deg,
+            location.elevation_m,
+        )
+        passes = get_iss_visible_passes(
+            self.ts, self.iss,
+            location.latitude_deg, location.longitude_deg,
+            location.elevation_m,
+            hours=48,
+        )
+
+        return {
+            "status": "available",
+            "current_position": current,
+            "passes": passes[:10],  # Top 10 passes by elevation
+            "total_passes": len(passes),
+        }

@@ -293,6 +293,24 @@ async def get_upcoming_events(
     )
 
 
+# ─── ISS Visibility ─────────────────────────────────────────────────────────
+
+@app.get("/api/v1/sky/iss")
+async def get_iss_visibility(
+    location_id: int = Query(None),
+    latitude: float = Query(None),
+    longitude: float = Query(None),
+    timezone: str = Query(None),
+):
+    """Get current ISS position and upcoming visible passes."""
+    loc = _resolve_location(location_id, latitude, longitude, timezone)
+    iss_data = sky_service.get_iss_data(loc)
+    return ApiResponse(
+        data=iss_data,
+        metadata=None,
+    )
+
+
 # ─── Helper functions ───────────────────────────────────────────────────────
 
 def _resolve_location(location_id, latitude, longitude, timezone_str):
