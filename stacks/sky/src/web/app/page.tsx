@@ -821,6 +821,9 @@ export default function Dashboard() {
   // Dark sky planner
   const [darkSkyHours, setDarkSkyHours] = useState<DarkSkyHour[]>([]);
 
+  // System status
+  const [systemStatus, setSystemStatus] = useState<{ status: string; engine_version: string; ephemeris: string } | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(getToday());
@@ -871,6 +874,12 @@ export default function Dashboard() {
     fetch("/api/v1/sky/iss")
       .then(r => r.json())
       .then(json => { if (!cancelled) setIssData(json.data); })
+      .catch(() => {});
+
+    // System status
+    fetch("/api/v1/system/status")
+      .then(r => r.json())
+      .then(json => { if (!cancelled) setSystemStatus(json); })
       .catch(() => {});
 
     // Planet tonight
@@ -1084,6 +1093,22 @@ export default function Dashboard() {
           <span className="font-mono text-[10px]">
             {data.location.latitude.toFixed(2)}&deg;N {data.location.longitude.toFixed(2)}&deg;E
           </span>
+          {/* System Status Badge */}
+          {systemStatus && (
+            <span
+              className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-full cursor-default"
+              style={{
+                background: systemStatus.status === "healthy" ? "rgba(52,211,153,0.12)" : "rgba(248,113,113,0.12)",
+                color: systemStatus.status === "healthy" ? "#34d399" : "#f87171",
+              }}
+              title={`Engine: ${systemStatus.engine_version || "unknown"} · Ephemeris: ${systemStatus.ephemeris || "unknown"}`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{
+                background: systemStatus.status === "healthy" ? "#34d399" : "#f87171",
+              }} />
+              <span className="uppercase">{systemStatus.status}</span>
+            </span>
+          )}
         </div>
 
         {/* ── Location Picker Dropdown ──────────────────────────────── */}
