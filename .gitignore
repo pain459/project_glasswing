@@ -9,6 +9,3 @@ stacks/*/compose.override.yaml
 stacks/*/repos.env
 /tests/__pycache__/*
 stacks/sky/data/ephemeris/
-/stacks/sky/src/worker/__pycache__/
-/stacks/sky/src/tests/__pycache__/
-__pycache__/

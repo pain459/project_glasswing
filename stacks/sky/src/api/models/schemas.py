@@ -126,3 +126,58 @@ class LocationResponse(BaseModel):
     longitude_deg: float
     elevation_m: float
     timezone: str
+
+
+# ─── Weather & Observing Conditions ─────────────────────────────────────────
+
+class ObservingConditions(BaseModel):
+    """Computed observing conditions from weather data."""
+    rating: str  # excellent, good, fair, poor, unknown
+    transparency_score: int  # 0-100
+    seeing_estimate: str  # excellent, good, fair, poor, unknown
+    dew_risk: str  # high, moderate, low, minimal, unknown
+    recommendations: list[str] = []
+
+
+class CurrentWeather(BaseModel):
+    """Current weather and observing conditions."""
+    timestamp: Optional[str] = None
+    is_night: Optional[bool] = None
+    conditions: str = ""
+    weather_code: Optional[int] = None
+    temperature_c: Optional[float] = None
+    humidity_percent: Optional[float] = None
+    dew_point_c: Optional[float] = None
+    cloud_cover_percent: Optional[float] = None
+    visibility_m: Optional[float] = None
+    precipitation_mm: Optional[float] = None
+    wind_speed_kmh: Optional[float] = None
+    wind_gusts_kmh: Optional[float] = None
+    pressure_hpa: Optional[float] = None
+    observing: Optional[ObservingConditions] = None
+
+
+class HourlyForecast(BaseModel):
+    """Single hour of weather forecast."""
+    time: str
+    cloud_cover_percent: Optional[float] = None
+    visibility_m: Optional[float] = None
+    precipitation_mm: Optional[float] = None
+    precipitation_probability: Optional[float] = None
+    temperature_c: Optional[float] = None
+    humidity_percent: Optional[float] = None
+    wind_speed_kmh: Optional[float] = None
+    weather_code: Optional[int] = None
+    conditions: str = ""
+    is_night: Optional[bool] = None
+    suitable_for_observing: Optional[bool] = None
+
+
+class WeatherResponse(BaseModel):
+    """Full weather and observing conditions response."""
+    current: CurrentWeather
+    forecast: list[HourlyForecast] = []
+    source: str = "open-meteo"
+    source_url: str = "https://open-meteo.com"
+    attribution: str = ""
+    error: Optional[str] = None

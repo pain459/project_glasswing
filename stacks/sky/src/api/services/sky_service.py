@@ -32,6 +32,7 @@ from core.messier import MessierService
 from core.panchang import PanchangService
 from core.milkyway import MilkyWayService
 from core.observation import ObservationService
+from core import weather as weather_service
 from api.models.schemas import SystemStatusResponse
 
 logger = logging.getLogger(__name__)
@@ -611,3 +612,35 @@ class SkyService:
             location.latitude_deg, location.longitude_deg,
             location.elevation_m,
         )
+
+    # ─── Weather & Observing Conditions ────────────────────────────────
+
+    def get_weather(self, location: ObserverLocation,
+                    forecast_hours: int = 24) -> dict:
+        """Get current weather and observing conditions for a location.
+
+        Fetches real-time data from Open-Meteo and computes astronomy
+        observing conditions (transparency, seeing, dew risk, etc.).
+        """
+        return weather_service.get_observing_conditions(
+            latitude=location.latitude_deg,
+            longitude=location.longitude_deg,
+            timezone=location.timezone,
+            forecast_hours=forecast_hours,
+        )
+
+    def get_observing_conditions(self, location: ObserverLocation) -> dict:
+        """Get just the current observing conditions (lightweight).
+
+        Uses a minimal API call for current conditions only.
+        """
+        raw = weather_service.fetch_current_weather(
+            latitude=location.latitude_deg,
+            longitude=location.longitude_deg,
+            timezone=location.timezone,
+        )
+
+        if raw is None:
+            return weather_service._empty_conditions()
+
+        return weather_service.compute_observing_conditions(raw)

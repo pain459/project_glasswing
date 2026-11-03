@@ -23,6 +23,51 @@ from sqlalchemy.orm import sessionmaker
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# ─── OpenTelemetry Setup ─────────────────────────────────────────────────────
+# Lazy initialization: OTel is configured in the lifespan callback after `app` exists.
+
+def _setup_otel(app_instance):
+    """Configure OpenTelemetry tracing, metrics, and logging export."""
+    try:
+        from opentelemetry import trace
+        from opentelemetry.sdk.trace import TracerProvider
+        from opentelemetry.sdk.trace.export import BatchSpanProcessor
+        from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+        from opentelemetry.sdk.resources import Resource
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+        from opentelemetry.instrumentation.requests import RequestsInstrumentor
+        from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
+        resource = Resource.create({
+            "service.name": os.environ.get("OTEL_SERVICE_NAME", "glasswing-sky-api"),
+            "deployment.environment": os.environ.get(
+                "OTEL_RESOURCE_ATTRIBUTES", "deployment.environment=glasswing"
+            ).split(",")[0].split("=")[1] if "=" in os.environ.get("OTEL_RESOURCE_ATTRIBUTES", "") else "glasswing",
+        })
+
+        provider = TracerProvider(resource=resource)
+        otlp_endpoint = os.environ.get(
+            "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+            os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318"),
+        )
+        processor = BatchSpanProcessor(
+            OTLPSpanExporter(endpoint=otlp_endpoint),
+        )
+        provider.add_span_processor(processor)
+        trace.set_tracer_provider(provider)
+
+        # Auto-instrument FastAPI, requests, and SQLAlchemy
+        FastAPIInstrumentor.instrument_app(app_instance)
+        RequestsInstrumentor().instrument()
+        SQLAlchemyInstrumentor().instrument(enable_commenter=True, commenter_options={})
+
+        logger.info("OpenTelemetry initialized for %s", resource.attributes.get("service.name"))
+    except ImportError:
+        logger.warning("OpenTelemetry packages not installed; tracing disabled")
+    except Exception as e:
+        logger.warning("OpenTelemetry setup failed: %s", e)
+
+
 from api.models.schemas import (
     ApiResponse, HealthResponse, SystemStatusResponse,
     SolarResponse, LunarResponse, PlanetsResponse,
@@ -38,7 +83,7 @@ logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
-    "postgresql://sky:sky@glasswing-sky-postgres:5432/sky",
+    "postgresql+psycopg://sky:sky@glasswing-sky-postgres:5432/sky",
 )
 
 db_engine = create_engine(DATABASE_URL, pool_pre_ping=True)
@@ -66,6 +111,9 @@ async def lifespan(app: FastAPI):
     global sky_service, location_service
 
     logger.info("Initializing Skytoday API...")
+
+    # ── OpenTelemetry ────────────────────────────────────────────────
+    _setup_otel(app)
 
     # ── Database ─────────────────────────────────────────────────────
     from api.models.database import Base  # noqa: F811
@@ -147,8 +195,8 @@ async def sources_status():
     return ApiResponse(
         data={
             "ephemeris": "available" if sky_service and sky_service.is_ready else "unavailable",
-            "weather": "unavailable",  # Not yet implemented
-            "satellites": "unavailable",  # Not yet implemented
+            "weather": "available",
+            "satellites": "available" if sky_service and sky_service.iss else "unavailable",
             "catalogues": "available",
         },
         metadata={"checked_at": datetime.now(timezone.utc).isoformat()},
@@ -526,6 +574,50 @@ async def get_observable_tonight(
     return ApiResponse(
         data=observable,
         metadata=_calc_metadata(target_date, loc),
+    )
+
+
+# ─── Weather & Observing Conditions ───────────────────────────────────────
+
+@app.get("/api/v1/weather")
+async def get_weather(
+    location_id: Optional[str] = Query(None),
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+    timezone_str: Optional[str] = Query("Asia/Kolkata"),
+    forecast_hours: int = Query(24, ge=1, le=168),
+):
+    """Get current weather and observing conditions.
+
+    Returns real-time weather data from Open-Meteo with computed
+    astronomy observing conditions including transparency, seeing,
+    dew risk, and actionable recommendations.
+    """
+    loc = _resolve_location(location_id, latitude, longitude, timezone_str)
+    weather_data = sky_service.get_weather(loc, forecast_hours=forecast_hours)
+    return ApiResponse(
+        data=weather_data,
+        metadata=_calc_metadata(datetime.now(timezone.utc), loc),
+    )
+
+
+@app.get("/api/v1/weather/observing")
+async def get_observing_conditions(
+    location_id: Optional[str] = Query(None),
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+    timezone_str: Optional[str] = Query("Asia/Kolkata"),
+):
+    """Get current observing conditions only (lightweight).
+
+    Returns a quick assessment of whether conditions are suitable
+    for astronomical observing right now.
+    """
+    loc = _resolve_location(location_id, latitude, longitude, timezone_str)
+    conditions = sky_service.get_observing_conditions(loc)
+    return ApiResponse(
+        data=conditions,
+        metadata=_calc_metadata(datetime.now(timezone.utc), loc),
     )
 
 

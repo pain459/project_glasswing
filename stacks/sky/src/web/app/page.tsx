@@ -24,6 +24,7 @@ import {
   Navigation,
   Clock,
   ScrollText,
+  CloudRain,
 } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -501,9 +502,60 @@ interface PanchangDay {
   muhurta: PanchangMuhurta;
 }
 
+// ─── Weather & Observing Conditions Types ────────────────────────────
+
+interface ObservingConditions {
+  rating: string;
+  transparency_score: number;
+  seeing_estimate: string;
+  dew_risk: string;
+  recommendations: string[];
+}
+
+interface WeatherCurrent {
+  timestamp: string | null;
+  is_night: boolean | null;
+  conditions: string;
+  weather_code: number | null;
+  temperature_c: number | null;
+  humidity_percent: number | null;
+  dew_point_c: number | null;
+  cloud_cover_percent: number | null;
+  visibility_m: number | null;
+  precipitation_mm: number | null;
+  wind_speed_kmh: number | null;
+  wind_gusts_kmh: number | null;
+  pressure_hpa: number | null;
+  observing: ObservingConditions;
+}
+
+interface WeatherHourly {
+  time: string;
+  cloud_cover_percent: number | null;
+  visibility_m: number | null;
+  precipitation_mm: number | null;
+  precipitation_probability: number | null;
+  temperature_c: number | null;
+  humidity_percent: number | null;
+  wind_speed_kmh: number | null;
+  weather_code: number | null;
+  conditions: string;
+  is_night: boolean | null;
+  suitable_for_observing: boolean | string | null;
+}
+
+interface WeatherData {
+  current: WeatherCurrent;
+  forecast: WeatherHourly[];
+  source: string;
+  source_url: string;
+  attribution: string;
+  error: string | null;
+}
+
 // ─── Tab definitions ────────────────────────────────────────────────
 
-type TabKey = "daily" | "planets" | "calendar" | "stories" | "iss" | "events" | "panchang";
+type TabKey = "daily" | "planets" | "calendar" | "stories" | "iss" | "events" | "panchang" | "weather";
 
 const TABS: Array<{ key: TabKey; label: string; icon: React.ReactNode }> = [
   { key: "daily", label: "Daily Sky", icon: <Sun className="w-3.5 h-3.5" /> },
@@ -513,6 +565,7 @@ const TABS: Array<{ key: TabKey; label: string; icon: React.ReactNode }> = [
   { key: "iss", label: "ISS", icon: <Satellite className="w-3.5 h-3.5" /> },
   { key: "events", label: "Events", icon: <Sparkles className="w-3.5 h-3.5" /> },
   { key: "panchang", label: "Panchang", icon: <ScrollText className="w-3.5 h-3.5" /> },
+  { key: "weather", label: "Weather", icon: <CloudRain className="w-3.5 h-3.5" /> },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -902,6 +955,9 @@ export default function Dashboard() {
   // System status
   const [systemStatus, setSystemStatus] = useState<{ status: string; engine_version: string; ephemeris: string } | null>(null);
 
+  // Weather & observing conditions
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+
   // Ref to avoid re-fetching when selectedLocationId changes during initial mount
   const selectedLocationIdRef = React.useRef<number | null>(null);
   useEffect(() => { selectedLocationIdRef.current = selectedLocationId; }, [selectedLocationId]);
@@ -1044,6 +1100,12 @@ export default function Dashboard() {
       })
       .catch(() => {});
 
+    // Weather & observing conditions
+    fetch("/api/v1/weather?forecast_hours=24")
+      .then(r => r.json())
+      .then(json => { if (!cancelled && json.data) setWeatherData(json.data); })
+      .catch(() => {});
+
     return () => { cancelled = true; };
   }, [currentDate]);
 
@@ -1080,6 +1142,10 @@ export default function Dashboard() {
     fetch(`/api/v1/sky/planets/tonight?date=${currentDate}&location_id=${selectedLocationId}`)
       .then(r => r.json())
       .then(json => { setPlanetTonightData(json.data); })
+      .catch(() => {});
+    fetch("/api/v1/weather?forecast_hours=24")
+      .then(r => r.json())
+      .then(json => { if (json.data) setWeatherData(json.data); })
       .catch(() => {});
   }, [selectedLocationId]);
 
@@ -3218,6 +3284,203 @@ export default function Dashboard() {
               </div>
             )}
 
+          </div>
+        )}
+
+        {/* ── Weather & Observing Conditions Tab ──────────────────── */}
+        {activeTab === "weather" && (
+          <div className="space-y-4">
+            {/* Current Observing Conditions */}
+            {weatherData ? (
+              <>
+                {/* Rating Card */}
+                <div className="sky-card">
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <CloudRain className="w-3.5 h-3.5" style={{ color: "#38bdf8" }} />
+                      <span className="section-label">Observing Conditions</span>
+                      <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                        {weatherData.source} &bull; {weatherData.current.timestamp ? new Date(weatherData.current.timestamp).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "—"}
+                      </span>
+                    </div>
+
+                    {/* Rating Badge */}
+                    <div className="flex items-center justify-center mb-4">
+                      {(() => {
+                        const rating = weatherData.current.observing.rating;
+                        const ratingStyles: Record<string, { bg: string; color: string; label: string; emoji: string }> = {
+                          excellent: { bg: "rgba(16,185,129,0.15)", color: "#34d399", label: "Excellent", emoji: "🌟" },
+                          good: { bg: "rgba(59,130,246,0.15)", color: "#60a5fa", label: "Good", emoji: "✨" },
+                          fair: { bg: "rgba(251,191,36,0.15)", color: "#fbbf24", label: "Fair", emoji: "🌥" },
+                          poor: { bg: "rgba(248,113,113,0.15)", color: "#f87171", label: "Poor", emoji: "🌧" },
+                          unknown: { bg: "rgba(148,163,184,0.1)", color: "#94a3b8", label: "Unknown", emoji: "❓" },
+                        };
+                        const s = ratingStyles[rating] || ratingStyles.unknown;
+                        return (
+                          <div className="text-center">
+                            <div className="text-2xl mb-1">{s.emoji}</div>
+                            <span className="text-lg font-bold" style={{ color: s.color }}>{s.label}</span>
+                            <div className="text-[10px] mt-1" style={{ color: "var(--sky-muted)" }}>
+                              {weatherData.current.conditions}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Metrics Grid */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      {/* Transparency */}
+                      <div className="rounded-lg p-3 border" style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}>
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Transparency</div>
+                        <div className="text-xs font-semibold" style={{ color: "var(--sky-text)" }}>
+                          {weatherData.current.observing.transparency_score}/100
+                        </div>
+                        <div className="w-full h-1.5 rounded-full mt-1" style={{ background: "rgba(255,255,255,0.1)" }}>
+                          <div className="h-full rounded-full" style={{
+                            width: `${weatherData.current.observing.transparency_score}%`,
+                            background: weatherData.current.observing.transparency_score > 60 ? "#34d399" : weatherData.current.observing.transparency_score > 30 ? "#fbbf24" : "#f87171",
+                          }} />
+                        </div>
+                      </div>
+
+                      {/* Seeing */}
+                      <div className="rounded-lg p-3 border" style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}>
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Seeing</div>
+                        <div className="text-xs font-semibold" style={{ color: "var(--sky-text)" }}>
+                          {weatherData.current.observing.seeing_estimate.charAt(0).toUpperCase() + weatherData.current.observing.seeing_estimate.slice(1)}
+                        </div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>
+                          Wind {weatherData.current.wind_speed_kmh} km/h
+                        </div>
+                      </div>
+
+                      {/* Temperature */}
+                      <div className="rounded-lg p-3 border" style={{ background: "var(--sky-sun-bg)", borderColor: "var(--sky-sun-border)" }}>
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Temperature</div>
+                        <div className="text-xs font-semibold" style={{ color: "var(--sky-text)" }}>
+                          {weatherData.current.temperature_c != null ? `${weatherData.current.temperature_c}°C` : "—"}
+                        </div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>
+                          Humidity {weatherData.current.humidity_percent}%
+                        </div>
+                      </div>
+
+                      {/* Dew Risk */}
+                      <div className="rounded-lg p-3 border" style={{ background: "var(--sky-moon-bg)", borderColor: "var(--sky-moon-border)" }}>
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Dew Risk</div>
+                        <div className="text-xs font-semibold" style={{ color: "var(--sky-text)" }}>
+                          {weatherData.current.observing.dew_risk.charAt(0).toUpperCase() + weatherData.current.observing.dew_risk.slice(1)}
+                        </div>
+                        <div className="text-[10px] mt-0.5" style={{ color: "var(--sky-footer-text)" }}>
+                          Dew pt {weatherData.current.dew_point_c != null ? `${weatherData.current.dew_point_c}°C` : "—"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Cloud & Visibility Row */}
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      <div className="text-center">
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Cloud Cover</div>
+                        <div className="text-sm font-bold" style={{ color: "var(--sky-text)" }}>
+                          {weatherData.current.cloud_cover_percent != null ? `${weatherData.current.cloud_cover_percent}%` : "—"}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Visibility</div>
+                        <div className="text-sm font-bold" style={{ color: "var(--sky-text)" }}>
+                          {weatherData.current.visibility_m != null ? `${(weatherData.current.visibility_m / 1000).toFixed(1)} km` : "—"}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-[9px] uppercase tracking-wider mb-1" style={{ color: "var(--sky-muted)" }}>Pressure</div>
+                        <div className="text-sm font-bold" style={{ color: "var(--sky-text)" }}>
+                          {weatherData.current.pressure_hpa != null ? `${weatherData.current.pressure_hpa} hPa` : "—"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Recommendations */}
+                    {weatherData.current.observing.recommendations.length > 0 && (
+                      <div className="rounded-lg p-3 border" style={{ background: "rgba(56,189,248,0.06)", borderColor: "rgba(56,189,248,0.15)" }}>
+                        <div className="text-[9px] uppercase tracking-wider mb-2" style={{ color: "var(--sky-muted)" }}>Recommendations</div>
+                        <ul className="space-y-1">
+                          {weatherData.current.observing.recommendations.map((rec, i) => (
+                            <li key={i} className="text-[10px] flex items-start gap-1.5" style={{ color: "var(--sky-text)" }}>
+                              <span className="text-[8px] mt-0.5">•</span>
+                              <span>{rec}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Hourly Forecast Grid */}
+                {weatherData.forecast.length > 0 && (
+                  <div className="sky-card">
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Clock className="w-3.5 h-3.5" style={{ color: "#38bdf8" }} />
+                        <span className="section-label">Hourly Forecast</span>
+                        <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                          {weatherData.forecast.length} hours
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-6 gap-2">
+                        {weatherData.forecast.map((hour, i) => {
+                          const isSuitable = hour.suitable_for_observing === true;
+                          const isPartial = hour.suitable_for_observing === "partial";
+                          const isNight = hour.is_night;
+                          return (
+                            <div
+                              key={i}
+                              className="rounded-lg p-2 text-center border"
+                              style={{
+                                background: isSuitable ? "rgba(16,185,129,0.1)" : isPartial ? "rgba(251,191,36,0.08)" : "var(--sky-card)",
+                                borderColor: isSuitable ? "rgba(16,185,129,0.3)" : isPartial ? "rgba(251,191,36,0.2)" : "var(--sky-border)",
+                              }}
+                            >
+                              <div className="text-[9px] font-medium mb-1" style={{ color: "var(--sky-text)" }}>
+                                {new Date(hour.time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                              </div>
+                              <div className="text-[8px] mb-0.5" style={{ color: "var(--sky-muted)" }}>
+                                {isNight ? "🌙" : "☀️"}
+                              </div>
+                              <div className="text-[9px] font-semibold" style={{ color: "var(--sky-text)" }}>
+                                {hour.temperature_c != null ? `${hour.temperature_c}°` : "—"}
+                              </div>
+                              <div className="text-[8px]" style={{ color: "var(--sky-footer-text)" }}>
+                                ☁{hour.cloud_cover_percent != null ? `${hour.cloud_cover_percent}%` : "—"}
+                              </div>
+                              <div className="text-[8px]" style={{ color: "var(--sky-footer-text)" }}>
+                                {hour.precipitation_mm != null && hour.precipitation_mm > 0 ? `🌧${hour.precipitation_mm}mm` : "—"}
+                              </div>
+                              {isSuitable && (
+                                <div className="text-[7px] mt-0.5" style={{ color: "#34d399" }}>
+                                  ✓ Good
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <LoadingState />
+            )}
+
+            {/* Attribution */}
+            {weatherData && (
+              <div className="text-center text-[8px]" style={{ color: "var(--sky-muted)" }}>
+                Weather data from Open-Meteo (CC BY 4.0) &bull; Updated on request
+              </div>
+            )}
           </div>
         )}
 

@@ -67,11 +67,12 @@ services:
     environment:
       <<: *sky-env
       # Database connection
-      DATABASE_URL: postgresql://${SKY_POSTGRES_USER:?Required}:${SKY_POSTGRES_PASSWORD_URLENCODED:?Required}@glasswing-sky-postgres:5432/${SKY_POSTGRES_DB:?Required}
+      DATABASE_URL: postgresql+psycopg://${SKY_POSTGRES_USER:?Required}:${SKY_POSTGRES_PASSWORD_URLENCODED:?Required}@glasswing-sky-postgres:5432/${SKY_POSTGRES_DB:?Required}
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-sky-api
       OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
       OTEL_EXPORTER_OTLP_ENDPOINT: http://${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:4318
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:4318/v1/traces
       OTEL_TRACES_EXPORTER: otlp
       OTEL_METRICS_EXPORTER: otlp
       OTEL_LOGS_EXPORTER: otlp
@@ -154,9 +155,16 @@ services:
 
     environment:
       <<: *sky-env
-      DATABASE_URL: postgresql://${SKY_POSTGRES_USER:?Required}:${SKY_POSTGRES_PASSWORD_URLENCODED:?Required}@glasswing-sky-postgres:5432/${SKY_POSTGRES_DB:?Required}
+      DATABASE_URL: postgresql+psycopg://${SKY_POSTGRES_USER:?Required}:${SKY_POSTGRES_PASSWORD_URLENCODED:?Required}@glasswing-sky-postgres:5432/${SKY_POSTGRES_DB:?Required}
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-sky-worker
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:4318
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:4318/v1/traces
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: otlp
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=glasswing,host.name=pathfinder
 
     depends_on:
       postgres:
