@@ -140,7 +140,8 @@ function formatDaylight(hours: number | null): string {
 }
 
 function formatDateShort(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
+  const parts = dateStr.split("-").map(Number);
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
   return d.toLocaleDateString("en-IN", {
     weekday: "short",
     month: "short",
@@ -148,14 +149,22 @@ function formatDateShort(dateStr: string): string {
   });
 }
 
+function toLocalISOString(d: Date): string {
+  const y = String(d.getFullYear());
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function shiftDate(dateStr: string, days: number): string {
-  const d = new Date(dateStr + "T00:00:00");
+  const parts = dateStr.split("-").map(Number);
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return toLocalISOString(d);
 }
 
 function getToday(): string {
-  return new Date().toISOString().slice(0, 10);
+  return toLocalISOString(new Date());
 }
 
 // ─── Moon Phase SVG (compact, 32px) ─────────────────────────────────
@@ -322,13 +331,30 @@ export default function Dashboard() {
           >
             <ChevronLeft className="w-3.5 h-3.5" />
           </button>
-          <div>
+          <div className="min-w-[120px]">
             <div className="flex items-center justify-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5" style={{ color: "var(--sky-accent)" }} />
+              <Calendar className="w-3.5 h-3.5 flex-shrink-0" style={{ color: "var(--sky-accent)" }} />
               <h1 className="text-base font-semibold">
                 {isToday ? "Today" : formatDateShort(currentDate)}
               </h1>
             </div>
+            <input
+              type="date"
+              value={currentDate}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setCurrentDate(e.target.value);
+                }
+              }}
+              className="text-[10px] mt-1 px-1.5 py-0.5 rounded border text-center cursor-pointer"
+              style={{
+                background: "var(--sky-date-btn-bg)",
+                color: "var(--sky-text)",
+                borderColor: "var(--sky-date-btn-border)",
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            />
             {!isToday && (
               <button
                 onClick={goToday}
