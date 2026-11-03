@@ -824,6 +824,10 @@ export default function Dashboard() {
   // System status
   const [systemStatus, setSystemStatus] = useState<{ status: string; engine_version: string; ephemeris: string } | null>(null);
 
+  // Ref to avoid re-fetching when selectedLocationId changes during initial mount
+  const selectedLocationIdRef = React.useRef<number | null>(null);
+  useEffect(() => { selectedLocationIdRef.current = selectedLocationId; }, [selectedLocationId]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(getToday());
@@ -832,7 +836,8 @@ export default function Dashboard() {
     setLoading(true);
     setError(null);
     try {
-      const locParam = selectedLocationId ? `&location_id=${selectedLocationId}` : "";
+      const locId = selectedLocationIdRef.current;
+      const locParam = locId ? `&location_id=${locId}` : "";
       const [dailyRes, arcRes, darkRes] = await Promise.all([
         fetch(`/api/v1/sky/daily?date=${dateStr}${locParam}`),
         fetch(`/api/v1/sky/arc?date=${dateStr}${locParam}`),
@@ -854,7 +859,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [selectedLocationId]);
+  }, []);
 
   useEffect(() => {
     fetchData(currentDate);
@@ -970,9 +975,20 @@ export default function Dashboard() {
       .catch(() => { setPlanetDetail(null); });
   }, [selectedPlanet, currentDate, selectedLocationId]);
 
-  // Re-fetch ISS and planet-tonight when location changes
+  // Track whether the initial location has been set (to skip first null->value transition)
+  const locationInitialized = React.useRef(false);
+
+  // Re-fetch location-dependent data when user changes location (skip initial mount)
   useEffect(() => {
     if (!selectedLocationId) return;
+    if (!locationInitialized.current) {
+      // First time: just mark as initialized, don't re-fetch
+      // (fetchData uses selectedLocationIdRef which will pick up the value)
+      locationInitialized.current = true;
+      return;
+    }
+    // Subsequent location changes: re-fetch everything
+    fetchData(currentDate);
     fetch(`/api/v1/sky/iss?location_id=${selectedLocationId}`)
       .then(r => r.json())
       .then(json => { setIssData(json.data); })
