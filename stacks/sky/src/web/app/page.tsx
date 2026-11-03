@@ -4058,6 +4058,257 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
+
+            {/* Twilight Definitions */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sunrise className="w-3.5 h-3.5" style={{ color: "#fb923c" }} />
+                  <span className="section-label">Twilight Definitions</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>Civil</span><span style={{ color: "var(--sky-text)" }}>sun 0°–6° below horizon</span>
+                  <span style={{ color: "var(--sky-muted)" }}>&nbsp;</span><span style={{ color: "var(--sky-text)" }}>enough light for outdoor activity</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Nautical</span><span style={{ color: "var(--sky-text)" }}>sun 6°–12° below horizon</span>
+                  <span style={{ color: "var(--sky-muted)" }}>&nbsp;</span><span style={{ color: "var(--sky-text)" }}>horizon visible for navigation</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Astronomical</span><span style={{ color: "var(--sky-text)" }}>sun 12°–18° below horizon</span>
+                  <span style={{ color: "var(--sky-muted)" }}>&nbsp;</span><span style={{ color: "var(--sky-text)" }}>sky nearly fully dark</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Below 18°</span><span style={{ color: "var(--sky-text)" }}>full darkness (if no moon)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Golden hour</span><span style={{ color: "var(--sky-text)" }}>sun ~0°–6°, warm soft light</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Blue hour</span><span style={{ color: "var(--sky-text)" }}>sun ~4°–8°, cool even light</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Airmass & Seeing */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Eye className="w-3.5 h-3.5" style={{ color: "#4ade80" }} />
+                  <span className="section-label">Airmass & Atmospheric Quality</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>Airmass 1.0</span><span style={{ color: "var(--sky-text)" }}>zenith, minimum atmosphere</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Airmass 2.0</span><span style={{ color: "var(--sky-text)" }}>≈ 48° altitude</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Airmass &gt;3</span><span style={{ color: "var(--sky-text)" }}>&lt;22° alt, heavy extinction</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Airmass &gt;6</span><span style={{ color: "var(--sky-text)" }}>&lt;9° alt, avoid for observing</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Seeing: excellent</span><span style={{ color: "var(--sky-text)" }}>&lt;1″ arcsec</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Seeing: good</span><span style={{ color: "var(--sky-text)" }}>1″–2″</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Seeing: poor</span><span style={{ color: "var(--sky-text)" }}>&gt;3″, planets will shimmer</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Transparency</span><span style={{ color: "var(--sky-text)" }}>cloud cover + humidity effect</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Moon Phases & Luminance */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <MoonIcon className="w-3.5 h-3.5" style={{ color: "#cbd5e1" }} />
+                  <span className="section-label">Moon Phases & Sky Luminance</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>New moon</span><span style={{ color: "var(--sky-text)" }}>0% illuminated, best dark sky</span>
+                  <span style={{ color: "var(--sky-muted)" }}>First quarter</span><span style={{ color: "var(--sky-text)" }}>~50%, sets ~midnight</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Full moon</span><span style={{ color: "var(--sky-text)" }}>100%, worst for deep sky</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Last quarter</span><span style={{ color: "var(--sky-text)" }}>~50%, rises ~midnight</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Luminance: dark</span><span style={{ color: "var(--sky-text)" }}>&lt;20% illum, deep-sky friendly</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Luminance: moderate</span><span style={{ color: "var(--sky-text)" }}>20–60%, planets/stars OK</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Luminance: bright</span><span style={{ color: "var(--sky-text)" }}>&gt;60%, avoid faint objects</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Perigee</span><span style={{ color: "var(--sky-text)" }}>closest, "supermoon"</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Apogee</span><span style={{ color: "var(--sky-text)" }}>farthest, "micromoon"</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bortle Dark Sky Scale */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <EyeOff className="w-3.5 h-3.5" style={{ color: "#818cf8" }} />
+                  <span className="section-label">Bortle Dark Sky Scale</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>Class 1</span><span style={{ color: "var(--sky-text)" }}>prime-site dark sky</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Class 2</span><span style={{ color: "var(--sky-text)" }}>rural dark sky</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Class 3</span><span style={{ color: "var(--sky-text)" }}>rural–suburban transition</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Class 4</span><span style={{ color: "var(--sky-text)" }}>suburban sky</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Class 5</span><span style={{ color: "var(--sky-text)" }}>suburban–urban transition</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Class 6</span><span style={{ color: "var(--sky-text)" }}>urban sky</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Class 7</span><span style={{ color: "var(--sky-text)" }}>inner-urban sky</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Class 8–9</span><span style={{ color: "var(--sky-text)" }}>city / twilight sky</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Spectral Types */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-3.5 h-3.5" style={{ color: "#facc15" }} />
+                  <span className="section-label">Stellar Spectral Types</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>O</span><span style={{ color: "#93c5fd" }}>≥30 000 K, blue, short-lived</span>
+                  <span style={{ color: "var(--sky-muted)" }}>B</span><span style={{ color: "#bfdbfe" }}>10 500–30 000 K, blue-white</span>
+                  <span style={{ color: "var(--sky-muted)" }}>A</span><span style={{ color: "#e2e8f0" }}>7 500–10 000 K, white (Sirius)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>F</span><span style={{ color: "#fef08a" }}>6 000–7 500 K, yellow-white</span>
+                  <span style={{ color: "var(--sky-muted)" }}>G</span><span style={{ color: "#fbbf24" }}>5 200–6 000 K, yellow (Sun)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>K</span><span style={{ color: "#fb923c" }}>3 700–5 200 K, orange</span>
+                  <span style={{ color: "var(--sky-muted)" }}>M</span><span style={{ color: "#f87171" }}>&lt;3 700 K, red dwarf</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Mnemonic</span><span style={{ color: "var(--sky-text)" }}>"Oh Be A Fine Girl/Mate"</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Messier Object Types */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <BookOpen className="w-3.5 h-3.5" style={{ color: "#c084fc" }} />
+                  <span className="section-label">Messier Object Types</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>GC</span><span style={{ color: "var(--sky-text)" }}>Globular Cluster</span>
+                  <span style={{ color: "var(--sky-muted)" }}>OC</span><span style={{ color: "var(--sky-text)" }}>Open Cluster</span>
+                  <span style={{ color: "var(--sky-muted)" }}>EN</span><span style={{ color: "var(--sky-text)" }}>Emission Nebula</span>
+                  <span style={{ color: "var(--sky-muted)" }}>RN</span><span style={{ color: "var(--sky-text)" }}>Reflection Nebula</span>
+                  <span style={{ color: "var(--sky-muted)" }}>PN</span><span style={{ color: "var(--sky-text)" }}>Planetary Nebula</span>
+                  <span style={{ color: "var(--sky-muted)" }}>SNR</span><span style={{ color: "var(--sky-text)" }}>Supernova Remnant</span>
+                  <span style={{ color: "var(--sky-muted)" }}>SB</span><span style={{ color: "var(--sky-text)" }}>Spiral Galaxy</span>
+                  <span style={{ color: "var(--sky-muted)" }}>EB</span><span style={{ color: "var(--sky-text)" }}>Elliptical Galaxy</span>
+                  <span style={{ color: "var(--sky-muted)" }}>IB</span><span style={{ color: "var(--sky-text)" }}>Irregular Galaxy</span>
+                  <span style={{ color: "var(--sky-muted)" }}>CoN</span><span style={{ color: "var(--sky-text)" }}>Composite Nebula</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Named Planets & Moon */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Globe className="w-3.5 h-3.5" style={{ color: "#fcd34d" }} />
+                  <span className="section-label">Named Planets & Moon</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>☿ Mercury</span><span style={{ color: "var(--sky-text)" }}>Roman messenger god</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♀ Venus</span><span style={{ color: "var(--sky-text)" }}>goddess of love</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♂ Mars</span><span style={{ color: "var(--sky-text)" }}>god of war</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♃ Jupiter</span><span style={{ color: "var(--sky-text)" }}>king of the gods</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♄ Saturn</span><span style={{ color: "var(--sky-text)" }}>god of time / agriculture</span>
+                  <span style={{ color: "var(--sky-muted)" }}>⛢ Uranus</span><span style={{ color: "var(--sky-text)" }}>Greek sky deity</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♆ Neptune</span><span style={{ color: "var(--sky-text)" }}>god of the sea</span>
+                  <span style={{ color: "var(--sky-muted)" }}>☿ symbol</span><span style={{ color: "var(--sky-text)" }}>caduceus (staff + wings)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♀ symbol</span><span style={{ color: "var(--sky-text)" }}>mirror (hand mirror of Venus)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♂ symbol</span><span style={{ color: "var(--sky-text)" }}>shield + spear of Mars</span>
+                  <span style={{ color: "var(--sky-muted)" }}>☽ Luna (Moon)</span><span style={{ color: "var(--sky-text)" }}>Roman moon goddess</span>
+                  <span style={{ color: "var(--sky-muted)" }}>☉ Sol (Sun)</span><span style={{ color: "var(--sky-text)" }}>Roman sun god</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Brightest Named Stars */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-3.5 h-3.5" style={{ color: "#fde68a" }} />
+                  <span className="section-label">Brightest Named Stars</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>Sirius</span><span style={{ color: "var(--sky-text)" }}>"the hound-star" (Grk), CMa</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Vega</span><span style={{ color: "var(--sky-text)" }}>"falling hawk" (Arb), Lyr</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Arcturus</span><span style={{ color: "var(--sky-text)" }}>"guardian of the bear" (Grk), Boo</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Capella</span><span style={{ color: "var(--sky-text)" }}>"little goat" (Lat), Aur</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Rigel</span><span style={{ color: "var(--sky-text)" }}>"foot" (Arb), Ori</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Betelgeuse</span><span style={{ color: "var(--sky-text)" }}>"armpit of the giant" (Arb), Ori</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Altair</span><span style={{ color: "var(--sky-text)" }}>"the flyer" (Arb), Aql</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Aldebaran</span><span style={{ color: "var(--sky-text)" }}>"the follower" (Arb), Tau</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Antares</span><span style={{ color: "var(--sky-text)" }}>"rival of Ares/Mars" (Grk), Sco</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Deneb</span><span style={{ color: "var(--sky-text)" }}>"the tail" (Arb), Cyg</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Procyon</span><span style={{ color: "var(--sky-text)" }}>"before the dog" (Grk), CMi</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Regulus</span><span style={{ color: "var(--sky-text)" }}>"little king" (Lat), Leo</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Spica</span><span style={{ color: "var(--sky-text)" }}>"ear of grain" (Lat), Vir</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Polaris</span><span style={{ color: "var(--sky-text)" }}>"the pole star", UMi</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Constellation Abbreviations */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <MapPin className="w-3.5 h-3.5" style={{ color: "#a3e635" }} />
+                  <span className="section-label">Constellation Abbreviations (IAU)</span>
+                </div>
+                <div className="grid grid-cols-3 gap-x-2 gap-y-1 text-[10px]" style={{ color: "var(--sky-text)" }}>
+                  <span>Aql Aquila</span><span>Aqr Aquarius</span><span>Aps Apus</span>
+                  <span>Ara Ara</span><span>Ari Aries</span><span>Aur Auriga</span>
+                  <span>Boo Boötes</span><span>Cen Centaurus</span><span>Cep Cepheus</span>
+                  <span>Cma Canis Major</span><span>Cmi Canis Minor</span><span>CMa Carina</span>
+                  <span>Cas Cassiopeia</span><span>Col Columba</span><span>Crab Cancer</span>
+                  <span>Crv Corvus</span><span>Crux Crux</span><span>Cyg Cygnus</span>
+                  <span>Dor Dorado</span><span>Dra Draco</span><span>Equ Equuleus</span>
+                  <span>Eri Eridanus</span><span>Gem Gemini</span><span>Gru Grus</span>
+                  <span>Her Hercules</span><span>Hya Hydra</span><span>Hyi Hydrus</span>
+                  <span>Ind Indus</span><span>Lac Lacerta</span><span>Leo Leo</span>
+                  <span>Lea Leo Minor</span><span>Lep Lepus</span><span>Lib Libra</span>
+                  <span>LMi Leo Minor</span><span>Men Mensa</span><span>Mic Microscopium</span>
+                  <span>Mon Monoceros</span><span>Mus Musca</span><span>Nor Norma</span>
+                  <span>Oct Octans</span><span>Oph Ophiuchus</span><span>Ori Orion</span>
+                  <span>Pav Pavo</span><span>Peg Pegasus</span><span>Per Perseus</span>
+                  <span>Pho Phoenix</span><span>Pic Pictor</span><span>Psc Pisces</span>
+                  <span>PsA Piscis Austrinus</span><span>Pup Puppis</span><span>Pyx Pyxis</span>
+                  <span>Ret Reticulum</span><span>Scl Sculptor</span><span>Sct Scutum</span>
+                  <span>Sco Scorpius</span><span>Sep Sextans</span><span>Tau Taurus</span>
+                  <span>Tel Telescopium</span><span>TrA Triangulum Austr.</span><span>Tri Triangulum</span>
+                  <span>Tuc Tucana</span><span>UMa Ursa Major</span><span>UMi Ursa Minor</span>
+                  <span>Vel Vela</span><span>Vir Virgo</span><span>Vel Volans</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Zodiac Constellations */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <ScrollText className="w-3.5 h-3.5" style={{ color: "#e879f9" }} />
+                  <span className="section-label">Zodiac & Ecliptic Constellations</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>♈ Aries</span><span style={{ color: "var(--sky-text)" }}>the ram</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♉ Taurus</span><span style={{ color: "var(--sky-text)" }}>the bull</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♊ Gemini</span><span style={{ color: "var(--sky-text)" }}>the twins</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♋ Cancer</span><span style={{ color: "var(--sky-text)" }}>the crab</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♌ Leo</span><span style={{ color: "var(--sky-text)" }}>the lion</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♍ Virgo</span><span style={{ color: "var(--sky-text)" }}>the maiden</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♎ Libra</span><span style={{ color: "var(--sky-text)" }}>the scales</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♏ Scorpius</span><span style={{ color: "var(--sky-text)" }}>the scorpion</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♐ Sagittarius</span><span style={{ color: "var(--sky-text)" }}>the archer</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♑ Capricornus</span><span style={{ color: "var(--sky-text)" }}>the sea-goat</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♒ Aquarius</span><span style={{ color: "var(--sky-text)" }}>the water-bearer</span>
+                  <span style={{ color: "var(--sky-muted)" }}>♓ Pisces</span><span style={{ color: "var(--sky-text)" }}>the fishes</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Ophiuchus</span><span style={{ color: "var(--sky-text)" }}>sun passes through, not zodiac</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Observing Tips */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Info className="w-3.5 h-3.5" style={{ color: "#22d3ee" }} />
+                  <span className="section-label">Quick Observing Tips</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>Dark adaptation</span><span style={{ color: "var(--sky-text)" }}>20–30 min in darkness</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Red light</span><span style={{ color: "var(--sky-text)" }}>preserves night vision</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Averted vision</span><span style={{ color: "var(--sky-text)" }}>look aside for faint objects</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Best deep sky</span><span style={{ color: "var(--sky-text)" }}>new moon, airmass &lt;2</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Best planets</span><span style={{ color: "var(--sky-text)" }}>high altitude, steady seeing</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Dew point risk</span><span style={{ color: "var(--sky-text)" }}>optics cool below dew point</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
