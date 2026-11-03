@@ -555,7 +555,7 @@ interface WeatherData {
 
 // ─── Tab definitions ────────────────────────────────────────────────
 
-type TabKey = "daily" | "planets" | "calendar" | "stories" | "iss" | "events" | "panchang" | "weather" | "charts";
+type TabKey = "daily" | "planets" | "calendar" | "stories" | "iss" | "events" | "panchang" | "weather" | "charts" | "ref";
 
 const TABS: Array<{ key: TabKey; label: string; icon: React.ReactNode }> = [
   { key: "daily", label: "Daily Sky", icon: <Sun className="w-3.5 h-3.5" /> },
@@ -567,6 +567,7 @@ const TABS: Array<{ key: TabKey; label: string; icon: React.ReactNode }> = [
   { key: "panchang", label: "Panchang", icon: <ScrollText className="w-3.5 h-3.5" /> },
   { key: "weather", label: "Weather", icon: <CloudRain className="w-3.5 h-3.5" /> },
   { key: "charts", label: "Charts", icon: <Telescope className="w-3.5 h-3.5" /> },
+  { key: "ref", label: "Reference", icon: <Info className="w-3.5 h-3.5" /> },
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────
@@ -3939,6 +3940,124 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── Reference Tab: Units & Constants ──────────────────── */}
+        {activeTab === "ref" && (
+          <div className="space-y-4">
+            {/* Angle & Arc */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Navigation className="w-3.5 h-3.5" style={{ color: "#38bdf8" }} />
+                  <span className="section-label">Angle & Arc</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>1 degree (°)</span><span style={{ color: "var(--sky-text)" }}>60 arcmin (′)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>1 arcmin</span><span style={{ color: "var(--sky-text)" }}>60 arcsec (″)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>1 radian</span><span style={{ color: "var(--sky-text)" }}>57.296°</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Full circle</span><span style={{ color: "var(--sky-text)" }}>360° = 2π rad</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Full moon disc</span><span style={{ color: "var(--sky-text)" }}>≈ 0.5° (30′)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Pinky finger</span><span style={{ color: "var(--sky-text)" }}>≈ 1° at arm's length</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Distance & Scale */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Globe className="w-3.5 h-3.5" style={{ color: "#a78bfa" }} />
+                  <span className="section-label">Distance & Scale</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>1 AU</span><span style={{ color: "var(--sky-text)" }}>149.6 M km</span>
+                  <span style={{ color: "var(--sky-muted)" }}>1 light-year</span><span style={{ color: "var(--sky-text)" }}>9.461 T km</span>
+                  <span style={{ color: "var(--sky-muted)" }}>1 parsec</span><span style={{ color: "var(--sky-text)" }}>3.262 ly = 206265 AU</span>
+                  <span style={{ color: "var(--sky-muted)" }}>1 kpc</span><span style={{ color: "var(--sky-text)" }}>1000 pc ≈ 3262 ly</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Sun–Earth</span><span style={{ color: "var(--sky-text)" }}>1 AU (8.3 lt-min)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Sun–Moon</span><span style={{ color: "var(--sky-text)" }}>384 400 km (1.3 lt-sec)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Galactic centre</span><span style={{ color: "var(--sky-text)" }}>≈ 8 kpc</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Andromeda (M31)</span><span style={{ color: "var(--sky-text)" }}>≈ 780 kpc</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Magnitudes */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Eye className="w-3.5 h-3.5" style={{ color: "#fbbf24" }} />
+                  <span className="section-label">Apparent Magnitude</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>Δm = 1</span><span style={{ color: "var(--sky-text)" }}>factor 2.512 in brightness</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Δm = 5</span><span style={{ color: "var(--sky-text)" }}>factor 100</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Sun</span><span style={{ color: "var(--sky-text)" }}>-26.74</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Full moon</span><span style={{ color: "var(--sky-text)" }}>-12.7</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Sirius</span><span style={{ color: "var(--sky-text)" }}>-1.46</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Naked-eye limit</span><span style={{ color: "var(--sky-text)" }}>≈ +6.5</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Andromeda (M31)</span><span style={{ color: "var(--sky-text)" }}>+3.4</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Hubble deep field</span><span style={{ color: "var(--sky-text)" }}>≈ +31</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Time & Periods */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="w-3.5 h-3.5" style={{ color: "#34d399" }} />
+                  <span className="section-label">Time & Periods</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>Sidereal day</span><span style={{ color: "var(--sky-text)" }}>23h 56m 04s</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Solar day</span><span style={{ color: "var(--sky-text)" }}>24h 00m 00s</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Sidereal month</span><span style={{ color: "var(--sky-text)" }}>27.32 d</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Synodic month</span><span style={{ color: "var(--sky-text)" }}>29.53 d</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Tropical year</span><span style={{ color: "var(--sky-text)" }}>365.2422 d</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Precession cycle</span><span style={{ color: "var(--sky-text)" }}>≈ 25 772 yr</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Earth axial tilt</span><span style={{ color: "var(--sky-text)" }}>23.44°</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Coordinate Systems */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <MapPin className="w-3.5 h-3.5" style={{ color: "#fb7185" }} />
+                  <span className="section-label">Coordinate Systems</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>RA / Dec</span><span style={{ color: "var(--sky-text)" }}>equatorial (J2000.0)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Alt / Az</span><span style={{ color: "var(--sky-text)" }}>horizontal, observer-dependent</span>
+                  <span style={{ color: "var(--sky-muted)" }}>RA</span><span style={{ color: "var(--sky-text)" }}>0–24h eastward from vernal equinox</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Declination</span><span style={{ color: "var(--sky-text)" }}>-90° to +90° from celestial eq.</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Altitude</span><span style={{ color: "var(--sky-text)" }}>-90° (nadir) to +90° (zenith)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Azimuth</span><span style={{ color: "var(--sky-text)" }}>0–360° from north, clockwise</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Ephemeris & Data Sources */}
+            <div className="sky-card">
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Telescope className="w-3.5 h-3.5" style={{ color: "#f472b6" }} />
+                  <span className="section-label">Ephemeris & Data Sources</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                  <span style={{ color: "var(--sky-muted)" }}>Planetary ephemeris</span><span style={{ color: "var(--sky-text)" }}>DE440S (JPL)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Star catalog</span><span style={{ color: "var(--sky-text)" }}>121 bright stars (Hipparcos)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Deep-sky objects</span><span style={{ color: "var(--sky-text)" }}>103 Messier catalog</span>
+                  <span style={{ color: "var(--sky-muted)" }}>ISS position</span><span style={{ color: "var(--sky-text)" }}>TLE + SGP4 propagation</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Weather</span><span style={{ color: "var(--sky-text)" }}>Open-Meteo (CC BY 4.0)</span>
+                  <span style={{ color: "var(--sky-muted)" }}>Panchang</span><span style={{ color: "var(--sky-text)" }}>Drik Panchang API</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
