@@ -843,6 +843,129 @@ class EventsService:
             logger.debug("Eclipse lookup failed: %s", e)
             return []
 
+    # ─── Zodiac Sign Mapping ──────────────────────────────────────────
+
+    # IAU constellation → zodiac sign mapping
+    _ZODIAC_MAP = {
+        "Aries": "Aries ♈", "Taurus": "Taurus ♉", "Gemini": "Gemini ♊",
+        "Cancer": "Cancer ♋", "Leo": "Leo ♌", "Virgo": "Virgo ♍",
+        "Libra": "Libra ♎", "Scorpius": "Scorpio ♏", "Sagittarius": "Sagittarius ♐",
+        "Capricornus": "Capricorn ♑", "Aquarius": "Aquarius ♒", "Pisces": "Pisces ♓",
+        "Ophiuchus": "Ophiuchus",  # Not a zodiac sign but on the ecliptic
+    }
+
+    def get_zodiac_sign(self, constellation_name: str) -> str:
+        """Map an IAU constellation name to a zodiac sign."""
+        return self._ZODIAC_MAP.get(constellation_name, constellation_name)
+
+    # ─── Planetary Oppositions ────────────────────────────────────────
+
+    def get_planetary_oppositions(
+        self, ts, from_date: datetime, days: int = 180
+    ) -> list:
+        """Detect planetary oppositions (outer planet ~180° from Sun) over N days.
+
+        Returns list of {date, planet, elongation_deg}.
+        """
+        from core.planetary import PLANET_EPHEMERIS_KEY, PLANET_DISPLAY
+
+        # Only outer planets can be in opposition
+        outer_planets = ["mars", "jupiter", "saturn", "uranus", "neptune"]
+
+        results = []
+        day = from_date.replace(hour=12, minute=0, second=0, microsecond=0)
+        end = day + timedelta(days=days)
+
+        # Track active oppositions to avoid daily duplicates
+        active: dict[str, str] = {}
+
+        while day <= end:
+            t = ts.from_datetime(day)
+            earth = self.eph["earth"]
+            sun = self.eph["sun"]
+
+            for pk in outer_planets:
+                try:
+                    eph_key = PLANET_EPHEMERIS_KEY.get(pk, pk)
+                    planet_vec = earth.at(t).observe(self.eph[eph_key])
+                    sun_vec = earth.at(t).observe(sun)
+                    elongation = planet_vec.separation_from(sun_vec).degrees
+
+                    # Opposition: elongation > 150°
+                    if elongation > 150.0:
+                        display = PLANET_DISPLAY.get(pk, pk.title())
+                        date_str = day.strftime("%Y-%m-%d")
+                        if display in active:
+                            for opp in results:
+                                if opp["planet"] == display:
+                                    opp["end"] = date_str
+                                    break
+                        else:
+                            active[display] = date_str
+                            results.append({
+                                "date": date_str,
+                                "planet": display,
+                                "elongation_deg": round(elongation, 1),
+                                "end": date_str,
+                            })
+                    else:
+                        display = PLANET_DISPLAY.get(pk, pk.title())
+                        active.pop(display, None)
+                except Exception:
+                    pass
+
+            day += timedelta(days=1)
+
+        return results
+
+    # ─── Moon Standstill ──────────────────────────────────────────────
+
+    def get_moon_standstill_info(self, ts, dt: datetime) -> dict:
+        """Estimate where we are in the 18.6-year lunar standstill cycle.
+
+        The Moon's declination range varies between ~23° (major) and ~18° (minor).
+        Returns info about current phase of the cycle.
+        """
+        try:
+            # Reference: major standstill was around 2006, next around 2025, 2044
+            # Cycle period = 18.619 years
+            import math
+            cycle_period = 18.619
+            # Major standstill reference year
+            major_ref = 2025.0
+            years_since_major = (dt.year + dt.timetuple().tm_yday / 365.25) - major_ref
+            phase = (years_since_major / cycle_period) % 1.0
+
+            # Phase 0 = major, 0.5 = minor
+            if phase < 0.15 or phase > 0.85:
+                standstill_type = "major"
+                declination_range = "~28.6°"
+                description = "Moon reaches extreme north/south declinations"
+            elif phase > 0.35 and phase < 0.65:
+                standstill_type = "minor"
+                declination_range = "~18.3°"
+                description = "Moon's declination range is at its minimum"
+            else:
+                standstill_type = "intermediate"
+                declination_range = "variable"
+                description = "Between major and minor standstill"
+
+            years_to_major = round((cycle_period - phase) * cycle_period, 1) if phase > 0.5 else round(phase * cycle_period, 1)
+
+            return {
+                "type": standstill_type,
+                "declination_range": declination_range,
+                "description": description,
+                "years_to_major": years_to_major,
+            }
+        except Exception:
+            return {
+                "type": "unknown",
+                "declination_range": "unknown",
+                "description": "Could not compute standstill info",
+                "years_to_major": None,
+            }
+
     def _moon_phase_emoji(self, phase_val: int) -> str:
         # Skyfield MOON_PHASES: 0=New, 1=First Quarter, 2=Full, 3=Last Quarter
         # Using intuitive emojis: crescent for quarter phases, not half-moon

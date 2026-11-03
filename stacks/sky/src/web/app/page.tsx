@@ -65,6 +65,7 @@ interface PlanetData {
   constellation?: string;
   magnitude?: number | null;
   is_retrograde?: boolean;
+  airmass?: number | null;
   rise?: string | null;
   set?: string | null;
   culmination?: string | null;
@@ -277,6 +278,75 @@ interface SkyStoryData {
   seasonal_tip: string;
   fun_fact: string;
   activity: string;
+}
+
+// ─── Extended Types ──────────────────────────────────────────────────
+
+interface StarData {
+  name: string;
+  magnitude: number;
+  spectral_type: string;
+  distance_ly: number;
+  constellation: string;
+  altitude_deg: number;
+  azimuth_deg: number;
+  airmass?: number | null;
+}
+
+interface MessierData {
+  designation: string;
+  type: string;
+  magnitude: number;
+  size_arcmin: number;
+  constellation: string;
+  altitude_deg: number;
+  azimuth_deg: number;
+  airmass?: number | null;
+}
+
+interface OppositionData {
+  date: string;
+  planet: string;
+  elongation_deg: number;
+  end: string;
+}
+
+interface ZodiacEntry {
+  constellation: string;
+  zodiac: string;
+}
+
+interface ZodiacPlanetEntry {
+  planet: string;
+  constellation: string;
+  zodiac: string;
+}
+
+interface ZodiacData {
+  sun: ZodiacEntry;
+  moon: ZodiacEntry;
+  planets: ZodiacPlanetEntry[];
+}
+
+interface MoonStandstillData {
+  type: string;
+  declination_range: string;
+  description: string;
+  years_to_major: number | null;
+}
+
+interface SolarDataExtended extends SolarData {
+  daylight_trend?: string;
+}
+
+interface LunarDataExtended extends LunarData {
+  current_position?: {
+    altitude_deg: number;
+    azimuth_deg?: number;
+    distance_km?: number;
+    is_above_horizon: boolean;
+    airmass?: number | null;
+  };
 }
 
 // ─── Tab definitions ────────────────────────────────────────────────
@@ -650,6 +720,11 @@ export default function Dashboard() {
   const [skyStoryData, setSkyStoryData] = useState<SkyStoryData | null>(null);
   const [conjunctionData, setConjunctionData] = useState<ConjunctionData[] | null>(null);
   const [eclipseData, setEclipseData] = useState<EclipseData[] | null>(null);
+  const [starData, setStarData] = useState<StarData[] | null>(null);
+  const [messierData, setMessierData] = useState<MessierData[] | null>(null);
+  const [oppositionData, setOppositionData] = useState<OppositionData[] | null>(null);
+  const [zodiacData, setZodiacData] = useState<ZodiacData | null>(null);
+  const [moonStandstillData, setMoonStandstillData] = useState<MoonStandstillData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(getToday());
@@ -724,6 +799,36 @@ export default function Dashboard() {
     fetch("/api/v1/sky/eclipses?days=180")
       .then(r => r.json())
       .then(json => { if (!cancelled) setEclipseData(json.data); })
+      .catch(() => {});
+
+    // Bright stars
+    fetch(`/api/v1/sky/stars?date=${currentDate}`)
+      .then(r => r.json())
+      .then(json => { if (!cancelled) setStarData(json.data); })
+      .catch(() => {});
+
+    // Messier objects
+    fetch(`/api/v1/sky/messier?date=${currentDate}`)
+      .then(r => r.json())
+      .then(json => { if (!cancelled) setMessierData(json.data); })
+      .catch(() => {});
+
+    // Planetary oppositions
+    fetch("/api/v1/sky/oppositions?days=180")
+      .then(r => r.json())
+      .then(json => { if (!cancelled) setOppositionData(json.data); })
+      .catch(() => {});
+
+    // Zodiac info
+    fetch(`/api/v1/sky/zodiac?date=${currentDate}`)
+      .then(r => r.json())
+      .then(json => { if (!cancelled) setZodiacData(json.data); })
+      .catch(() => {});
+
+    // Moon standstill
+    fetch(`/api/v1/sky/moon/standstill?date=${currentDate}`)
+      .then(r => r.json())
+      .then(json => { if (!cancelled) setMoonStandstillData(json.data); })
       .catch(() => {});
 
     return () => { cancelled = true; };
@@ -846,6 +951,14 @@ export default function Dashboard() {
                     <span className="row-label">Daylight</span>
                     <span className="row-value">{formatDaylight(data.solar.daylight_hours)}</span>
                   </div>
+                  {(data.solar as any).daylight_trend && (
+                    <div className="flex items-center justify-between py-1.5">
+                      <span className="row-label">Trend</span>
+                      <span className="row-value text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                        {(data.solar as any).daylight_trend}
+                      </span>
+                    </div>
+                  )}
 
                   <div className="my-2 sky-divider" />
 
@@ -1037,6 +1150,14 @@ export default function Dashboard() {
                         <span className="row-label">Distance</span>
                         <span className="row-value">
                           {data.lunar.current_position.distance_km != null ? `${(data.lunar.current_position.distance_km / 1000).toFixed(0)}k km` : "—"}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-1.5">
+                        <span className="row-label">Airmass</span>
+                        <span className="row-value">
+                          {(data.lunar.current_position as any)?.airmass != null
+                            ? (data.lunar.current_position as any).airmass.toFixed(2)
+                            : "—"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between py-1.5">
@@ -1420,6 +1541,12 @@ export default function Dashboard() {
                                 ) : (
                                   <span style={{ color: "#34d399" }}>→ Direct</span>
                                 )}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Airmass</span>
+                              <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                                {raw?.airmass != null ? raw.airmass.toFixed(2) : "—"}
                               </p>
                             </div>
                           </div>
@@ -1935,6 +2062,215 @@ export default function Dashboard() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Planetary Oppositions */}
+            {oppositionData && oppositionData.length > 0 && (
+              <div className="sky-card">
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Globe className="w-3.5 h-3.5" style={{ color: "#f472b6" }} />
+                    <span className="section-label">Planetary Oppositions</span>
+                    <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>Next 6 months</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {oppositionData.map((opp, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-lg p-3 border"
+                        style={{ background: "rgba(244,114,182,0.05)", borderColor: "rgba(244,114,182,0.15)" }}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>
+                            {opp.planet}
+                          </span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(244,114,182,0.15)", color: "#f472b6" }}>
+                            {opp.elongation_deg.toFixed(1)}° from Sun
+                          </span>
+                        </div>
+                        <p className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                          {opp.date.slice(5)} → {opp.end.slice(5)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Zodiac Signs */}
+            {zodiacData && (
+              <div className="sky-card">
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-3.5 h-3.5" style={{ color: "#c084fc" }} />
+                    <span className="section-label">Zodiac Positions</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="rounded-lg p-3 border" style={{ background: "rgba(251,191,36,0.05)", borderColor: "rgba(251,191,36,0.15)" }}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">☀️</span>
+                        <span className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>Sun</span>
+                        <span className="text-[10px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                          {zodiacData.sun.zodiac}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="rounded-lg p-3 border" style={{ background: "rgba(148,163,184,0.05)", borderColor: "rgba(148,163,184,0.15)" }}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">🌙</span>
+                        <span className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>Moon</span>
+                        <span className="text-[10px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                          {zodiacData.moon.zodiac}
+                        </span>
+                      </div>
+                    </div>
+                    {zodiacData.planets.map((pz, idx) => (
+                      <div key={idx} className="rounded-lg p-3 border" style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>{pz.planet}</span>
+                          <span className="text-[10px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                            {pz.zodiac}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Moon Standstill */}
+            {moonStandstillData && (
+              <div className="sky-card">
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <MoonIcon className="w-3.5 h-3.5" style={{ color: "#38bdf8" }} />
+                    <span className="section-label">Moon Standstill Cycle</span>
+                  </div>
+
+                  <div className="rounded-lg p-3 border" style={{ background: "rgba(56,189,248,0.05)", borderColor: "rgba(56,189,248,0.15)" }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide ${
+                        moonStandstillData.type === "major" ? "bg-purple-600 text-white" :
+                        moonStandstillData.type === "minor" ? "bg-blue-600 text-white" :
+                        "bg-gray-600 text-gray-200"
+                      }`}>
+                        {moonStandstillData.type}
+                      </span>
+                      <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                        Declination range: {moonStandstillData.declination_range}
+                      </span>
+                    </div>
+                    <p className="text-[10px] leading-relaxed" style={{ color: "var(--sky-muted)" }}>
+                      {moonStandstillData.description}
+                    </p>
+                    {moonStandstillData.years_to_major != null && (
+                      <p className="text-[9px] mt-1.5" style={{ color: "var(--sky-footer-text)" }}>
+                        Next major standstill in ~{moonStandstillData.years_to_major} years
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Bright Stars */}
+            {starData && starData.length > 0 && (
+              <div className="sky-card">
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-3.5 h-3.5" style={{ color: "#fde68a" }} />
+                    <span className="section-label">Bright Stars</span>
+                    <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                      {starData.length} visible
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {starData.slice(0, 20).map((star, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 border"
+                        style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}
+                      >
+                        <span className="text-[9px] w-6 text-center font-mono flex-shrink-0" style={{ color: "var(--sky-muted)" }}>
+                          {star.magnitude.toFixed(1)}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>
+                            {star.name}
+                          </span>
+                          <span className="text-[9px] ml-2" style={{ color: "var(--sky-footer-text)" }}>
+                            {star.spectral_type}
+                          </span>
+                        </div>
+                        <span className="text-[9px] flex-shrink-0" style={{ color: "var(--sky-muted)" }}>
+                          {star.constellation}
+                        </span>
+                        <span className="text-[9px] w-10 text-right flex-shrink-0" style={{ color: "var(--sky-footer-text)" }}>
+                          {star.altitude_deg.toFixed(0)}°
+                        </span>
+                      </div>
+                    ))}
+                    {starData.length > 20 && (
+                      <p className="text-[9px] text-center pt-1" style={{ color: "var(--sky-footer-text)" }}>
+                        +{starData.length - 20} more stars visible
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Messier Objects */}
+            {messierData && messierData.length > 0 && (
+              <div className="sky-card">
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Telescope className="w-3.5 h-3.5" style={{ color: "#34d399" }} />
+                    <span className="section-label">Messier Objects</span>
+                    <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
+                      {messierData.length} visible
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {messierData.slice(0, 20).map((obj, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 border"
+                        style={{ background: "var(--sky-planet-bg)", borderColor: "var(--sky-planet-border)" }}
+                      >
+                        <span className="text-[9px] w-6 text-center font-mono flex-shrink-0" style={{ color: "var(--sky-muted)" }}>
+                          {obj.magnitude.toFixed(0)}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[11px] font-medium" style={{ color: "var(--sky-text)" }}>
+                            {obj.designation}
+                          </span>
+                          <span className="text-[9px] ml-2" style={{ color: "var(--sky-footer-text)" }}>
+                            {obj.type}
+                          </span>
+                        </div>
+                        <span className="text-[9px] flex-shrink-0" style={{ color: "var(--sky-muted)" }}>
+                          {obj.constellation}
+                        </span>
+                        <span className="text-[9px] w-10 text-right flex-shrink-0" style={{ color: "var(--sky-footer-text)" }}>
+                          {obj.altitude_deg.toFixed(0)}°
+                        </span>
+                      </div>
+                    ))}
+                    {messierData.length > 20 && (
+                      <p className="text-[9px] text-center pt-1" style={{ color: "var(--sky-footer-text)" }}>
+                        +{messierData.length - 20} more objects visible
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

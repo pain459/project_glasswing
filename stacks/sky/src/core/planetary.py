@@ -176,6 +176,15 @@ class PlanetaryService:
         except Exception:
             pass
 
+        # Airmass (Hardie 1962 approximation)
+        airmass = None
+        alt_deg = alt.degrees
+        if alt_deg > 5.0:
+            z = math.radians(90.0 - alt_deg)
+            airmass = round(1.0 / (math.cos(z) + 0.50572 * math.pow(96.079 - alt_deg, -1.6)), 2)
+        elif alt_deg > 0:
+            airmass = 999.0  # Too low for good airmass estimate
+
         return {
             "name": PLANET_DISPLAY.get(planet_name_lower, planet_name),
             "ra_hours": round(ra.hours, 4),
@@ -187,6 +196,7 @@ class PlanetaryService:
             "angular_diameter_arcsec": round(angular_diam_arcsec, 2),
             "magnitude": round(mag, 2) if mag is not None else None,
             "is_retrograde": is_retrograde,
+            "airmass": airmass,
         }
 
     def get_planet_rise_set(

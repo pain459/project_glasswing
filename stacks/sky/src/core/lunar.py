@@ -126,11 +126,20 @@ class LunarService:
         apparent = moon_obs.apparent()
         alt, az, distance = apparent.altaz()
 
+        # Airmass
+        airmass = None
+        alt_deg = alt.degrees
+        if alt_deg > 5.0:
+            import math
+            z = math.radians(90.0 - alt_deg)
+            airmass = round(1.0 / (math.cos(z) + 0.50572 * math.pow(96.079 - alt_deg, -1.6)), 2)
+
         return {
             "altitude_deg": round(alt.degrees, 2),
             "azimuth_deg": round(az.degrees, 2),
             "distance_km": round(distance.km, 1),
             "is_above_horizon": bool(alt.degrees > 0),
+            "airmass": airmass,
         }
 
     def get_upcoming_phases(

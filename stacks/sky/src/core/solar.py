@@ -295,6 +295,23 @@ class SolarService:
         if culmination:
             result["solar_culmination"] = culmination
 
+        # Day length trend: compare with yesterday
+        try:
+            yesterday = date - timedelta(days=1)
+            yd = self.get_sunrise_sunset(ts, latitude, longitude, yesterday, elevation)
+            today_hours = result.get("daylight_hours", 0)
+            yesterday_hours = yd.get("daylight_hours", 0)
+            diff_minutes = round((today_hours - yesterday_hours) * 60, 1)
+            if diff_minutes > 0:
+                trend = f"Daylight growing by {diff_minutes} min"
+            elif diff_minutes < 0:
+                trend = f"Daylight shrinking by {abs(diff_minutes)} min"
+            else:
+                trend = "Daylight stable"
+            result["daylight_trend"] = trend
+        except Exception:
+            result["daylight_trend"] = "Unknown"
+
         if current_dt:
             result["current_position"] = self.get_solar_position(
                 ts, latitude, longitude, current_dt, elevation

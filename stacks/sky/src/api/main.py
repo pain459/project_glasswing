@@ -9,6 +9,7 @@ import logging
 import sys
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from typing import Optional
 from pathlib import Path
 
 import uvicorn
@@ -384,6 +385,83 @@ async def get_upcoming_eclipses(
     eclipses = sky_service.get_upcoming_eclipses(days=days)
     return ApiResponse(
         data=eclipses,
+    )
+
+
+@app.get("/api/v1/sky/stars")
+async def get_visible_stars(
+    date: str = Query("today"),
+    location_id: Optional[str] = Query(None),
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+    timezone_str: Optional[str] = Query("Asia/Kolkata"),
+):
+    """Get bright stars currently visible."""
+    target_date = _resolve_date(date)
+    loc = _resolve_location(location_id, latitude, longitude, timezone_str)
+    stars = sky_service.get_visible_stars(target_date, loc)
+    return ApiResponse(
+        data=stars,
+        metadata=_calc_metadata(target_date, loc),
+    )
+
+
+@app.get("/api/v1/sky/messier")
+async def get_visible_messier(
+    date: str = Query("today"),
+    location_id: Optional[str] = Query(None),
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+    timezone_str: Optional[str] = Query("Asia/Kolkata"),
+):
+    """Get Messier objects currently visible."""
+    target_date = _resolve_date(date)
+    loc = _resolve_location(location_id, latitude, longitude, timezone_str)
+    messier = sky_service.get_visible_messier(target_date, loc)
+    return ApiResponse(
+        data=messier,
+        metadata=_calc_metadata(target_date, loc),
+    )
+
+
+@app.get("/api/v1/sky/oppositions")
+async def get_planetary_oppositions(
+    days: int = Query(180, ge=1, le=730),
+):
+    """Get upcoming planetary oppositions."""
+    oppositions = sky_service.get_oppositions(days=days)
+    return ApiResponse(
+        data=oppositions,
+    )
+
+
+@app.get("/api/v1/sky/zodiac")
+async def get_zodiac_info(
+    date: str = Query("today"),
+    location_id: Optional[str] = Query(None),
+    latitude: Optional[float] = Query(None),
+    longitude: Optional[float] = Query(None),
+    timezone_str: Optional[str] = Query("Asia/Kolkata"),
+):
+    """Get zodiac sign for Sun, Moon, and planets."""
+    target_date = _resolve_date(date)
+    loc = _resolve_location(location_id, latitude, longitude, timezone_str)
+    zodiac = sky_service.get_zodiac_info(target_date, loc)
+    return ApiResponse(
+        data=zodiac,
+        metadata=_calc_metadata(target_date, loc),
+    )
+
+
+@app.get("/api/v1/sky/moon/standstill")
+async def get_moon_standstill(
+    date: str = Query("today"),
+):
+    """Get moon standstill cycle info."""
+    target_date = _resolve_date(date)
+    standstill = sky_service.get_moon_standstill(target_date)
+    return ApiResponse(
+        data=standstill,
     )
 
 

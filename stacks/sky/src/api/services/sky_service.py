@@ -27,6 +27,8 @@ from core.satellite import create_iss_satellite, get_iss_visible_passes, get_iss
 from core.planet_visibility import get_planet_tonight_summary
 from core.season_calendar import compute_season_events, get_season_calendar, get_next_season_event_from_today
 from core.sky_stories import generate_sky_story
+from core.stars import StarService
+from core.messier import MessierService
 from api.models.schemas import SystemStatusResponse
 
 logger = logging.getLogger(__name__)
@@ -42,6 +44,8 @@ class SkyService:
         self.lunar = None
         self.planetary = None
         self.events = None
+        self.stars = None
+        self.messier = None
         self.iss = None
         self._start_time = None
         self._is_ready = False
@@ -63,6 +67,8 @@ class SkyService:
         self.lunar = LunarService(self.ephemeris_mgr.loaded_kernel)
         self.planetary = PlanetaryService(self.ephemeris_mgr.loaded_kernel)
         self.events = EventsService(self.ephemeris_mgr.loaded_kernel)
+        self.stars = StarService(self.ephemeris_mgr.loaded_kernel)
+        self.messier = MessierService(self.ephemeris_mgr.loaded_kernel)
 
         # Initialize ISS satellite tracking
         try:
@@ -398,3 +404,107 @@ class SkyService:
         )
 
         return story
+
+    # ─── Stars ─────────────────────────────────────────────────────────
+
+    def get_visible_stars(self, date: datetime, location: ObserverLocation) -> list:
+        """Get bright stars currently visible from the location."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        obs_dt = self._get_observation_time(date, location.tz)
+        return self.stars.get_visible_stars(
+            self.ts, obs_dt,
+            location.latitude_deg, location.longitude_deg,
+            location.elevation_m,
+            min_altitude=5.0,
+            max_magnitude=4.0,
+        )
+
+    # ─── Messier ───────────────────────────────────────────────────────
+
+    def get_visible_messier(self, date: datetime, location: ObserverLocation) -> list:
+        """Get Messier objects currently visible from the location."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        obs_dt = self._get_observation_time(date, location.tz)
+        return self.messier.get_visible_messier(
+            self.ts, obs_dt,
+            location.latitude_deg, location.longitude_deg,
+            location.elevation_m,
+            min_altitude=10.0,
+            max_magnitude=7.0,
+        )
+
+    # ─── Oppositions ───────────────────────────────────────────────────
+
+    def get_oppositions(self, days: int = 180) -> list:
+        """Get upcoming planetary oppositions."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        from_date = datetime.now(timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        return self.events.get_planetary_oppositions(
+            self.ts, from_date, days=days
+        )
+
+    # ─── Zodiac Info ───────────────────────────────────────────────────
+
+    def get_zodiac_info(self, date: datetime, location: ObserverLocation) -> dict:
+        """Get zodiac sign for Sun, Moon, and planets."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        local_date = self._get_local_date(date, location.tz)
+        obs_dt = self._get_observation_time(date, location.tz)
+
+        result = {}
+
+        # Sun zodiac
+        sun_const = self.events.get_sun_constellation(self.ts, obs_dt)
+        result["sun"] = {
+            "constellation": sun_const,
+            "zodiac": self.events.get_zodiac_sign(sun_const),
+        }
+
+        # Moon zodiac
+        moon_const = self.events.get_moon_constellation(self.ts, obs_dt)
+        result["moon"] = {
+            "constellation": moon_const,
+            "zodiac": self.events.get_zodiac_sign(moon_const),
+        }
+
+        # Planet zodiacs
+        from core.planetary import PLANET_EPHEMERIS_KEY, PLANET_DISPLAY
+        planets_zodiac = []
+        for pk in ["mercury", "venus", "mars", "jupiter", "saturn"]:
+            try:
+                pconst = self.events.get_planet_constellation(
+                    self.ts, obs_dt, pk
+                )
+                display = PLANET_DISPLAY.get(pk, pk.title())
+                planets_zodiac.append({
+                    "planet": display,
+                    "constellation": pconst,
+                    "zodiac": self.events.get_zodiac_sign(pconst),
+                })
+            except Exception:
+                pass
+
+        result["planets"] = planets_zodiac
+
+        return result
+
+    # ─── Moon Standstill ───────────────────────────────────────────────
+
+    def get_moon_standstill(self, date: datetime) -> dict:
+        """Get moon standstill cycle info."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        local_date = self._get_local_date(date, location=None) if False else \
+            self._get_local_date(date, __import__('zoneinfo').ZoneInfo("Asia/Kolkata"))
+        return self.events.get_moon_standstill_info(self.ts, local_date)
