@@ -1129,14 +1129,14 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ──── Planets Tonight Tab ──── */}
+        {/* ──── Planets Tab ──── */}
         {activeTab === "planets" && (
           <div className="space-y-4">
             <div className="sky-card">
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-4">
                   <Globe className="w-3.5 h-3.5" style={{ color: "#60a5fa" }} />
-                  <span className="section-label">Planet Visibility Tonight</span>
+                  <span className="section-label">Planets — Full Reference</span>
                   <span className="text-[9px] ml-auto" style={{ color: "var(--sky-muted)" }}>
                     {planetTonightData?.date ? formatDateShort(planetTonightData.date) : ""}
                   </span>
@@ -1151,92 +1151,117 @@ export default function Dashboard() {
                 ) : (
                   <div className="space-y-3">
                     {planetTonightData.planets.map((planet) => {
-                      // Merge in raw coordinates from daily sky data
                       const raw = data.planets.find(p => p.name === planet.name);
 
                       return (
-                      <div
-                        key={planet.name}
-                        className="rounded-lg p-3 border"
-                        style={{
-                          background: planet.is_above_horizon ? "var(--sky-visible-bg)" : "var(--sky-planet-bg)",
-                          borderColor: planet.is_above_horizon ? "var(--sky-visible-border)" : "var(--sky-planet-border)",
-                        }}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">{planet.symbol}</span>
-                            <span className="text-[12px] font-semibold" style={{ color: "var(--sky-text)" }}>
-                              {planet.name}
-                            </span>
-                            <QualityBadge quality={planet.quality} />
-                            {planet.needs_optics && (
-                              <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(139,92,246,0.15)", color: "#a78bfa" }}>
-                                🔭 Optics needed
+                        <div
+                          key={planet.name}
+                          className="rounded-lg p-3 border"
+                          style={{
+                            background: planet.is_above_horizon ? "var(--sky-visible-bg)" : "var(--sky-planet-bg)",
+                            borderColor: planet.is_above_horizon ? "var(--sky-visible-border)" : "var(--sky-planet-border)",
+                          }}
+                        >
+                          {/* Header: symbol, name, badges, horizon status */}
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{planet.symbol}</span>
+                              <span className="text-[12px] font-semibold" style={{ color: "var(--sky-text)" }}>
+                                {planet.name}
                               </span>
+                              <QualityBadge quality={planet.quality} />
+                              {planet.needs_optics && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full" style={{ background: "rgba(139,92,246,0.15)", color: "#a78bfa" }}>
+                                  🔭 Optics needed
+                                </span>
+                              )}
+                              <span className={planet.is_above_horizon ? "status-dot-on" : "status-dot-off"} />
+                            </div>
+                            <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
+                              {planet.is_above_horizon ? "Above horizon" : "Below horizon"}
+                            </span>
+                          </div>
+
+                          {/* Timing: rise, set, culmination */}
+                          <div className="grid grid-cols-3 gap-2 mb-2">
+                            <div>
+                              <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Rise</span>
+                              <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                                {planet.rise ? formatTime(planet.rise) : "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Set</span>
+                              <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                                {planet.set ? formatTime(planet.set) : "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Culmination</span>
+                              <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                                {raw?.culmination ? formatTime(raw.culmination) : "—"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Position: altitude, azimuth, RA, Dec */}
+                          <div className="grid grid-cols-4 gap-2 mb-2" style={{ borderTop: "1px solid var(--sky-divider)", paddingTop: "6px" }}>
+                            <div>
+                              <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Altitude</span>
+                              <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                                {planet.altitude_deg.toFixed(1)}°
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Azimuth</span>
+                              <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                                {raw?.azimuth_deg != null ? `${raw.azimuth_deg.toFixed(0)}°` : "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>RA</span>
+                              <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                                {raw?.ra_hours != null ? `${raw.ra_hours.toFixed(1)}h` : "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Dec</span>
+                              <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                                {raw?.dec_deg != null ? `${raw.dec_deg >= 0 ? "+" : ""}${raw.dec_deg.toFixed(1)}°` : "—"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Physical: distance, angular diameter */}
+                          <div className="grid grid-cols-2 gap-2 mb-2" style={{ borderTop: "1px solid var(--sky-divider)", paddingTop: "6px" }}>
+                            <div>
+                              <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Distance</span>
+                              <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                                {raw?.distance_au != null ? `${raw.distance_au.toFixed(3)} AU` : "—"}
+                              </p>
+                            </div>
+                            <div>
+                              <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Angular Size</span>
+                              <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
+                                {raw?.angular_diameter_arcsec != null ? `${raw.angular_diameter_arcsec.toFixed(1)}″` : "—"}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Commentary: viewing window + comment */}
+                          <div style={{ borderTop: "1px solid var(--sky-divider)", paddingTop: "6px" }}>
+                            {planet.viewing_window && (
+                              <p className="text-[10px] mb-1" style={{ color: "var(--sky-muted)" }}>
+                                <span style={{ color: "var(--sky-footer-text)" }}>Viewing: </span>
+                                {planet.viewing_window}
+                              </p>
                             )}
-                          </div>
-                          <span className="text-[10px]" style={{ color: "var(--sky-muted)" }}>
-                            Alt {planet.altitude_deg.toFixed(1)}°
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-2 mb-2">
-                          <div>
-                            <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Rise</span>
-                            <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
-                              {planet.rise ? formatTime(planet.rise) : "—"}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Set</span>
-                            <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
-                              {planet.set ? formatTime(planet.set) : "—"}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Culmination</span>
-                            <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
-                              {raw?.culmination ? formatTime(raw.culmination) : "—"}
+                            <p className="text-[10px] leading-relaxed" style={{ color: "var(--sky-muted)" }}>
+                              {planet.comment}
                             </p>
                           </div>
                         </div>
-
-                        <div className="grid grid-cols-3 gap-2 mb-2" style={{ borderTop: "1px solid var(--sky-divider)", paddingTop: "6px" }}>
-                          <div>
-                            <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>RA</span>
-                            <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
-                              {raw?.ra_hours != null ? `${raw.ra_hours.toFixed(1)}h` : "—"}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Dec</span>
-                            <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
-                              {raw?.dec_deg != null ? `${raw.dec_deg >= 0 ? "+" : ""}${raw.dec_deg.toFixed(1)}°` : "—"}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Az</span>
-                            <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
-                              {raw?.azimuth_deg != null ? `${raw.azimuth_deg.toFixed(0)}°` : "—"}
-                            </p>
-                          </div>
-                        </div>
-
-                        {raw?.distance_au != null && (
-                          <div className="mb-2">
-                            <span className="text-[9px]" style={{ color: "var(--sky-footer-text)" }}>Distance</span>
-                            <p className="text-[10px] font-medium" style={{ color: "var(--sky-detail-text)" }}>
-                              {raw.distance_au.toFixed(2)} AU
-                            </p>
-                          </div>
-                        )}
-
-                        <p className="text-[10px] leading-relaxed" style={{ color: "var(--sky-muted)" }}>
-                          {planet.comment}
-                        </p>
-                      </div>
-                    );
+                      );
                     })}
                   </div>
                 )}
