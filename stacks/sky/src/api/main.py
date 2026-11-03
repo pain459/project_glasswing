@@ -311,6 +311,60 @@ async def get_iss_visibility(
     )
 
 
+# ─── Planet Visibility Tonight ──────────────────────────────────────────────
+
+@app.get("/api/v1/sky/planets/tonight")
+async def get_planet_tonight(
+    date: str = Query("today"),
+    location_id: int = Query(None),
+    latitude: float = Query(None),
+    longitude: float = Query(None),
+    timezone: str = Query(None),
+):
+    """Get planet visibility commentary for tonight."""
+    loc = _resolve_location(location_id, latitude, longitude, timezone)
+    target_date = _resolve_date(date)
+    planet_data = sky_service.get_planet_tonight(target_date, loc)
+    return ApiResponse(
+        data=planet_data,
+        metadata=_calc_metadata(target_date, loc),
+    )
+
+
+# ─── Season Calendar (Equinoxes & Solstices) ────────────────────────────────
+
+@app.get("/api/v1/sky/calendar/seasons")
+async def get_season_calendar(
+    year: int = Query(None, ge=2026, le=2027),
+):
+    """Get equinox/solstice calendar for 2026-2027."""
+    events = sky_service.get_season_calendar(year)
+    return ApiResponse(
+        data={"events": events, "year": year},
+        metadata=None,
+    )
+
+
+# ─── Sky Stories (for kids) ────────────────────────────────────────────────
+
+@app.get("/api/v1/sky/story")
+async def get_sky_story(
+    date: str = Query("today"),
+    location_id: int = Query(None),
+    latitude: float = Query(None),
+    longitude: float = Query(None),
+    timezone: str = Query(None),
+):
+    """Get a kid-friendly sky story for the given date."""
+    loc = _resolve_location(location_id, latitude, longitude, timezone)
+    target_date = _resolve_date(date)
+    story = sky_service.get_sky_story(target_date, loc)
+    return ApiResponse(
+        data=story,
+        metadata=_calc_metadata(target_date, loc),
+    )
+
+
 # ─── Helper functions ───────────────────────────────────────────────────────
 
 def _resolve_location(location_id, latitude, longitude, timezone_str):

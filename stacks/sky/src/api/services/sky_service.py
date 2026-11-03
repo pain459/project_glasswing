@@ -24,6 +24,9 @@ from core.lunar import LunarService
 from core.planetary import PlanetaryService
 from core.events import EventsService
 from core.satellite import create_iss_satellite, get_iss_visible_passes, get_iss_current_position
+from core.planet_visibility import get_planet_tonight_summary
+from core.season_calendar import compute_season_events, get_season_calendar, get_next_season_event_from_today
+from core.sky_stories import generate_sky_story
 from api.models.schemas import SystemStatusResponse
 
 logger = logging.getLogger(__name__)
@@ -287,3 +290,73 @@ class SkyService:
             "passes": passes[:10],  # Top 10 passes by elevation
             "total_passes": len(passes),
         }
+
+    def get_planet_tonight(self, date: datetime, location: ObserverLocation) -> dict:
+        """Get planet visibility commentary for tonight."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        local_date = self._get_local_date(date, location.tz)
+
+        planets = get_planet_tonight_summary(
+            self.ts,
+            self.planetary,
+            self.solar,
+            location.latitude_deg,
+            location.longitude_deg,
+            location.elevation_m,
+            local_date,
+        )
+
+        return {
+            "date": local_date.strftime("%Y-%m-%d"),
+            "location": location.name,
+            "planets": planets,
+        }
+
+    def get_season_calendar(self, year: Optional[int] = None) -> list:
+        """Get equinox/solstice calendar."""
+        return get_season_calendar(year)
+
+    def get_sky_story(self, date: datetime, location: ObserverLocation) -> dict:
+        """Generate a kid-friendly sky story for the given date."""
+        if not self._is_ready:
+            raise RuntimeError("SkyService not initialized")
+
+        local_date = self._get_local_date(date, location.tz)
+        obs_dt = self._get_observation_time(date, location.tz)
+
+        # Get lunar data for moon phase
+        lunar = self.lunar.get_full_lunar_data(
+            self.ts, location.latitude_deg, location.longitude_deg,
+            local_date, location.elevation_m, obs_dt
+        )
+
+        # Get visible planets
+        visible_planets = self.planetary.get_visible_planets(
+            self.ts, location.latitude_deg, location.longitude_deg,
+            obs_dt, location.elevation_m
+        )
+
+        # Get active meteor showers
+        active_showers = self.events.get_active_meteor_showers(local_date)
+
+        # Get season
+        season = self.events._get_season(local_date)
+
+        # Get moon distance label
+        moon_dist = self.events.get_moon_distance_info(self.ts, obs_dt)
+
+        # Generate story
+        story = generate_sky_story(
+            date=obs_dt,
+            moon_phase=lunar.get("phase_name", "New Moon"),
+            moon_illumination=lunar.get("illumination_percent", 0),
+            visible_planets=visible_planets,
+            season=season,
+            moon_distance_label=moon_dist.get("distance_label", "normal"),
+            active_showers=active_showers,
+            is_moon_above_horizon=lunar.get("current_position", {}).get("is_above_horizon", False),
+        )
+
+        return story
