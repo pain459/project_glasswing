@@ -1,0 +1,289 @@
+/* Glasswing Catalog — Dark theme, clean layout */
+:root {
+  --bg: #0b0d13;
+  --surface: #131620;
+  --card: #1a1e2e;
+  --border: #2a2f45;
+  --text: #e2e4ed;
+  --muted: #8b90a5;
+  --accent: #6c8cff;
+  --accent-dim: #4a62c4;
+  --green: #34d399;
+  --amber: #fbbf24;
+  --red: #f87171;
+  --purple: #a78bfa;
+  --cyan: #22d3ee;
+  --orange: #fb923c;
+  --pink: #f472b6;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, #131620 0%, #1a1e2e 50%, #0f1923 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 3rem 2rem 2rem;
+  text-align: center;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--cyan));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.header .subtitle {
+  color: var(--muted);
+  font-size: 1.1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.header .meta {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.header .meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.header .meta-item .num {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 1.3rem;
+}
+
+/* Container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+/* Category section */
+.category {
+  margin-bottom: 3rem;
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.category-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.category-header h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.category-header .count {
+  margin-left: auto;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 0.2rem 0.8rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* Service cards grid */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem;
+}
+
+/* Service card */
+.service-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+.service-card:hover {
+  border-color: var(--accent-dim);
+  transform: translateY(-2px);
+}
+
+.service-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.service-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.service-name {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.15rem;
+}
+
+.service-desc {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.service-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.badge.port {
+  color: var(--cyan);
+  border-color: rgba(34, 211, 238, 0.2);
+}
+
+.badge.container {
+  color: var(--purple);
+  border-color: rgba(167, 139, 250, 0.2);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge.internal {
+  color: var(--amber);
+  border-color: rgba(251, 191, 36, 0.2);
+}
+
+.badge.tech {
+  color: var(--green);
+  border-color: rgba(52, 211, 153, 0.2);
+}
+
+/* Color themes for category icons */
+.cat-infra .category-icon { background: rgba(108, 140, 255, 0.15); color: var(--accent); }
+.cat-ai .category-icon { background: rgba(167, 139, 250, 0.15); color: var(--purple); }
+.cat-mcp .category-icon { background: rgba(34, 211, 238, 0.15); color: var(--cyan); }
+.cat-dev .category-icon { background: rgba(52, 211, 153, 0.15); color: var(--green); }
+.cat-time .category-icon { background: rgba(251, 191, 36, 0.15); color: var(--amber); }
+.cat-home .category-icon { background: rgba(244, 114, 182, 0.15); color: var(--pink); }
+.cat-astronomy .category-icon { background: rgba(251, 146, 60, 0.15); color: var(--orange); }
+.cat-research .category-icon { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+.cat-news .category-icon { background: rgba(108, 140, 255, 0.15); color: var(--accent); }
+.cat-entertainment .category-icon { background: rgba(244, 114, 182, 0.15); color: var(--pink); }
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 2rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+}
+
+.footer a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+/* Search */
+.search-bar {
+  max-width: 500px;
+  margin: 0 auto 2rem;
+  position: relative;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.search-bar input:focus {
+  border-color: var(--accent);
+}
+
+.search-bar input::placeholder {
+  color: var(--muted);
+}
+
+.search-bar .search-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header h1 { font-size: 1.8rem; }
+  .services-grid { grid-template-columns: 1fr; }
+  .header .meta { gap: 1rem; }
+}

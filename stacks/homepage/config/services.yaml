@@ -259,6 +259,13 @@
         container: glasswing-atlas-web
         siteMonitor: http://192.168.68.62:5090
 
+    - Service Catalog:
+        icon: mdi-bookshelf
+        href: http://192.168.68.62:3029
+        description: Complete Stack Service Directory
+        container: glasswing-catalog
+        siteMonitor: http://192.168.68.62:3029
+
 - News Centre:
     - Glance:
         icon: mdi-newspaper-variant

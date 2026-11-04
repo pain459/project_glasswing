@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Glasswing — Service Catalog</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="header">
+  <h1>Glasswing</h1>
+  <p class="subtitle">Pathfinder Home Server — Service Catalog</p>
+  <div class="meta">
+    <div class="meta-item"><span class="num">40+</span> services</div>
+    <div class="meta-item"><span class="num">10</span> categories</div>
+    <div class="meta-item"><span class="num">60+</span> containers</div>
+    <div class="meta-item"><span class="num">RTX 4090</span> GPU</div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="search-bar">
+    <span class="search-icon">&#128269;</span>
+    <input type="text" id="search" placeholder="Search services..." oninput="filterServices()">
+  </div>
+
+  <!-- Core Infrastructure -->
+  <section class="category cat-infra" data-category="infrastructure">
+    <div class="category-header">
+      <div class="category-icon">&#9881;</div>
+      <h2>Core Infrastructure</h2>
+      <span class="count">12 services</span>
+    </div>
+    <div class="services-grid">
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128274;</div>
+          <div>
+            <div class="service-name">Infisical</div>
+            <div class="service-desc">Secrets &amp; credentials management for all stacks</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:8095</span>
+          <span class="badge container">glasswing-infisical</span>
+          <span class="badge tech">PostgreSQL</span>
+          <span class="badge tech">Redis</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128201;</div>
+          <div>
+            <div class="service-name">Uptime Kuma</div>
+            <div class="service-desc">Availability monitoring with alerts for all services</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3003</span>
+          <span class="badge container">glasswing-uptime-kuma</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128161;</div>
+          <div>
+            <div class="service-name">Beszel</div>
+            <div class="service-desc">Host telemetry — CPU, GPU, RAM, disk, network metrics</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:8090</span>
+          <span class="badge container">glasswing-beszel</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128160;</div>
+          <div>
+            <div class="service-name">Glances</div>
+            <div class="service-desc">Real-time host system monitor with API access</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:61208</span>
+          <span class="badge container">glasswing-glances</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128736;</div>
+          <div>
+            <div class="service-name">Portainer</div>
+            <div class="service-desc">Container management dashboard for Docker</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:9443</span>
+          <span class="badge container">glasswing-portainer</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128737;</div>
+          <div>
+            <div class="service-name">AdGuard Home</div>
+            <div class="service-desc">DNS sinkhole, network-wide ad blocking &amp; security</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3007</span>
+          <span class="badge port">DNS :53</span>
+          <span class="badge container">glasswing-adguard</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#127968;</div>
+          <div>
+            <div class="service-name">Homepage</div>
+            <div class="service-desc">Operations dashboard — service tiles, status, quick links</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3006</span>
+          <span class="badge container">glasswing-homepage</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128202;</div>
+          <div>
+            <div class="service-name">OpenObserve</div>
+            <div class="service-desc">Centralized logs, metrics, and traces (OpenTelemetry-native)</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3018</span>
+          <span class="badge container">glasswing-openobserve</span>
+          <span class="badge tech">S3 storage</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128200;</div>
+          <div>
+            <div class="service-name">OpenTelemetry Collector</div>
+            <div class="service-desc">Collects Docker metrics &amp; traces from all containers</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:4318</span>
+          <span class="badge port">:13133</span>
+          <span class="badge container">glasswing-otel-collector</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128196;</div>
+          <div>
+            <div class="service-name">Vector</div>
+            <div class="service-desc">High-performance log collector — Docker logs to OpenObserve</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:8686</span>
+          <span class="badge container">glasswing-vector</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128143;</div>
+          <div>
+            <div class="service-name">Dagu</div>
+            <div class="service-desc">Workflow scheduler &amp; cron runner for orchestrated tasks</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3014</span>
+          <span class="badge container">glasswing-dagu</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128451;</div>
+          <div>
+            <div class="service-name">PostgreSQL</div>
+            <div class="service-desc">Shared database server for multiple stacks</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:5432</span>
+          <span class="badge container">glasswing-postgres</span>
+          <span class="badge internal">internal</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- AI Platform -->
+  <section class="category cat-ai" data-category="ai">
+    <div class="category-header">
+      <div class="category-icon">&#129302;</div>
+      <h2>AI Platform</h2>
+      <span class="count">5 services</span>
+    </div>
+    <div class="services-grid">
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#129504;</div>
+          <div>
+            <div class="service-name">Ollama</div>
+            <div class="service-desc">Local LLM inference on RTX 4090 — llama3, mistral, codellama &amp; more</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:11434</span>
+          <span class="badge container">glasswing-ollama</span>
+          <span class="badge tech">GPU</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#129306;</div>
+          <div>
+            <div class="service-name">Flowise</div>
+            <div class="service-desc">Visual AI agent &amp; workflow builder — LLM chains, tools, memory</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3002</span>
+          <span class="badge container">glasswing-flowise</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128202;</div>
+          <div>
+            <div class="service-name">Langfuse</div>
+            <div class="service-desc">LLM observability — tracing, prompts, datasets, analytics</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3010</span>
+          <span class="badge container">glasswing-langfuse</span>
+          <span class="badge tech">ClickHouse</span>
+          <span class="badge tech">MinIO</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128218;</div>
+          <div>
+            <div class="service-name">AnythingLLM</div>
+            <div class="service-desc">Local RAG — chat with documents, knowledge bases, custom workspaces</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3012</span>
+          <span class="badge container">glasswing-anythingllm</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128269;</div>
+          <div>
+            <div class="service-name">SearXNG</div>
+            <div class="service-desc">Private metasearch engine — no tracking, 70+ sources, MCP-ready</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3028</span>
+          <span class="badge container">glasswing-searxng</span>
+          <span class="badge tech">Valkey</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- MCP Servers -->
+  <section class="category cat-mcp" data-category="mcp">
+    <div class="category-header">
+      <div class="category-icon">&#128295;</div>
+      <h2>MCP Servers</h2>
+      <span class="count">6 servers</span>
+    </div>
+    <div class="services-grid">
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128214;</div>
+          <div>
+            <div class="service-name">Open Notebook MCP</div>
+            <div class="service-desc">Persistent knowledge base — notes, sources, vector search</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:8502</span>
+          <span class="badge container">glasswing-open-notebook-mcp</span>
+          <span class="badge tech">SurrealDB</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#127760;</div>
+          <div>
+            <div class="service-name">Steel MCP</div>
+            <div class="service-desc">Browser automation — web scraping, screenshots, form filling</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3100</span>
+          <span class="badge container">glasswing-steel-mcp</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128187;</div>
+          <div>
+            <div class="service-name">Serena MCP</div>
+            <div class="service-desc">Code intelligence — symbol search, references, refactoring</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:24282</span>
+          <span class="badge container">glasswing-serena</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128300;</div>
+          <div>
+            <div class="service-name">REA MCP</div>
+            <div class="service-desc">Reverse engineering — binary analysis, debugging, disassembly</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:8003</span>
+          <span class="badge container">glasswing-rea-mcp</span>
+          <span class="badge internal">localhost</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128203;</div>
+          <div>
+            <div class="service-name">Sequential Thinking MCP</div>
+            <div class="service-desc">Working memory — structured reasoning, evidence tracking</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:8004</span>
+          <span class="badge container">glasswing-sequential-thinking-mcp</span>
+          <span class="badge internal">localhost</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128269;</div>
+          <div>
+            <div class="service-name">SearXNG MCP</div>
+            <div class="service-desc">Private web search — MCP interface to SearXNG instance</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:8005</span>
+          <span class="badge container">glasswing-searxng-mcp</span>
+          <span class="badge internal">localhost</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Developer Workbench -->
+  <section class="category cat-dev" data-category="developer">
+    <div class="category-header">
+      <div class="category-icon">&#128736;</div>
+      <h2>Developer Workbench</h2>
+      <span class="count">8 services</span>
+    </div>
+    <div class="services-grid">
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128024;</div>
+          <div>
+            <div class="service-name">Forgejo</div>
+            <div class="service-desc">Private Git hosting — self-hosted fork of Gitea</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3011</span>
+          <span class="badge port">SSH :2222</span>
+          <span class="badge container">glasswing-forgejo</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#129412;</div>
+          <div>
+            <div class="service-name">JupyterLab</div>
+            <div class="service-desc">Python notebooks — data science, ML experiments, exploration</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:8889</span>
+          <span class="badge container">glasswing-jupyterlab</span>
+          <span class="badge tech">Python</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128451;</div>
+          <div>
+            <div class="service-name">DBGate</div>
+            <div class="service-desc">Database administration — query builder, schema browser, exports</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3004</span>
+          <span class="badge container">glasswing-dbgate</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#127912;</div>
+          <div>
+            <div class="service-name">Excalidraw</div>
+            <div class="service-desc">Hand-drawn style whiteboard — architecture diagrams, brainstorming</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3009</span>
+          <span class="badge container">glasswing-excalidraw</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#129302;</div>
+          <div>
+            <div class="service-name">CyberChef</div>
+            <div class="service-desc">Encode, decode, encrypt, hash, compress — data analysis recipes</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3013</span>
+          <span class="badge container">glasswing-cyberchef</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128297;</div>
+          <div>
+            <div class="service-name">IT-Tools</div>
+            <div class="service-desc">Developer utilities — JSON, UUID, regex, base64, hash generators</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3015</span>
+          <span class="badge container">glasswing-it-tools</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#129728;</div>
+          <div>
+            <div class="service-name">Calculators</div>
+            <div class="service-desc">Math, finance, unit conversion, scientific calculators</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3021</span>
+          <span class="badge container">glasswing-calculators</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128196;</div>
+          <div>
+            <div class="service-name">Stirling-PDF</div>
+            <div class="service-desc">PDF processing — merge, split, OCR, convert, sign, watermark</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3016</span>
+          <span class="badge container">glasswing-stirling-pdf</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- World Clock -->
+  <section class="category cat-time" data-category="time">
+    <div class="category-header">
+      <div class="category-icon">&#128338;</div>
+      <h2>World Clock</h2>
+      <span class="count">2 services</span>
+    </div>
+    <div class="services-grid">
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128340;</div>
+          <div>
+            <div class="service-name">Datetime</div>
+            <div class="service-desc">World clock &amp; time zone converter — multi-city display</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3022</span>
+          <span class="badge container">glasswing-datetime</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128197;</div>
+          <div>
+            <div class="service-name">Panchangam</div>
+            <div class="service-desc">Telugu Panchangam — Tithi, Nakshatra, Muhurtam &amp; festivals</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3023</span>
+          <span class="badge container">glasswing-panchangam</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Home Management -->
+  <section class="category cat-home" data-category="home">
+    <div class="category-header">
+      <div class="category-icon">&#127968;</div>
+      <h2>Home Management</h2>
+      <span class="count">2 services</span>
+    </div>
+    <div class="services-grid">
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#127970;</div>
+          <div>
+            <div class="service-name">HomeBox</div>
+            <div class="service-desc">Home inventory &amp; organization — catalog items, locations, warranties</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3024</span>
+          <span class="badge container">glasswing-homebox</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128196;</div>
+          <div>
+            <div class="service-name">Paperless-ngx</div>
+            <div class="service-desc">Document management — scan, OCR, index, search &amp; archive papers</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3025</span>
+          <span class="badge container">glasswing-paperless</span>
+          <span class="badge tech">PostgreSQL</span>
+          <span class="badge tech">Redis</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Astronomy -->
+  <section class="category cat-astronomy" data-category="astronomy">
+    <div class="category-header">
+      <div class="category-icon">&#128161;</div>
+      <h2>Astronomy</h2>
+      <span class="count">1 service</span>
+    </div>
+    <div class="services-grid">
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128286;</div>
+          <div>
+            <div class="service-name">Skytoday</div>
+            <div class="service-desc">Astronomy intelligence — solar, lunar, planetary positions, ISS tracking, weather observing conditions, Panchangam, ephemeris data</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:5088</span>
+          <span class="badge container">glasswing-sky-web</span>
+          <span class="badge tech">PostgreSQL</span>
+          <span class="badge tech">Open-Meteo</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Research & Intelligence -->
+  <section class="category cat-research" data-category="research">
+    <div class="category-header">
+      <div class="category-icon">&#127758;</div>
+      <h2>Research &amp; Intelligence</h2>
+      <span class="count">1 service</span>
+    </div>
+    <div class="services-grid">
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#127758;</div>
+          <div>
+            <div class="service-name">ATLAS</div>
+            <div class="service-desc">Planetary disaster intelligence — real-time earthquake, cyclone, fire, flood tracking via Cesium globe. Sources: USGS, GDACS, NASA EONET</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:5090</span>
+          <span class="badge container">glasswing-atlas-web</span>
+          <span class="badge tech">DuckDB</span>
+          <span class="badge tech">CesiumJS</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- News Centre -->
+  <section class="category cat-news" data-category="news">
+    <div class="category-header">
+      <div class="category-icon">&#128240;</div>
+      <h2>News Centre</h2>
+      <span class="count">2 services</span>
+    </div>
+    <div class="services-grid">
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128241;</div>
+          <div>
+            <div class="service-name">Glance</div>
+            <div class="service-desc">Visual news dashboard — 7 curated pages of feeds, widgets, bookmarks</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3026</span>
+          <span class="badge container">glasswing-glance</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128229;</div>
+          <div>
+            <div class="service-name">FreshRSS</div>
+            <div class="service-desc">RSS feed manager — persistent subscriptions, auto-refresh, categories</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3027</span>
+          <span class="badge container">glasswing-freshrss</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Entertainment -->
+  <section class="category cat-entertainment" data-category="entertainment">
+    <div class="category-header">
+      <div class="category-icon">&#127916;</div>
+      <h2>Entertainment</h2>
+      <span class="count">2 services</span>
+    </div>
+    <div class="services-grid">
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#127913;</div>
+          <div>
+            <div class="service-name">Plex</div>
+            <div class="service-desc">Media server — movies, TV, documentaries, home videos, music library</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:32400</span>
+          <span class="badge container">glasswing-plex</span>
+        </div>
+      </div>
+
+      <div class="service-card">
+        <div class="service-top">
+          <div class="service-icon">&#128214;</div>
+          <div>
+            <div class="service-name">Kavita</div>
+            <div class="service-desc">Digital library — books, comics, manga, CBZ/CBR readers</div>
+          </div>
+        </div>
+        <div class="service-details">
+          <span class="badge port">:3017</span>
+          <span class="badge container">glasswing-kavita</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<div class="footer">
+  <p>Glasswing on Pathfinder &middot; <a href="http://192.168.68.62:3006">Homepage</a> &middot; <a href="http://192.168.68.62:3003">Uptime Kuma</a> &middot; <a href="https://github.com/pain459/project_glasswing">GitHub</a></p>
+</div>
+
+<script>
+function filterServices() {
+  const query = document.getElementById('search').value.toLowerCase();
+  document.querySelectorAll('.service-card').forEach(card => {
+    const text = card.textContent.toLowerCase();
+    card.style.display = text.includes(query) ? '' : 'none';
+  });
+  // Hide empty categories
+  document.querySelectorAll('.category').forEach(cat => {
+    const visible = cat.querySelectorAll('.service-card[style=""], .service-card:not([style])');
+    let hasVisible = false;
+    cat.querySelectorAll('.service-card').forEach(c => { if (c.style.display !== 'none') hasVisible = true; });
+    cat.style.display = hasVisible ? '' : 'none';
+  });
+}
+</script>
+
+</body>
+</html>

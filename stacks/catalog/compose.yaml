@@ -1,0 +1,33 @@
+name: glasswing-catalog
+
+services:
+  catalog:
+    extends:
+      file: ../base.yaml
+      service: base
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: glasswing/catalog:latest
+    container_name: glasswing-catalog
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3029:80"
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ || exit 1"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+    labels:
+      com.glasswing.service: catalog
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
