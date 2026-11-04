@@ -1,0 +1,304 @@
+# Glasswing Version Manifest
+#
+# Central registry of image versions for all stacks.
+#
+# Fields:
+#   image    — full image reference (registry/repo)
+#   tag      — current pinned tag or mutable tag
+#   mutable  — true if eligible for automatic updates via Dagu
+#   updated  — date this version was deployed (YYYY-MM-DD)
+#   notes    — optional context (infra-critical, custom-built, etc.)
+#
+# Maintained by: scripts/release-manifest.sh
+# Last synced: 2026-11-04
+# Commit: 347f5ee
+
+stacks:
+  # ── Infrastructure Core ──────────────────────────────────────
+
+  infisical:
+    image: infisical/infisical
+    tag: "v0.167.4"
+    mutable: false
+    updated: "2026-10-15"
+    notes: "Critical infra — secrets management, excluded from auto-update"
+
+  ollama:
+    image: ollama/ollama
+    tag: "0.40.11"
+    mutable: false
+    updated: "2026-10-20"
+    notes: "Inference backend — update manually after testing models"
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage
+    tag: "v2.7.0"
+    mutable: false
+    updated: "2026-09-12"
+
+  # ── Observability ────────────────────────────────────────────
+
+  openobserve:
+    image: public.ecr.aws/zinclabs/openobserve
+    tag: "v1.1.2"
+    mutable: false
+    updated: "2026-10-10"
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib
+    tag: "0.164.0"
+    mutable: false
+    updated: "2026-10-10"
+    notes: "Critical infra — excluded from auto-update"
+
+  vector:
+    image: timberio/vector
+    tag: "0.60.0-debian"
+    mutable: false
+    updated: "2026-10-10"
+    notes: "Critical infra — excluded from auto-update"
+
+  uptime-kuma:
+    image: louislam/uptime-kuma
+    tag: "2.5.8"
+    mutable: false
+    updated: "2026-09-20"
+
+  beszel:
+    image: henrygd/beszel
+    tag: "0.21.1"
+    mutable: false
+    updated: "2026-09-15"
+
+  glances:
+    image: nicolargo/glances
+    tag: "ubuntu-4.5.8-full"
+    mutable: false
+    updated: "2026-09-15"
+
+  langfuse:
+    image: docker.langfuse.com/langfuse/langfuse
+    tag: "4.75.0"
+    mutable: false
+    updated: "2026-10-05"
+    notes: "Multi-service stack — worker + app share version"
+
+  # ── AI & MCP Servers ────────────────────────────────────────
+
+  open-notebook-mcp:
+    image: glasswing/open-notebook-mcp
+    tag: "0.3.0"
+    mutable: false
+    updated: "2026-10-25"
+    notes: "Custom-built MCP server"
+
+  steel-mcp:
+    image: glasswing/steel-mcp
+    tag: "3.0.0"
+    mutable: false
+    updated: "2026-10-25"
+    notes: "Custom-built MCP server"
+
+  serena:
+    image: glasswing/serena
+    tag: "2.1.1-node22"
+    mutable: false
+    updated: "2026-10-28"
+    notes: "Custom-built MCP server"
+
+  sequential-thinking-mcp:
+    image: glasswing/sequential-thinking-mcp
+    tag: "0.7.0"
+    mutable: false
+    updated: "2026-10-25"
+    notes: "Custom-built MCP server"
+
+  rea-mcp:
+    image: glasswing/rea-mcp
+    tag: "6.8.0"
+    mutable: false
+    updated: "2026-10-25"
+    notes: "Custom-built MCP server"
+
+  searxng:
+    image: searxng/searxng
+    tag: "2026.11.2-cccbc9e15"
+    mutable: false
+    updated: "2026-11-02"
+
+  # ── Application Services ────────────────────────────────────
+
+  adguard:
+    image: adguard/adguardhome
+    tag: "v0.107.79"
+    mutable: false
+    updated: "2026-10-01"
+
+  anythingllm:
+    image: mintplexlabs/anythingllm
+    tag: "1.19"
+    mutable: false
+    updated: "2026-10-08"
+
+  cyberchef:
+    image: ghcr.io/gchq/cyberchef
+    tag: "11.5.0"
+    mutable: false
+    updated: "2026-09-10"
+
+  datetime:
+    image: ghcr.io/airyland/datetime.app
+    tag: "1.4.2"
+    mutable: false
+    updated: "2026-09-10"
+
+  dbgate:
+    image: dbgate/dbgate
+    tag: "7.3.2"
+    mutable: false
+    updated: "2026-09-10"
+
+  excalidraw:
+    image: excalidraw/excalidraw
+    tag: "sha-67fe156"
+    mutable: false
+    updated: "2026-09-10"
+
+  flowise:
+    image: flowiseai/flowise
+    tag: "3.1.3"
+    mutable: false
+    updated: "2026-11-04"
+
+  forgejo:
+    image: codeberg.org/forgejo/forgejo
+    tag: "17.0.1"
+    mutable: false
+    updated: "2026-10-12"
+
+  homebox:
+    image: ghcr.io/sysadminsmedia/homebox
+    tag: "0.27.1"
+    mutable: false
+    updated: "2026-09-25"
+
+  it-tools:
+    image: ghcr.io/corentinth/it-tools
+    tag: "2024.10.22-7ca5933"
+    mutable: false
+    updated: "2026-09-10"
+
+  jupyterlab:
+    image: quay.io/jupyter/scipy-notebook
+    tag: "2026-07-28"
+    mutable: false
+    updated: "2026-07-28"
+
+  kavita:
+    image: ghcr.io/kareadita/kavita
+    tag: "0.9.1"
+    mutable: false
+    updated: "2026-10-01"
+
+  news-centre:
+    image: glanceapp/glance
+    tag: "v0.8.7"
+    mutable: false
+    updated: "2026-10-15"
+
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx
+    tag: "3.4.0"
+    mutable: false
+    updated: "2026-10-10"
+
+  plex:
+    image: plexinc/pms-docker
+    tag: "public"
+    mutable: true
+    updated: "2026-09-01"
+    notes: "Mutable tag — eligible for auto-update"
+
+  portainer:
+    image: portainer/portainer-ce
+    tag: "2.45.3"
+    mutable: false
+    updated: "2026-10-18"
+
+  stirling-pdf:
+    image: docker.stirlingpdf.com/stirlingtools/stirling-pdf
+    tag: "3.2.2"
+    mutable: false
+    updated: "2026-10-20"
+
+  steel:
+    image: ghcr.io/steel-dev/steel-browser
+    tag: "0.5.5-beta"
+    mutable: false
+    updated: "2026-10-22"
+
+  # ── Custom-Built Stacks ─────────────────────────────────────
+
+  sky:
+    image: glasswing/sky-api
+    tag: "latest"
+    mutable: true
+    updated: "2026-10-28"
+    notes: "Custom-built — api + web + worker, all built from Dockerfile"
+
+  panchangam:
+    image: glasswing/panchangam
+    tag: "latest"
+    mutable: true
+    updated: "2026-10-28"
+    notes: "Custom-built"
+
+  wiki:
+    image: glasswing/wiki
+    tag: "latest"
+    mutable: true
+    updated: "2026-10-28"
+    notes: "Custom-built"
+
+  catalog:
+    image: glasswing/catalog
+    tag: "latest"
+    mutable: true
+    updated: "2026-10-28"
+    notes: "Custom-built"
+
+  calculators:
+    image: glasswing/calculators
+    tag: "latest"
+    mutable: true
+    updated: "2026-10-28"
+    notes: "Custom-built"
+
+  atlas:
+    image: glasswing/atlas-engine
+    tag: "0.3.0"
+    mutable: false
+    updated: "2026-10-28"
+    notes: "Custom-built — engine + web"
+
+  # ── Infrastructure Support ──────────────────────────────────
+
+  postgres:
+    image: postgres
+    tag: "17-alpine"
+    mutable: false
+    updated: "2026-09-01"
+    notes: "Shared PostgreSQL — excluded from auto-update"
+
+  dagu:
+    image: ghcr.io/dagucloud/dagu
+    tag: "2.24.0"
+    mutable: false
+    updated: "2026-10-15"
+    notes: "Workflow orchestrator — excluded from auto-update"
+
+  open-notebook:
+    image: lfnovo/open_notebook
+    tag: "v1.4.2"
+    mutable: false
+    updated: "2026-10-20"

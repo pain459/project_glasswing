@@ -39,6 +39,7 @@ export DOCKER_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null)
 .PHONY: help up down restart rebuild update logs ps check infisical homepage core status \
         secrets-check secrets-injection-check secrets-plan network docker-pool doctor access access-check \
         certificates certificates-check mcp-preflight \
+        release-status release-bump release-apply release-rollback release-diff release-history release-sync \
 
 
 help:
@@ -71,6 +72,15 @@ help:
 	@echo "make certificates-check           Verify the TLS material covers the host IP and is current"
 	@echo ""
 	@echo "make update STACK=name            Pull latest pinned images and redeploy stack"
+	@echo ""
+	@echo "Release Management (stacks/VERSIONS.yaml):"
+	@echo "make release-status               Show version table for all stacks"
+	@echo "make release-bump STACK=x TAG=y   Bump one stack's version"
+	@echo "make release-apply                Apply manifest versions to compose files"
+	@echo "make release-rollback             Revert the last release commit"
+	@echo "make release-diff                 Show drift between manifest and compose files"
+	@echo "make release-history              Show recent release-related commits"
+	@echo "make release-sync                 Sync manifest from current compose files"
 	@echo ""
 	@echo "Optional: INFISICAL_PATH=/custom/path (default /<stack>)"
 	@echo "Optional: stacks/<name>/pre-up.sh and post-up.sh run automatically with make up"
@@ -352,3 +362,39 @@ backup-retention:
 	    --keep-weekly 4 \
 	    --keep-monthly 6 \
 	    --prune
+
+
+# --------------------------------------------------
+# Release Management — stacks/VERSIONS.yaml
+# --------------------------------------------------
+
+RELEASE_TAG ?=
+
+release-status:
+	@./scripts/release-manifest.sh status
+
+release-status-updates:
+	@./scripts/release-manifest.sh status --updates
+
+release-bump:
+	@if [ -z "$(RELEASE_TAG)" ]; then \
+	  echo "Usage: make release-bump STACK=name TAG=version"; \
+	  echo "Example: make release-bump STACK=ollama TAG=0.40.12"; \
+	  exit 1; \
+	fi
+	@./scripts/release-manifest.sh bump $(STACK) $(RELEASE_TAG)
+
+release-apply:
+	@./scripts/release-manifest.sh apply
+
+release-rollback:
+	@./scripts/release-manifest.sh rollback
+
+release-diff:
+	@./scripts/release-manifest.sh diff
+
+release-history:
+	@./scripts/release-manifest.sh history
+
+release-sync:
+	@./scripts/release-manifest.sh sync

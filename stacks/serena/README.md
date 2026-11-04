@@ -6,27 +6,19 @@ Serena provides code intelligence to host OpenCode over Streamable HTTP MCP.
 - Dashboard: `http://<HOST_IP>:24282/dashboard/index.html` (LAN accessible)
 - Infisical path: `/serena` (global settings only)
 
-## Configuring Repository Mounts
+## Configuring the Active Project
 
-Repo mounts are driven by `repos.env` — a simple, gitignored file that lists
-host-to-container path mappings, one per line:
-
-```bash
-cp stacks/serena/repos.env.example stacks/serena/repos.env
-```
-
-Then edit `repos.env`:
+Edit the single mount line in `repos.env` (gitignored; copy from `repos.env.example`):
 
 ```
-# Format: HOST_PATH:CONTAINER_PATH[:ro]
-/home/ravik/src_git:/workspace/repos
-/mnt/storage/other-project:/workspace/other-project:ro
+/home/ravik/src_git/project_glasswing:/workspace/project_glasswing
 ```
 
-The `pre-up.sh` hook reads this file and generates `compose.override.yaml`
+The first valid line is both mounted and activated as Serena's active project.
+Add further lines below it for additional read-only mounts if needed.
+
+The `pre-up.sh` hook reads `repos.env` and generates `compose.override.yaml`
 automatically. Both files are gitignored.
-
-Prefer `:ro` (read-only) mounts unless Serena must edit files in that repo.
 
 ## Lifecycle
 

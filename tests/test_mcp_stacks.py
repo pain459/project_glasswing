@@ -155,12 +155,14 @@ class MCPStackTests(unittest.TestCase):
 
     def test_serena_override(self) -> None:
         stack = REPO / "stacks" / "serena"
-        config = compose_config_files(
-            [stack / "compose.yaml", stack / "compose.override.example.yaml"], {}
-        )
-        targets = {volume["target"] for volume in config["services"]["serena"]["volumes"]}
-        self.assertIn("/workspace/repos", targets)
-        self.assertIn("/workspace/extra/example", targets)
+        # The override is generated from repos.env by pre-up.sh; verify the
+        # committed repos.env.example drives the expected active project mount.
+        repos_example = (stack / "repos.env.example").read_text()
+        self.assertIn("/workspace/project_glasswing", repos_example)
+        # The generated override should set --project and the volume mount.
+        override = (stack / "compose.override.yaml").read_text()
+        self.assertIn("--project", override)
+        self.assertIn("/workspace/project_glasswing", override)
 
     def test_containerized_opencode_removed(self) -> None:
         self.assertFalse(

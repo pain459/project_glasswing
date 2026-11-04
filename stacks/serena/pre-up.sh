@@ -3,6 +3,11 @@
 # configurable without touching the committed compose.yaml.
 # Also generates a projects list file that init-permissions uses to
 # sync the Serena projects registry.
+#
+# repos.env format — one line per repo:
+#   HOST_PATH:CONTAINER_PATH[:ro]
+# The first valid line is treated as the active project (passed as --project
+# to Serena on startup).  Add more lines below it for additional mounts.
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,10 +22,10 @@ if [[ ! -f "$REPOS_ENV" ]]; then
 fi
 
 # Build the volumes list and extract container paths for the projects registry.
-# Format per line:  HOST_PATH:CONTAINER_PATH[:ro]
-# Lines starting with # or blank are ignored.
+# The first valid line becomes the active project.
 volumes=()
 projects=()
+active_project=""
 while IFS= read -r line || [[ -n "$line" ]]; do
   # Strip leading/trailing whitespace
   line="${line#"${line%%[![:space:]]*}"}"
@@ -31,6 +36,10 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   # Extract the container path (second colon-separated field)
   container_path="$(echo "$line" | cut -d: -f2)"
   projects+=("$container_path")
+  # First valid line is the active project
+  if [[ -z "$active_project" ]]; then
+    active_project="$container_path"
+  fi
 done < "$REPOS_ENV"
 
 if [[ ${#volumes[@]} -eq 0 ]]; then
@@ -38,10 +47,22 @@ if [[ ${#volumes[@]} -eq 0 ]]; then
   exit 0
 fi
 
-# Write the override file
+# Write the override file.
+# The active project (--project) is always set from the first mount line.
 {
   echo "services:"
   echo "  serena:"
+  echo "    command:"
+  echo "      - serena"
+  echo "      - start-mcp-server"
+  echo "      - --project"
+  echo "      - $active_project"
+  echo "      - --transport"
+  echo "      - streamable-http"
+  echo "      - --port"
+  echo '      - "9121"'
+  echo "      - --host"
+  echo "      - 0.0.0.0"
   echo "    volumes:"
   printf '%s\n' "${volumes[@]}"
 } > "$OVERRIDE"
@@ -52,3 +73,4 @@ printf '%s\n' "${projects[@]}" > "$PROJECTS_LIST"
 
 echo "[INFO] Generated $OVERRIDE with ${#volumes[@]} repo mount(s)"
 echo "[INFO] Generated $PROJECTS_LIST with ${#projects[@]} project path(s)"
+echo "[INFO] Active project set to $active_project"

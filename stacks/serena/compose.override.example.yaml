@@ -1,4 +1,0 @@
-services:
-  serena:
-    volumes:
-      - /mnt/storage/example-repo:/workspace/extra/example:ro

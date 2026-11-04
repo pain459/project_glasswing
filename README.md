@@ -251,11 +251,11 @@ reference is `config/opencode/opencode.example.json`.
 | Steel | `http://127.0.0.1:8002/mcp` | `make up STACK=steel-mcp` | `/steel` (global values only for the gateway) |
 | Serena | `http://127.0.0.1:9121/mcp` | `make up STACK=serena` | `/serena` (global values only) |
 
-Serena maps `/home/ravik/src_git` at `/workspace/repos`. Copy
-`stacks/serena/compose.override.example.yaml` to `compose.override.yaml` to add
-other repository roots without editing the base stack. Run `make mcp-preflight`
-after changing any MCP stack and `make ai-preflight` after changing the native
-OpenCode or Ollama configuration.
+Serena's active project is set from the single mount line in
+`stacks/serena/repos.env` (gitignored). Change that line to switch repos, then
+redeploy with `make up STACK=serena`. Run `make mcp-preflight` after changing
+any MCP stack and `make ai-preflight` after changing the native OpenCode or
+Ollama configuration.
 
 Ollama and host OpenCode share one inference baseline: 131k context, 32k
 generation, temperature 0.3, thinking disabled, and a `q8_0` KV cache with
