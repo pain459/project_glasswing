@@ -155,7 +155,6 @@
         icon: mdi-magnify-scan
         description: Private Web Search & MCP Intelligence
         container: glasswing-searxng-mcp
-        siteMonitor: http://127.0.0.1:8005/mcp
 
 - Developer Workbench:
     - Forgejo:
