@@ -251,6 +251,14 @@
         container: glasswing-sky-web
         siteMonitor: http://192.168.68.62:5088
 
+- Research & Intelligence:
+    - ATLAS:
+        icon: mdi-earth
+        href: http://192.168.68.62:5090
+        description: Planetary Disaster & Earth Intelligence
+        container: glasswing-atlas-web
+        siteMonitor: http://192.168.68.62:5090
+
 - News Centre:
     - Glance:
         icon: mdi-newspaper-variant

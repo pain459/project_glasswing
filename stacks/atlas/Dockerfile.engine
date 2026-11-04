@@ -1,0 +1,91 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# ATLAS Engine — Python FastAPI backend with DuckDB
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage 1: Build Python dependencies (including GDAL for rasterio)
+FROM python:3.11-slim AS build
+
+WORKDIR /build
+
+# Install build dependencies for rasterio (GDAL)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      gdal-bin libgdal-dev pkg-config gcc g++ && \
+    apt-get purge -y gcc g++ && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy engine pyproject.toml + README (hatchling needs README.md) for dependency installation
+COPY services/engine/pyproject.toml services/engine/README.md /build/
+
+# Install Python dependencies including raster optional extra
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir ".[raster]"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Stage 2: Production runtime
+FROM python:3.11-slim
+
+# Runtime dependencies for GDAL/rasterio and system libs
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      gdal-bin libgdal36 libproj25 libsqlite3-0 curl && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy installed Python packages from build stage
+COPY --from=build /usr/local/lib/python3.11/site-packages/ /usr/local/lib/python3.11/site-packages/
+COPY --from=build /usr/local/bin/ /usr/local/bin/
+
+# Copy engine source
+COPY services/engine/src/ /app/src/
+
+# Copy pnpm-workspace.yaml so _repo_root() resolves to /app (not ~/.atlas)
+# and copy data/registry/sources.json (default source registry for atlas setup)
+COPY pnpm-workspace.yaml /app/
+COPY data/registry/sources.json /app/data/registry/
+
+# Set Python path so atlas package is importable
+ENV PYTHONPATH=/app/src
+ENV PYTHONIOENCODING=utf-8
+ENV PYTHONUTF8=1
+
+# ATLAS runtime config
+ENV ATLAS_HOST=0.0.0.0
+ENV ATLAS_PORT=8787
+ENV ATLAS_DATA_DIR=/data/runtime
+
+# Create data directory
+RUN mkdir -p /data/runtime
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --retries=5 --start-period=45s \
+  CMD curl -sf http://localhost:8787/api/v1/health || exit 1
+
+# Run as non-root
+RUN useradd --create-home --shell /bin/bash atlas && \
+    chown atlas:atlas /app
+
+# Entrypoint script: fix volume mount ownership at runtime (Docker volumes are root-owned)
+# then run atlas setup (first-run initialization) and atlas serve
+RUN cat > /usr/local/bin/entrypoint.sh << 'ENTRYPOINT'
+#!/bin/bash
+set -e
+# Ensure /data is writable by atlas user (Docker volumes mount as root)
+mkdir -p /data/runtime
+chown -R atlas:atlas /data
+
+# First-run: initialize DuckDB extensions and Core Pack
+gosu atlas atlas setup
+
+# Then serve
+exec gosu atlas "$@"
+ENTRYPOINT
+RUN chmod +x /usr/local/bin/entrypoint.sh && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends gosu && \
+    rm -rf /var/lib/apt/lists/*
+
+# Stay root for entrypoint; entrypoint switches to atlas user
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["atlas", "serve"]
