@@ -112,6 +112,13 @@
         container: glasswing-anythingllm
         siteMonitor: http://192.168.68.62:3012
 
+    - Glasswing Search:
+        icon: mdi-magnify
+        href: http://192.168.68.62:3028
+        description: Private Web Search & MCP Intelligence
+        container: glasswing-searxng
+        siteMonitor: http://192.168.68.62:3028/healthz
+
 - MCP Servers:
     - Open Notebook MCP:
         icon: open-notebook.png
@@ -143,6 +150,12 @@
         icon: mdi-notebook-outline
         description: Working Memory & Reasoning MCP
         container: glasswing-sequential-thinking-mcp-sequential-thinking-mcp-1
+
+    - SearXNG MCP:
+        icon: mdi-magnify-scan
+        description: Private Web Search & MCP Intelligence
+        container: glasswing-searxng-mcp
+        siteMonitor: http://127.0.0.1:8005/mcp
 
 - Developer Workbench:
     - Forgejo:

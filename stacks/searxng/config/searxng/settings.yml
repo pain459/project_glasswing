@@ -1,0 +1,115 @@
+# SearXNG settings for Glasswing Search
+# Mounted at /etc/searxng/settings.yml inside the container.
+#
+# Reference: https://docs.searxng.org/admin/settings/settings.html
+
+use_default_settings: true
+
+general:
+  instance_name: "Glasswing Search"
+  debug: false
+
+search:
+  safe_search: 1
+  formats:
+    - html
+    - json
+
+server:
+  base_url: http://localhost:3028
+  secret_key: "${SEARXNG_SECRET:?SEARXNG_SECRET required from Infisical}"
+  limiter: false
+  image_proxy: false
+  method: "GET"
+  default_http_headers:
+    X-Content-Type-Options: nosniff
+    X-Download-Options: noopen
+    X-Robots-Tag: noindex, nofollow
+    Referrer-Policy: no-referrer
+
+ui:
+  static_use_hash: true
+  default_theme: simple
+  default_language: en_US
+  infinite_scroll: true
+
+# Valkey connection for caching
+valkey:
+  url: "${SEARXNG_VALKEY_URL:?SEARXNG_VALKEY_URL required}"
+
+# Search engine configuration
+# Optimized for free, reliable backends with English/India relevance
+# Engines not listed here use their default settings from use_default_settings
+engines:
+
+  # --- General web search ---
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    disabled: false
+
+  - name: google
+    engine: google
+    shortcut: g
+    disabled: false
+
+  - name: brave
+    engine: brave
+    shortcut: br
+    disabled: false
+
+  - name: startpage
+    engine: startpage
+    shortcut: sp
+    disabled: false
+
+  # --- Knowledge & reference ---
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    disabled: false
+
+  - name: wikidata
+    engine: wikidata
+    shortcut: wd
+    disabled: false
+
+  # --- Technology & development ---
+  - name: github
+    engine: github
+    shortcut: gh
+    disabled: false
+
+  - name: stackexchange
+    engine: stackexchange
+    shortcut: sexchange
+    disabled: false
+
+  # --- Scientific ---
+  - name: arxiv
+    engine: arxiv
+    shortcut: ar
+    disabled: false
+
+  - name: pubmed
+    engine: pubmed
+    shortcut: pm
+    disabled: false
+
+  # --- News ---
+  - name: google news
+    engine: google_news
+    shortcut: ggn
+    disabled: false
+
+  # --- Images ---
+  - name: google images
+    engine: google_images
+    shortcut: ggi
+    disabled: false
+
+  # --- Video ---
+  - name: google videos
+    engine: google_videos
+    shortcut: ggv
+    disabled: false

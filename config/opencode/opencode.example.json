@@ -75,6 +75,11 @@
       "type": "remote",
       "url": "http://127.0.0.1:9121/mcp",
       "oauth": false
+    },
+    "searxng": {
+      "type": "remote",
+      "url": "http://127.0.0.1:8005/mcp",
+      "oauth": false
     }
   }
 }

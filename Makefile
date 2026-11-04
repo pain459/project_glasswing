@@ -11,7 +11,7 @@ PRE_UP_HOOK := $(STACK_DIR)/pre-up.sh
 POST_UP_HOOK := $(STACK_DIR)/post-up.sh
 
 # Default secret location: /<stack>. The collector reuses /openobserve.
-INFISICAL_PATH ?= $(if $(filter otel-collector vector,$(STACK)),/openobserve,$(if $(filter open-notebook-mcp,$(STACK)),/open-notebook,$(if $(filter steel-mcp,$(STACK)),/steel,/$(STACK))))
+INFISICAL_PATH ?= $(if $(filter otel-collector vector,$(STACK)),/openobserve,$(if $(filter open-notebook-mcp,$(STACK)),/open-notebook,$(if $(filter steel-mcp,$(STACK)),/steel,$(if $(filter searxng,$(STACK)),/searxng,/$(STACK)))))
 
 # One shared bridge for every published service. An explicit subnet does not
 # draw from Docker's address pool, so the platform stops creating one network
@@ -295,6 +295,7 @@ mcp-preflight:
 	 python3 scripts/mcp-preflight.py --name open-notebook http://127.0.0.1:8001/mcp || status=1; \
 	 python3 scripts/mcp-preflight.py --name steel http://127.0.0.1:8002/mcp || status=1; \
 	 python3 scripts/mcp-preflight.py --name serena http://127.0.0.1:9121/mcp || status=1; \
+	 python3 scripts/mcp-preflight.py --name searxng http://127.0.0.1:8005/mcp || status=1; \
 	 exit $$status
 
 

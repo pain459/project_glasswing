@@ -1,0 +1,138 @@
+name: glasswing-searxng
+
+# SearXNG: self-hosted, privacy-respecting metasearch engine.
+#
+# Architecture:
+#   searxng       → published on :3028 (LAN web UI + JSON API), joins glasswing + internal
+#   mcp           → published on 127.0.0.1:8005 (host-only MCP), joins glasswing
+#   valkey        → internal only (caching backend), joins internal
+#
+# The MCP container uses supergateway to bridge the searxng-mcp-server's
+# stdio transport to streamable HTTP. This avoids the @modelcontextprotocol/
+# server@2.x legacy JSON-RPC incompatibility with OpenCode's MCP client.
+
+services:
+  valkey:
+    extends:
+      file: ../base.yaml
+      service: base
+    image: valkey/valkey:9-alpine
+    container_name: glasswing-searxng-valkey
+
+    volumes:
+      - searxng-valkey-data:/data
+
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+    mem_limit: 128m
+    pids_limit: 64
+
+    networks:
+      - internal
+
+  searxng:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: searxng/searxng:latest
+    container_name: glasswing-searxng
+
+    depends_on:
+      valkey:
+        condition: service_healthy
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3028:8080"
+
+    environment:
+      # Timezone (from global secrets)
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+
+      # SearXNG secrets (from Infisical)
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?Required from Infisical}
+      SEARXNG_BASE_URL: http://localhost:3028
+      SEARXNG_VALKEY_URL: redis://valkey:6379/0
+
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-searxng
+
+    volumes:
+      - ./config/searxng/settings.yml:/etc/searxng/settings.yml:ro
+
+    mem_limit: 512m
+    pids_limit: 128
+    cpus: 0.5
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    labels:
+      com.glasswing.service: searxng
+      com.glasswing.category: ai
+      com.glasswing.monitoring: "true"
+
+    networks:
+      - glasswing
+      - internal
+
+  mcp:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    build:
+      context: ./mcp
+      dockerfile: Dockerfile
+    image: glasswing/searxng-mcp:1.0.1
+    container_name: glasswing-searxng-mcp
+    init: true
+
+    depends_on:
+      searxng:
+        condition: service_healthy
+
+    ports:
+      - "127.0.0.1:8005:8000"
+
+    environment:
+      # SearXNG connection (Docker DNS on glasswing network)
+      SEARXNG_URL: http://searxng:8080
+
+      # Timezone (from global secrets)
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-searxng-mcp
+
+    mem_limit: 512m
+    pids_limit: 256
+    cpus: 0.5
+
+    # Healthcheck handled by the Dockerfile (supergateway /healthz endpoint)
+
+    labels:
+      com.glasswing.service: searxng-mcp
+      com.glasswing.category: ai
+      com.glasswing.monitoring: "true"
+
+    networks:
+      - glasswing
+
+volumes:
+  searxng-valkey-data:
+    name: glasswing-searxng-valkey-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
+  internal:
+    driver: bridge

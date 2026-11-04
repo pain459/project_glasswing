@@ -1,0 +1,13 @@
+[limiter]
+# SearXNG limiter configuration
+# Reference: https://docs.searxng.org/admin/settings/settings.html#limiter
+
+# Enable the limiter
+enabled = true
+
+# Rate limiting configuration
+[limiter.botdetection]
+# Limit per IP per time window (requests per second)
+limit = 20
+check_limits = ["ip"]
+strategy = ["storage"]

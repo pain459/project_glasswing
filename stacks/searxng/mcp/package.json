@@ -1,0 +1,77 @@
+{
+  "name": "searxng-mcp-server",
+  "version": "1.0.1",
+  "mcpName": "io.github.bumbaRasch/searxng-mcp-server",
+  "description": "MCP server for a self-hosted SearXNG instance: web, image, news, video, music and scientific-publication search, query suggestions, page fetch (PDF-capable) and engine listing.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Dimitri Pisarev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bumbaRasch/searxng-mcp-server.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "searxng",
+    "search",
+    "web-search",
+    "fetch",
+    "readability",
+    "privacy"
+  ],
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "bin": {
+    "searxng-mcp-server": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "docs/design.md",
+    "docs/extending.md",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "prebuild": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "pnpm lint && pnpm lint:types && pnpm typecheck && pnpm test && pnpm build",
+    "preversion": "pnpm run lint && pnpm run typecheck && pnpm test",
+    "version": "node scripts/sync-version.mjs && git add src/version.ts server.json",
+    "postversion": "git push && git push --tags",
+    "lint": "oxlint",
+    "lint:types": "oxlint --type-aware",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "inspector": "npx -y @modelcontextprotocol/inspector node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/node": "^2.0.0",
+    "@modelcontextprotocol/server": "^2.0.0",
+    "@mozilla/readability": "^0.6.0",
+    "linkedom": "^0.18.14",
+    "turndown": "^7.2.4",
+    "undici": "^8.12.3",
+    "unpdf": "^1.9.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.0.0",
+    "@types/node": "^26.6.5",
+    "@types/turndown": "^5.0.6",
+    "@vitest/coverage-v8": "^5.0.5",
+    "oxlint": "^1.89.0",
+    "oxlint-tsgolint": "^7.0.2004",
+    "prettier": "^3.9.10",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

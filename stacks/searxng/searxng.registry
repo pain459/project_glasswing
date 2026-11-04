@@ -1,0 +1,3 @@
+# SearXNG stack secret registry
+SEARXNG_SECRET=
+SEARXNG_AUTH_TOKEN=
