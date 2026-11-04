@@ -266,6 +266,13 @@
         container: glasswing-catalog
         siteMonitor: http://192.168.68.62:3029
 
+    - Wiki:
+        icon: mdi-library
+        href: http://192.168.68.62:3030
+        description: Architecture Docs & Service Guides
+        container: glasswing-wiki
+        siteMonitor: http://192.168.68.62:3030
+
 - News Centre:
     - Glance:
         icon: mdi-newspaper-variant
