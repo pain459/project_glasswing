@@ -18,7 +18,6 @@ Complete list of all Glasswing services organized by category. Click any service
 | [OpenObserve](/services/infrastructure.md#openobserve) | `:3018` | `glasswing-openobserve` | Centralized logs, metrics, traces |
 | [OTel Collector](/services/infrastructure.md#otel-collector) | `:4318`, `:13133` | `glasswing-otel-collector` | Docker metrics collection |
 | [Vector](/services/infrastructure.md#vector) | `:8686` | `glasswing-vector` | Log collector |
-| [WUD](/services/infrastructure.md#wud) | `:3031` | `glasswing-wud` | Docker image update intelligence |
 | [Dagu](/services/infrastructure.md#dagu) | `:3014` | `glasswing-dagu` | Workflow scheduler |
 | [PostgreSQL](/services/infrastructure.md#postgresql) | `:5432` | `glasswing-postgres` | Shared database server |
 

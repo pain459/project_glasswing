@@ -39,7 +39,7 @@ export DOCKER_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null)
 .PHONY: help up down restart rebuild update logs ps check infisical homepage core status \
         secrets-check secrets-injection-check secrets-plan network docker-pool doctor access access-check \
         certificates certificates-check mcp-preflight \
-        version-list version-apply version-check version-promote version-rollback version-rollback-all
+
 
 help:
 	@echo "Glasswing Stack Manager"
@@ -71,12 +71,6 @@ help:
 	@echo "make certificates-check           Verify the TLS material covers the host IP and is current"
 	@echo ""
 	@echo "make update STACK=name            Pull latest pinned images and redeploy stack"
-	@echo "make version-list                 Show current image versions from stacks/versions.yaml"
-	@echo "make version-apply                Sync compose files to match stacks/versions.yaml"
-	@echo "make version-check                Check if compose files match versions.yaml (exit 2 if drift)"
-	@echo "make version-promote KEY=k V=v    Promote image to new version, sync compose, redeploy"
-	@echo "make version-rollback STACK=name   Rollback stack to previous version and redeploy"
-	@echo "make version-rollback-all          Rollback all stacks to previous versions"
 	@echo ""
 	@echo "Optional: INFISICAL_PATH=/custom/path (default /<stack>)"
 	@echo "Optional: stacks/<name>/pre-up.sh and post-up.sh run automatically with make up"
@@ -141,7 +135,6 @@ restart:
 	@echo "[PASS] Stack $(STACK) restarted"
 
 # Pull new images (using pinned versions from compose files) and redeploy.
-# This is the target WUD's command trigger should call.
 update:
 	@if [ -x "$(PRE_UP_HOOK)" ]; then \
 	  echo "[INFO] Running $(PRE_UP_HOOK)"; \
@@ -322,54 +315,6 @@ mcp-preflight:
 	 python3 scripts/mcp-preflight.py --name serena http://127.0.0.1:9121/mcp || status=1; \
 	 python3 scripts/mcp-preflight.py --name searxng http://127.0.0.1:8005/mcp || status=1; \
 	 exit $$status
-
-
-# --------------------------------------------------
-# Image version management (stacks/versions.yaml)
-# --------------------------------------------------
-
-VERSIONS_FILE := stacks/versions.yaml
-VERSION_KEY ?=
-VERSION_TAG ?=
-
-# Show all pinned image versions and their rollback candidates
-version-list:
-	@python3 scripts/version-list.py "$(VERSIONS_FILE)"
-
-# Sync compose files to match versions.yaml
-version-apply:
-	@python3 scripts/version-apply.py "$(VERSIONS_FILE)"
-
-# Check if compose files match versions.yaml (exit 2 if drift)
-version-check:
-	@python3 scripts/version-apply.py "$(VERSIONS_FILE)" --check
-
-# Promote an image to a new version: make version-promote KEY=nginx V=1.29-alpine
-version-promote:
-	@if [ -z "$(VERSION_KEY)" ] || [ -z "$(VERSION_TAG)" ]; then \
-	  echo "[FAIL] Usage: make version-promote KEY=<key> V=<new_version>"; \
-	  echo "  Example: make version-promote KEY=nginx V=1.29-alpine"; \
-	  exit 1; \
-	fi
-	@python3 scripts/version-promote.py "$(VERSIONS_FILE)" "$(VERSION_KEY)" "$(VERSION_TAG)"
-
-# Rollback a single stack's images to the previous version and redeploy
-version-rollback:
-	@set -eu; \
-	test -f "$(VERSIONS_FILE)" || { echo "[FAIL] $(VERSIONS_FILE) not found"; exit 1; }; \
-	echo "[INFO] Rolling back stack $(STACK) to previous versions"; \
-	python3 scripts/version-rollback.py "$(VERSIONS_FILE)" "$(STACK)"; \
-	echo "[INFO] Redeploying stack $(STACK)"; \
-	$(MAKE) --no-print-directory up STACK=$(STACK)
-
-# Rollback all stacks to their previous versions
-version-rollback-all:
-	@set -eu; \
-	test -f "$(VERSIONS_FILE)" || { echo "[FAIL] $(VERSIONS_FILE) not found"; exit 1; }; \
-	echo "[INFO] Rolling back all stacks to previous versions"; \
-	python3 scripts/version-rollback.py "$(VERSIONS_FILE)" "__all__"; \
-	echo "[INFO] Redeploying all stacks"; \
-	$(MAKE) --no-print-directory restart-all
 
 
 # --------------------------------------------------
