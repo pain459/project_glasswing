@@ -228,6 +228,45 @@ Visual workflow orchestrator. Defines DAGs (Directed Acyclic Graphs) for:
 
 ---
 
+## WUD (What's Up Docker)
+
+> **Docker image update intelligence — detection-only monitoring**
+
+- **URL:** [http://192.168.68.62:3031](http://192.168.68.62:3031)
+- **Port:** `:3031`
+- **Containers:** `glasswing-wud`, `glasswing-docker-proxy`
+- **Stack:** `stacks/wud/`
+
+### How it works
+
+WUD v9.7.0 monitors all Docker Compose-managed containers for available image updates. It is configured in **detection-only** mode: no auto-update, no image pull, no container restart.
+
+```
+Docker containers ──discovered──→ docker-proxy (read-only API) ──→ WUD
+                                                              │
+                                                              ▼
+                                                          SQLite store
+```
+
+### Configuration
+
+- **Docker access:** Via `tecnativa/docker-socket-proxy` (read-only: containers, images, events, version, info, ping)
+- **Watcher scope:** Docker Compose containers only (`label:^com.docker.compose`)
+- **Scan schedule:** Twice daily at ~02:00 and ~14:00 IST
+- **Digest monitoring:** Disabled by default for Docker Hub (rate limit safety)
+- **Authentication:** Basic Auth with admin user, password managed in Infisical (`/wud`)
+- **Storage:** Persistent SQLite at `/store` (named Docker volume `glasswing-wud-store`)
+
+### Container categories
+
+| Category | Tags | Monitoring | Example |
+|----------|------|------------|---------|
+| A (Versioned) | Semver (`:1.2.3`) | Tag comparison | `postgres:16`, `redis:7.2` |
+| B (Mutable) | Non-semver (`:latest`) | Digest comparison (opt-in) | `nginx:latest` |
+| C (Local) | No registry | Not monitorable | `glasswing/sky-web:latest` |
+
+---
+
 ## PostgreSQL
 
 > **Shared database server**

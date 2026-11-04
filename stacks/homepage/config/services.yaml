@@ -71,6 +71,13 @@
         container: glasswing-vector
         siteMonitor: http://192.168.68.62:8686/health
 
+    - WUD:
+        icon: mdi-docker
+        href: http://192.168.68.62:3031
+        description: Docker Image Update Intelligence
+        container: glasswing-wud
+        siteMonitor: http://192.168.68.62:3031/health
+
     - Dagu:
         icon: mdi-clock-alert
         href: http://192.168.68.62:3014

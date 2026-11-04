@@ -7,3 +7,5 @@ Key Open Notebook notes for project_glasswing:
 - Review - Pathfinder Sky Implementation Status (note:b8419t1fgolpgty5z63t): Spec vs implementation review
 - Decision - Sequential Thinking MCP Server - Stack Fit Analysis (note:0mo3x0gqj2wlwb0ebnij): Analysis of which sequential thinking server fits the Serena+Open Notebook+REA+Steel stack
 - Ref - MCP Stack - Agent Decision Tree and Protocol Flow (note:svda1r91c0mpnyrym51a): Complete decision tree for all 4 MCP servers in Glasswing Infrastructure notebook
+- Code Map - WUD Docker Image Update Intelligence (note:7uxkatpzvm20b1nsk63l): WUD v9.7.0 detection-only stack, docker socket proxy, watcher config
+- Fix - WUD v9.7.0 Auth Configuration (note:xhju3mevix7rmsp2vdxe): WUD_AUTH_ADMIN_USER/PASSWORD required, WUD_AUTH_BASIC_* deprecated

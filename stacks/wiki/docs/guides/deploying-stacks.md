@@ -199,6 +199,36 @@ deploy:
           capabilities: [gpu]
 ```
 
+### Service with Docker socket proxy (read-only)
+
+For services that need Docker API access without full socket privileges:
+
+```yaml
+services:
+  docker-proxy:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: tecnativa/docker-socket-proxy:0.3.0
+    container_name: glasswing-docker-proxy
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    environment:
+      CONTAINERS: "1"
+      IMAGES: "1"
+      EVENTS: "1"
+
+    expose:
+      - "2375"
+
+    networks:
+      - glasswing
+```
+
+See `stacks/wud/compose.yaml` for a complete example (WUD image update monitor).
+
 ---
 
 ## Makefile Commands
