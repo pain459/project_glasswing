@@ -78,7 +78,8 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
-    # Serve .md files as text/markdown so Docsify XHR works
+    # Include default nginx MIME types, then add .md mapping
+    include /etc/nginx/mime.types;
     types {
         text/markdown md markdown;
     }
