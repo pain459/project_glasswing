@@ -139,6 +139,11 @@
         description: Reverse Engineering MCP
         container: glasswing-rea-mcp-rea-mcp-1
 
+    - Sequential Thinking MCP:
+        icon: mdi-notebook-outline
+        description: Working Memory & Reasoning MCP
+        container: glasswing-sequential-thinking-mcp-sequential-thinking-mcp-1
+
 - Developer Workbench:
     - Forgejo:
         icon: forgejo.png

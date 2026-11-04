@@ -1,16 +1,18 @@
-# AGENTS.md — Agent Operating Protocol (Serena + Open Notebook + Steel)
-This file defines how AI agents work in this repository using three MCP servers:
+# AGENTS.md — Agent Operating Protocol (Serena + Open Notebook + Sequential Thinking + Steel)
+This file defines how AI agents work in this repository using four MCP servers:
 - **Serena** (`serena`): code intelligence. It reads code at the symbol level, navigates it, edits it, and keeps lightweight project memory.
-- **Open Notebook** (`open-notebook`): long-term memory. It stores session history, decisions, fixes, and **code references discovered through Serena**.
+- **Open Notebook** (`open-notebook`): long-term persistent memory. It stores session history, decisions, fixes, and **code references discovered through Serena**.
+- **Sequential Thinking** (`sequential-thinking`): working memory. It provides a structured scratchpad for multi-step reasoning during complex tasks, with persistent SQLite storage that survives restarts and context compaction.
 - **Steel Browser** (`steel`): real browser access for web browsing, JavaScript-rendered pages, screenshots, and multi-step web workflows.
-It is the standard template for this project and can be reused in any repository that pairs OpenCode with all three servers.
+It is the standard template for this project and can be reused in any repository that pairs OpenCode with all four servers.
 
 **Core principles**
 1. **Remember before you look.** Check Open Notebook before exploring code. Someone may already have mapped it.
 2. **Navigate by symbol, never by brute force.** Use Serena to go straight to the code you need. Never sweep the repository.
-3. **Capture continuously, never assume you'll get a "goodbye".** Context can be compacted at any time without warning. Anything not saved to Open Notebook is lost. Write notes *before* heavy operations, not after.
-4. **Rich answers demand rich notes (never discard query intelligence).** When an exploration, explanation, or architectural trace yields deep, nuanced knowledge, that knowledge MUST be permanently captured into Open Notebook as decomposed, high-density micro-notes (Code Maps, Gotchas, Refs, Runbooks). Never collapse detailed multi-subsystem findings into a superficial 3-bullet summary.
-5. **Write-then-verify every note.** After creating or updating a note, immediately search for it by title. If it is not found, retry once, then fall back to `.agent-memory/pending-notes.md`.
+3. **Reason structurally during complex tasks.** When a task involves more than 3 connected steps across multiple tools (Serena + REA + Steel), create a Sequential Thinking session to track evidence, decisions, risks, and next actions. This is your working memory (RAM); Open Notebook is your persistent memory (disk).
+4. **Capture continuously, never assume you'll get a "goodbye".** Context can be compacted at any time without warning. Anything not saved to Sequential Thinking (during a task) or Open Notebook (at task end) is lost. Write notes *before* heavy operations, not after.
+5. **Rich answers demand rich notes (never discard query intelligence).** When an exploration, explanation, or architectural trace yields deep, nuanced knowledge, that knowledge MUST be permanently captured into Open Notebook as decomposed, high-density micro-notes (Code Maps, Gotchas, Refs, Runbooks). Never collapse detailed multi-subsystem findings into a superficial 3-bullet summary.
+6. **Write-then-verify every note.** After creating or updating a note, immediately search for it by title. If it is not found, retry once, then fall back to `.agent-memory/pending-notes.md`.
 
 ---
 
@@ -25,12 +27,15 @@ Each kind of knowledge has exactly one home, so nothing is stored twice.
 | Specs, designs, external docs | Open Notebook (sources) | Large reference material, embedded for search |
 | Project onboarding (build/test commands, layout, conventions) | Serena memories | Serena's own bootstrap; small and stable |
 | Index of key Open Notebook notes | Serena memory `notebook-index` | A pointer from the repo into the notebook |
+| **Working reasoning** (evidence, hypotheses, step-by-step traces during a complex task) | Sequential Thinking (sessions) | Survives compaction, idempotent writes, branching |
 | The code itself | The repository, read via Serena | Always the source of truth |
 
 **Rules**
 - Serena memories stay **small and stable**: onboarding facts and pointers only. Session logs, decisions, and fixes do **not** go in Serena memories.
 - If a Serena memory and an Open Notebook note disagree, **the current code wins**. Fix whichever one is stale.
 - Serena memories are stored inside the repository (`.serena/memories/`) and may be committed. Section 9's data rules apply to them in full.
+- **Sequential Thinking is working memory, not persistent memory.** Use it during a task to structure reasoning. At task end, distill the results into Open Notebook notes. Do not use Sequential Thinking as a substitute for Open Notebook.
+- **Sequential Thinking sessions survive compaction.** If context is compacted mid-task, call `list_sessions` to find your session by title, then `read_session` to resume where you left off.
 
 ---
 
@@ -49,11 +54,14 @@ Run these steps at the start of every session, in order, before any substantive 
 5. Search the notes for the latest `Session`, `Checkpoint`, or `Run` note on the current topic. Read its **Pending Items** and **Resume Here** sections.
 6. Search for `Code Map` notes covering the components the task touches (Section 3).
 
+**Sequential Thinking**
+7. Call `list_sessions` to check for any active (non-finalized) sessions from prior turns. If one exists and is relevant to the current task, call `read_session` to resume reasoning where it left off.
+
 **Fallback buffer**
-7. If `.agent-memory/pending-notes.md` exists, sync its contents to Open Notebook and then clear the file (Section 10).
+8. If `.agent-memory/pending-notes.md` exists, sync its contents to Open Notebook and then clear the file (Section 10).
 
 **Report**
-8. Tell the user in one or two lines which notes and memories you are building on, or that none matched.
+9. Tell the user in one or two lines which notes and memories you are building on, or that none matched.
 
 ---
 
@@ -77,6 +85,9 @@ If a `Code Map` or `Ref` note lists the relevant symbols and micro-snippets:
    - If different, check if mapped files changed via `git diff --name-only <note_commit> HEAD -- <mapped_files>`. If unmodified by the diff, the snippets remain 100% verified.
 2. **Zero-roundtrip fast path:** When the drift check passes and the note already contains verified canonical micro-snippets covering the query, **present the answer and snippets directly from Open Notebook**. Skip disk reads, greps, and file browsing entirely to achieve zero-roundtrip retrieval at minimum cost.
 3. If code exploration is still required for unmapped details, go **directly** to mapped symbol name paths with Serena (`find_symbol` or `search_for_pattern`). Do not re-explore what is already mapped.
+
+### Step 2b: Check for an active Sequential Thinking session
+If the task is complex (multi-step reasoning across Serena, REA, or Steel), check if a Sequential Thinking session already exists for this topic. If so, read its current state before proceeding. This prevents repeating work that was already structured.
 
 ### Step 3: Navigate with Serena (Section 4)
 Only when nothing in memory covers the question.
@@ -228,22 +239,25 @@ Do not wait for the session to end. Compaction happens silently and without warn
 ### Hard triggers (MUST write immediately)
 1. **After any decision, fix, gotcha, or non-trivial code trace (>3 symbols):** write the atomic note right then, before doing anything else.
 2. **Before any context-heavy operation** (large refactors, multi-file edits, long log analysis, reading big files): checkpoint first. Compaction is likely to follow and you will lose unsaved context.
-3. **When the user signals closure** ("done", "that's all", "thanks", "wrap up", "goodbye"): execute the **Session Closure Protocol** (see below).
-4. **When the topic changes substantially:** summarize the previous topic before moving on.
-5. **When validated by the user** ("save this", "remember this", "note that"): trigger the **Comprehensive Knowledge Persistence Protocol** detailed below.
+3. **When starting a complex multi-step task** (involving >3 connected steps across Serena, REA, or Steel): create a Sequential Thinking session to structure the reasoning. Use `create_session` with a descriptive title, then add steps as you progress.
+4. **When the user signals closure** ("done", "that's all", "thanks", "wrap up", "goodbye"): execute the **Session Closure Protocol** (see below).
+5. **When the topic changes substantially:** finalize any active Sequential Thinking session, then summarize the previous topic before moving on.
+6. **When validated by the user** ("save this", "remember this", "note that"): trigger the **Comprehensive Knowledge Persistence Protocol** detailed below.
 
 ### Soft triggers (should write within the next turn)
-6. **At milestones** in long tasks (after each completed sub-task): update a single `Checkpoint` note for the session.
-7. **After every 10-15 tool calls** in a long session: write or update a checkpoint, even if no specific milestone was reached. This is your safety net against compaction.
+7. **At milestones** in long tasks (after each completed sub-task): update a single `Checkpoint` note for the session.
+8. **After every 10-15 tool calls** in a long session: write or update a checkpoint, even if no specific milestone was reached. This is your safety net against compaction.
+9. **During a Sequential Thinking session**, after each significant finding or decision: add a step with the appropriate `kind` (`evidence`, `decision`, `risk`, `next_action`). This keeps the working memory current even if compaction occurs.
 
 ### Session Closure Protocol
 When the user signals closure or the session is ending, execute these steps in order:
-1. **Write all pending atomic notes first** (decisions, fixes, gotchas, code maps discovered during the session).
-2. **Update the session note** with the full template (Section 8).
-3. **Verify every written note** is searchable by title.
-4. **Sync the fallback buffer** (`.agent-memory/pending-notes.md`) if it exists.
-5. **Update Serena's `notebook-index`** memory with any new important notes.
-6. **Only then** respond to the user that the session is closed.
+1. **Finalize all active Sequential Thinking sessions** — call `finalize_session` on any open sessions, recording the outcome and key evidence IDs.
+2. **Write all pending atomic notes first** (decisions, fixes, gotchas, code maps discovered during the session). Distill the Sequential Thinking session results into focused Open Notebook notes.
+3. **Update the session note** with the full template (Section 8).
+4. **Verify every written note** is searchable by title.
+5. **Sync the fallback buffer** (`.agent-memory/pending-notes.md`) if it exists.
+6. **Update Serena's `notebook-index`** memory with any new important notes.
+7. **Only then** respond to the user that the session is closed.
 
 ### Explicit Human Validation Gate ("save this", "remember this", "note that")
 The user uses trigger phrases like `"save this"`, `"remember this"`, or `"note that"` to signal that the preceding response, architectural trace, or solution has been reviewed and validated as correct.
@@ -321,7 +335,7 @@ When a project epic or milestone is fully complete, archive its notebook with `u
 ---
 
 ## 9. Data Handling: What Must Never Be Stored
-These rules apply to **every** Open Notebook note and source **and every Serena memory**. Before writing, strip or mask the following. If in doubt, leave it out.
+These rules apply to **every** Open Notebook note and source, **every Serena memory**, and **every Sequential Thinking session step**. Before writing, strip or mask the following. If in doubt, leave it out.
 
 **Always blocked, everywhere:**
 - Passwords, API keys, tokens, encryption keys, credentialed connection strings, or any other secret.
@@ -361,6 +375,10 @@ These rules apply to **every** Open Notebook note and source **and every Serena 
 **Steel unavailable:**
 1. Tell the user that browser access is unavailable.
 2. Do not attempt web-scraping fallbacks via shell tools. Ask the user how to proceed.
+
+**Sequential Thinking unavailable:**
+1. If `create_session` or `add_step` fails, continue the task without structured reasoning. Record key findings directly in Open Notebook checkpoints instead.
+2. Do not invent session IDs or step IDs. If the server is unreachable, skip Sequential Thinking and rely on Open Notebook for persistence.
 
 ---
 
@@ -431,11 +449,70 @@ These rules apply to **every** Open Notebook note and source **and every Serena 
 
 ---
 
+## 14. Structured Reasoning with Sequential Thinking
+
+**Use Sequential Thinking for all complex multi-step tasks.** It provides a structured scratchpad with persistent SQLite storage that survives context compaction and session restarts.
+
+### When to use Sequential Thinking
+| Task complexity | Approach | Why |
+|---|---|---|
+| Simple lookup, single tool call | Open Notebook search directly | No overhead needed |
+| Multi-step across 2+ tools (Serena + REA, Serena + Steel, etc.) | Sequential Thinking session | Track evidence, decisions, risks across tool boundaries |
+| Debugging a hard-to-trace bug | Sequential Thinking session | Record hypotheses, test results, dead ends |
+| Reverse engineering investigation | Sequential Thinking session | Track binary analysis findings, cross-reference with Serena |
+| Long web workflow with Steel | Sequential Thinking session | Track page states, form progress, decisions |
+| Architectural exploration (>3 symbols traced) | Sequential Thinking session + Code Map at end | Structure the trace, then persist the map |
+
+### Sequential Thinking step kinds
+Use the appropriate `kind` for each `add_step` call:
+- **`evidence`**: Facts discovered from Serena, REA, Steel, or Open Notebook
+- **`decision`**: Architectural or design choices made during the task
+- **`risk`**: Potential problems, edge cases, or concerns identified
+- **`next_action`**: Concrete next steps to take
+- **`assumption`**: Unverified beliefs that need confirmation
+- **`option`**: Alternative approaches under consideration
+- **`observation`**: Notable behavior or patterns observed
+- **`note`**: General remarks (default)
+
+### Workflow pattern
+```
+1. create_session(title="Trace X through Y")
+2. add_step(kind="evidence", content="Serena found symbol Z in file A")
+3. [Execute Serena/REA/Steel call]
+4. add_step(kind="evidence", content="Result: ...")
+5. add_step(kind="decision", content="Use approach B because ...")
+6. [Continue reasoning...]
+7. finalize_session(outcome="Success/Partial/Blocked", evidence_ids=[...])
+8. Write distilled results to Open Notebook as atomic notes
+```
+
+### Key rules
+1. **One session per logical task.** Don't mix unrelated reasoning in one session.
+2. **Add steps as you go, not at the end.** If compaction hits between steps, the session persists.
+3. **Use `request_id` for idempotent writes.** If context compacts and you need to retry a step, reuse the same `request_id` to avoid duplicates.
+4. **Use `parent_step_id` for provenance.** Link steps that build on earlier findings.
+5. **Use `supersedes_step_id` to replace outdated conclusions.** When a hypothesis is disproven, supersede it rather than leaving stale evidence.
+6. **Finalize before writing to Open Notebook.** A finalized session is your source of truth for what happened during the task.
+7. **Distill, don't copy.** When writing Open Notebook notes from a Sequential Thinking session, extract the key findings into focused atomic notes. Do not copy the entire session verbatim.
+
+### Session lifecycle
+```
+1. create_session(title)           → start reasoning session
+2. add_step(content, kind, ...)    → record each reasoning step
+3. read_session(session_id)        → check current state (after compaction)
+4. finalize_session(outcome)       → mark task complete
+5. [Write Open Notebook notes]     → persist distilled knowledge
+```
+
+---
+
 ## Quick Checklist
 
-**Start:** Serena `initial_instructions` → `list_memories` (run `onboarding` only if empty) → find notebook → read the latest session note and pending items → find code maps → sync the local buffer.
+**Start:** Serena `initial_instructions` → `list_memories` (run `onboarding` only if empty) → find notebook → read the latest session note and pending items → find code maps → check Sequential Thinking `list_sessions` for active sessions → sync the local buffer.
 
-**Explore:** Dual-query notebook search → drift-checked code map → cold-start entrypoint scoping (if unmapped) → `get_symbols_overview` → `find_symbol` (bodies only when needed) → references and implementations → scoped config/pattern search. Never brute force; ask if stuck after phase budget.
+**Complex task:** `create_session` → reason with `add_step` (evidence/decision/risk/next_action) → execute with Serena/REA/Steel → `finalize_session` → distill to Open Notebook.
+
+**Explore:** Dual-query notebook search → drift-checked code map → check active Sequential Thinking session → cold-start entrypoint scoping (if unmapped) → `get_symbols_overview` → `find_symbol` (bodies only when needed) → references and implementations → scoped config/pattern search. Never brute force; ask if stuck after phase budget.
 
 **Edit:** check references → narrowest symbol-level edit → `get_diagnostics_for_file`.
 
@@ -443,4 +520,4 @@ These rules apply to **every** Open Notebook note and source **and every Serena 
 
 **Web:** `steel_scrape` for read-only tasks → `steel_session_create` only when interaction is needed → release promptly.
 
-**Always:** sanitize secrets, client data, and PII, in notes and in Serena memories. Prefer Serena over grep for code tasks. Prefer Steel scrape over sessions for read-only web tasks.
+**Always:** sanitize secrets, client data, and PII, in notes and in Serena memories. Prefer Serena over grep for code tasks. Prefer Steel scrape over sessions for read-only web tasks. Use Sequential Thinking for working memory, Open Notebook for persistent memory.
