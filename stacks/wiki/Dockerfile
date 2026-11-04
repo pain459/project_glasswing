@@ -70,13 +70,18 @@ RUN apk add --no-cache curl && \
 </html>
 INDEX
 
-# Nginx config for Docsify (history fallback)
+# Nginx config for Docsify (history fallback + markdown MIME type)
 RUN cat > /etc/nginx/conf.d/default.conf << 'NGINX'
 server {
     listen 80;
     server_name _;
     root /usr/share/nginx/html;
     index index.html;
+
+    # Serve .md files as text/markdown so Docsify XHR works
+    types {
+        text/markdown md markdown;
+    }
 
     location / {
         try_files $uri $uri/ /index.html;
