@@ -46,7 +46,7 @@ services:
     extends:
       file: ../base.yaml
       service: hardened
-    image: linuxserver/freshrss:latest
+    image: linuxserver/freshrss:1.30.4-ls329
     container_name: glasswing-freshrss
 
     ports:

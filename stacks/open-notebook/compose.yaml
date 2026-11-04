@@ -6,7 +6,7 @@ services:
     extends:
       file: ../base.yaml
       service: base
-    image: surrealdb/surrealdb:v2
+    image: surrealdb/surrealdb:2.1.6
     user: root
 
     command:
@@ -34,7 +34,7 @@ services:
     extends:
       file: ../base.yaml
       service: base
-    image: lfnovo/open_notebook:v1-latest
+    image: lfnovo/open_notebook:v1.4.2
 
     depends_on:
       - surrealdb

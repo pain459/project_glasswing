@@ -7,7 +7,7 @@ services:
       file: ../base.yaml
       service: hardened
     # Excalidraw publishes no version tags, only `latest` and `sha-<commit>`.
-    image: excalidraw/excalidraw:latest
+    image: excalidraw/excalidraw:sha-67fe156
     container_name: glasswing-excalidraw
 
     ports:

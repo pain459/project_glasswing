@@ -7,7 +7,7 @@ services:
       file: ../base.yaml
       service: hardened
     # No versioned tags available; :latest is the only option
-    image: ghcr.io/steel-dev/steel-browser:latest
+    image: ghcr.io/steel-dev/steel-browser:0.5.5-beta
     container_name: glasswing-steel
     init: true
 

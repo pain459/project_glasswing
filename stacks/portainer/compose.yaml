@@ -6,7 +6,7 @@ services:
     extends:
       file: ../base.yaml
       service: hardened
-    image: portainer/portainer-ce:lts
+    image: portainer/portainer-ce:2.45.3
     container_name: glasswing-portainer
 
     command:
