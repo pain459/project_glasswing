@@ -239,6 +239,21 @@
         container: glasswing-sky-web
         siteMonitor: http://192.168.68.62:5088
 
+- News Centre:
+    - Glance:
+        icon: mdi-newspaper-variant
+        href: http://192.168.68.62:3026
+        description: Visual News Dashboard — 7 curated pages
+        container: glasswing-glance
+        siteMonitor: http://192.168.68.62:3026
+
+    - FreshRSS:
+        icon: mdi-rss
+        href: http://192.168.68.62:3027
+        description: Feed Manager — Persistent RSS with auto-refresh
+        container: glasswing-freshrss
+        siteMonitor: http://192.168.68.62:3027/f.php
+
 - Entertainment:
     - Plex:
         icon: plex.png

@@ -1,0 +1,27 @@
+# World & India
+
+- type: rss
+  title: World News
+  limit: 15
+  collapse-after: 5
+  cache: 10m
+  feeds:
+    - url: https://feeds.bbci.co.uk/news/world/rss.xml
+      title: BBC World
+    - url: https://www.aljazeera.com/xml/rss/latest.xml
+      title: Al Jazeera
+    - url: https://apnews.com/rss/world
+      title: AP World
+
+- type: rss
+  title: India News
+  limit: 15
+  collapse-after: 5
+  cache: 10m
+  feeds:
+    - url: https://timesofindia.indiatimes.com/india/rssfeedsmsid-1558.cms
+      title: Times of India
+    - url: https://www.thehindu.com/news/national/feeder/default.rss
+      title: The Hindu
+    - url: https://indianexpress.com/section/india/feed/
+      title: Indian Express

@@ -1,0 +1,35 @@
+# Technology & AI
+
+- type: rss
+  title: AI & Machine Learning
+  limit: 15
+  collapse-after: 5
+  cache: 15m
+  feeds:
+    - url: https://blog.google/technology/ai/rss/
+      title: Google AI
+    - url: https://openai.com/blog/rss.xml
+      title: OpenAI
+    - url: https://www.anthropic.com/news.xml
+      title: Anthropic
+    - url: https://huggingface.co/blog/feed.xml
+      title: Hugging Face
+
+- type: rss
+  title: Technology News
+  limit: 15
+  collapse-after: 5
+  cache: 15m
+  feeds:
+    - url: https://feeds.arstechnica.com/arstechnica/index
+      title: Ars Technica
+    - url: https://www.wired.com/feed/rss
+      title: Wired
+    - url: https://techcrunch.com/feed/
+      title: TechCrunch
+    - url: https://www.theverge.com/rss/index.xml
+      title: The Verge
+
+- type: hacker-news
+  limit: 15
+  collapse-after: 7

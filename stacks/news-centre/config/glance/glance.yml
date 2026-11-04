@@ -1,0 +1,68 @@
+# Glance v0.8.7 — Glasswing News Centre
+# Main configuration with $include for per-page widget files.
+
+theme:
+  # Dark theme by default
+  background-color: 240 8 9
+  primary-color: 220 100 70
+  disable-picker: true
+
+branding:
+  app-name: "Glasswing News"
+  hide-footer: true
+
+pages:
+  # ── Headlines (default landing page) ──────────────────────────────────
+  - name: Headlines
+    columns:
+      - size: full
+        widgets:
+          - $include: pages/headlines.yml
+
+  # ── Technology & AI ───────────────────────────────────────────────────
+  - name: Technology
+    slug: technology
+    columns:
+      - size: full
+        widgets:
+          - $include: pages/technology.yml
+
+  # ── Cybersecurity ─────────────────────────────────────────────────────
+  - name: Cybersecurity
+    slug: cybersecurity
+    columns:
+      - size: full
+        widgets:
+          - $include: pages/cybersecurity.yml
+
+  # ── World & India ─────────────────────────────────────────────────────
+  - name: World
+    slug: world
+    columns:
+      - size: full
+        widgets:
+          - $include: pages/world.yml
+
+  # ── Science & Research ────────────────────────────────────────────────
+  - name: Science
+    slug: science
+    columns:
+      - size: full
+        widgets:
+          - $include: pages/science.yml
+
+  # ── Open Source Radar ─────────────────────────────────────────────────
+  - name: Open Source
+    slug: opensource
+    columns:
+      - size: full
+        widgets:
+          - $include: pages/opensource.yml
+
+  # ── Business & Markets ────────────────────────────────────────────────
+  - name: Business
+    slug: business
+    columns:
+      - size: full
+        widgets:
+          - $include: pages/business.yml

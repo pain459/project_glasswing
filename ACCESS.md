@@ -33,6 +33,8 @@ Host IP: `192.168.68.62` (from `GLASSWING_HOST_IP`, else `stacks/infisical/.env`
 | `panchangam` | `panchangam` | http://192.168.68.62:3023 | 80/tcp | glasswing | LAN |
 | `homebox` | `homebox` | http://192.168.68.62:3024 | 7745/tcp | glasswing | LAN |
 | `paperless` | `webserver` | http://192.168.68.62:3025 | 8000/tcp | glasswing+internal | LAN |
+| `news-centre` | `glance` | http://192.168.68.62:3026 | 8080/tcp | glasswing | LAN |
+| `news-centre` | `freshrss` | http://192.168.68.62:3027 | 80/tcp | glasswing | LAN |
 | `steel` | `steel` | http://192.168.68.62:3100 | 3000/tcp | glasswing | LAN |
 | `otel-collector` | `otel-collector` | http://192.168.68.62:4318 | 4318/tcp | glasswing | LAN |
 | `open-notebook` | `open_notebook` | http://192.168.68.62:5055 | 5055/tcp | internal+glasswing | LAN |
@@ -41,6 +43,7 @@ Host IP: `192.168.68.62` (from `GLASSWING_HOST_IP`, else `stacks/infisical/.env`
 | `open-notebook-mcp` | `open-notebook-mcp` | http://127.0.0.1:8001 | 8000/tcp | glasswing | host-only |
 | `steel-mcp` | `steel-mcp` | http://127.0.0.1:8002 | 8000/tcp | glasswing | host-only |
 | `rea-mcp` | `rea-mcp` | http://127.0.0.1:8003 | 8000/tcp | glasswing | host-only |
+| `sequential-thinking-mcp` | `sequential-thinking-mcp` | http://127.0.0.1:8004 | 8000/tcp | glasswing | host-only |
 | `beszel` | `beszel` | http://192.168.68.62:8090 | 8090/tcp | glasswing | LAN |
 | `infisical` | `gateway` | https://192.168.68.62:8095 | 443/tcp | internal | LAN |
 | `open-notebook` | `open_notebook` | http://192.168.68.62:8502 | 8502/tcp | internal+glasswing | LAN |

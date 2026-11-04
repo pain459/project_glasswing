@@ -1,0 +1,97 @@
+
+name: glasswing-news-centre
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Shared environment
+# ─────────────────────────────────────────────────────────────────────────────
+x-news-env: &news-env
+  TZ: ${GLASSWING_TZ:?Required from Infisical}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Services
+# ─────────────────────────────────────────────────────────────────────────────
+services:
+  # ── Glance: Visual News Dashboard ────────────────────────────────────────
+  glance:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: glanceapp/glance:v0.8.7
+    container_name: glasswing-glance
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3026:8080"
+
+    environment:
+      <<: *news-env
+
+    volumes:
+      - ./config/glance:/app/config:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+    labels:
+      com.glasswing.service: glance
+
+    networks:
+      - glasswing
+
+  # ── FreshRSS: Feed Backend with automatic refresh ────────────────────────
+  freshrss:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: linuxserver/freshrss:latest
+    container_name: glasswing-freshrss
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3027:80"
+
+    environment:
+      <<: *news-env
+      PUID: ${GLASSWING_PUID:?Required from Infisical}
+      PGID: ${GLASSWING_PGID:?Required from Infisical}
+      # Refresh feeds every 15 minutes
+      CRON_MIN: "0,15,30,45"
+      # SQLite backend (sufficient for RSS feeds)
+      DB_TYPE: sqlite
+      # Initial admin user
+      FRESHRSS_ADMIN_USER: ${FRESHRSS_ADMIN_USER:?Required from Infisical}
+      FRESHRSS_ADMIN_PASSWORD: ${FRESHRSS_ADMIN_PASSWORD:?Required from Infisical}
+
+    volumes:
+      - freshrss_data:/config
+      - ./config/freshrss/feedlist.opml:/etc/config/feedlist.opml:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/f.php || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+
+    labels:
+      com.glasswing.service: freshrss
+
+    networks:
+      - glasswing
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Volumes
+# ─────────────────────────────────────────────────────────────────────────────
+volumes:
+  freshrss_data:
+    name: glasswing-freshrss-data
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Networks
+# ─────────────────────────────────────────────────────────────────────────────
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

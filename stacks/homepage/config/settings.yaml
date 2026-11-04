@@ -28,6 +28,9 @@ layout:
   Astronomy:
     style: column
     columns: 2
+  News Centre:
+    style: column
+    columns: 2
   Entertainment:
     style: column
     columns: 2

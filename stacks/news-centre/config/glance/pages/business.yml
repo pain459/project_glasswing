@@ -1,0 +1,42 @@
+# Business & Markets
+
+- type: rss
+  title: Business News
+  limit: 15
+  collapse-after: 5
+  cache: 10m
+  feeds:
+    - url: https://feeds.a.dj.com/rss/RSSMarketsMain.xml
+      title: Wall Street Journal
+    - url: https://www.economist.com/latest/rss
+      title: The Economist
+    - url: https://www.bloomberg.com/news/rss
+      title: Bloomberg
+
+- type: rss
+  title: Indian Business
+  limit: 10
+  collapse-after: 5
+  cache: 10m
+  feeds:
+    - url: https://economictimes.indiatimes.com/news/industry/rssfeedsmsid-2146.cms
+      title: Economic Times
+    - url: https://www.livemint.com/rss/business
+      title: Mint
+
+- type: markets
+  title: Global Markets
+  cache: 10m
+  markets:
+    - symbol: ^GSPC
+      name: S&P 500
+    - symbol: ^NSEI
+      name: NIFTY 50
+    - symbol: BTC-USD
+      name: Bitcoin
+    - symbol: ETH-USD
+      name: Ethereum
+    - symbol: MSFT
+      name: Microsoft
+    - symbol: GOOGL
+      name: Alphabet

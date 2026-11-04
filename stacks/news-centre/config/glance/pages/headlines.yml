@@ -1,0 +1,29 @@
+# Headlines — Global news from major outlets
+
+- type: rss
+  title: Global Headlines
+  limit: 20
+  collapse-after: 8
+  cache: 10m
+  feeds:
+    - url: https://feeds.bbci.co.uk/news/rss.xml
+      title: BBC News
+    - url: https://www.reutersagency.com/feed/
+      title: Reuters
+    - url: https://feeds.npr.org/1001/rss.xml
+      title: NPR
+    - url: https://www.aljazeera.com/xml/rss/all.xml
+      title: Al Jazeera
+
+- type: rss
+  title: Indian Headlines
+  limit: 15
+  collapse-after: 5
+  cache: 10m
+  feeds:
+    - url: https://timesofindia.indiatimes.com/rssfeedstopstories.cms
+      title: Times of India
+    - url: https://www.thehindu.com/feed/syndication
+      title: The Hindu
+    - url: https://indianexpress.com/article-printfeed/
+      title: Indian Express

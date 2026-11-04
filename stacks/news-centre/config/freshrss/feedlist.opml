@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+<head>
+  <title>Glasswing News Centre — Feed Catalogue</title>
+  <ownerName>glasswing</ownerName>
+</head>
+<body>
+
+  <!-- ===== Global Headlines ===== -->
+  <outline text="Global Headlines" title="Global Headlines">
+    <outline text="BBC News" type="rss" xmlUrl="https://feeds.bbci.co.uk/news/rss.xml" htmlUrl="https://www.bbc.com/news"/>
+    <outline text="Reuters" type="rss" xmlUrl="https://www.reutersagency.com/feed/" htmlUrl="https://www.reuters.com"/>
+    <outline text="NPR" type="rss" xmlUrl="https://feeds.npr.org/1001/rss.xml" htmlUrl="https://www.npr.org"/>
+    <outline text="Al Jazeera" type="rss" xmlUrl="https://www.aljazeera.com/xml/rss/all.xml" htmlUrl="https://www.aljazeera.com"/>
+    <outline text="AP News" type="rss" xmlUrl="https://apnews.com/rss" htmlUrl="https://apnews.com"/>
+  </outline>
+
+  <!-- ===== Indian Headlines ===== -->
+  <outline text="Indian Headlines" title="Indian Headlines">
+    <outline text="Times of India" type="rss" xmlUrl="https://timesofindia.indiatimes.com/rssfeedstopstories.cms" htmlUrl="https://timesofindia.indiatimes.com"/>
+    <outline text="The Hindu" type="rss" xmlUrl="https://www.thehindu.com/feed/syndication" htmlUrl="https://www.thehindu.com"/>
+    <outline text="Indian Express" type="rss" xmlUrl="https://indianexpress.com/article-printfeed/" htmlUrl="https://indianexpress.com"/>
+  </outline>
+
+  <!-- ===== Technology & AI ===== -->
+  <outline text="Technology &amp; AI" title="Technology &amp; AI">
+    <outline text="Google AI Blog" type="rss" xmlUrl="https://blog.google/technology/ai/rss/" htmlUrl="https://blog.google/technology/ai/"/>
+    <outline text="OpenAI Blog" type="rss" xmlUrl="https://openai.com/blog/rss.xml" htmlUrl="https://openai.com/blog"/>
+    <outline text="Anthropic News" type="rss" xmlUrl="https://www.anthropic.com/news.xml" htmlUrl="https://www.anthropic.com/news"/>
+    <outline text="Hugging Face Blog" type="rss" xmlUrl="https://huggingface.co/blog/feed.xml" htmlUrl="https://huggingface.co/blog"/>
+    <outline text="Ars Technica" type="rss" xmlUrl="https://feeds.arstechnica.com/arstechnica/index" htmlUrl="https://arstechnica.com"/>
+    <outline text="Wired" type="rss" xmlUrl="https://www.wired.com/feed/rss" htmlUrl="https://www.wired.com"/>
+    <outline text="TechCrunch" type="rss" xmlUrl="https://techcrunch.com/feed/" htmlUrl="https://techcrunch.com"/>
+    <outline text="The Verge" type="rss" xmlUrl="https://www.theverge.com/rss/index.xml" htmlUrl="https://www.theverge.com"/>
+  </outline>
+
+  <!-- ===== Cybersecurity ===== -->
+  <outline text="Cybersecurity" title="Cybersecurity">
+    <outline text="Krebs on Security" type="rss" xmlUrl="https://www.krebs-on-security.com/feed/" htmlUrl="https://krebsonsecurity.com"/>
+    <outline text="The Hacker News" type="rss" xmlUrl="https://thehackernews.com/rss.xml" htmlUrl="https://thehackernews.com"/>
+    <outline text="Schneier on Security" type="rss" xmlUrl="https://www.schneier.com/feed/" htmlUrl="https://www.schneier.com"/>
+    <outline text="Dark Reading" type="rss" xmlUrl="https://www.darkreading.com/rss.xml" htmlUrl="https://www.darkreading.com"/>
+    <outline text="CVE Details Top 10" type="rss" xmlUrl="https://www.cvedetails.com/rss.php?type=top-10" htmlUrl="https://www.cvedetails.com"/>
+    <outline text="NVD RSS" type="rss" xmlUrl="https://nvd.nist.gov/vuln/search/rss" htmlUrl="https://nvd.nist.gov"/>
+    <outline text="BleepingComputer" type="rss" xmlUrl="https://www.bleepingcomputer.com/feed/" htmlUrl="https://www.bleepingcomputer.com"/>
+    <outline text="CSO Online" type="rss" xmlUrl="https://www.csoonline.com/index.xml" htmlUrl="https://www.csoonline.com"/>
+  </outline>
+
+  <!-- ===== World & India ===== -->
+  <outline text="World &amp; India" title="World &amp; India">
+    <outline text="BBC World" type="rss" xmlUrl="https://feeds.bbci.co.uk/news/world/rss.xml" htmlUrl="https://www.bbc.com/news/world"/>
+    <outline text="Al Jazeera Latest" type="rss" xmlUrl="https://www.aljazeera.com/xml/rss/latest.xml" htmlUrl="https://www.aljazeera.com"/>
+    <outline text="France 24 World" type="rss" xmlUrl="https://www.france24.com/en/feed/world" htmlUrl="https://www.france24.com/en"/>
+    <outline text="AP World" type="rss" xmlUrl="https://apnews.com/rss/world" htmlUrl="https://apnews.com/hub/world"/>
+    <outline text="Times of India — India" type="rss" xmlUrl="https://timesofindia.indiatimes.com/india/rssfeedsmsid-1558.cms" htmlUrl="https://timesofindia.indiatimes.com/india"/>
+    <outline text="The Hindu — National" type="rss" xmlUrl="https://www.thehindu.com/news/national/feeder/default.rss" htmlUrl="https://www.thehindu.com/news/national/"/>
+    <outline text="Indian Express — India" type="rss" xmlUrl="https://indianexpress.com/section/india/feed/" htmlUrl="https://indianexpress.com/section/india/"/>
+  </outline>
+
+  <!-- ===== Science & Research ===== -->
+  <outline text="Science &amp; Research" title="Science &amp; Research">
+    <outline text="Science.org" type="rss" xmlUrl="https://www.science.org/rss/news_current.xml" htmlUrl="https://www.science.org"/>
+    <outline text="Nature" type="rss" xmlUrl="https://www.nature.com/nature.rss" htmlUrl="https://www.nature.com"/>
+    <outline text="New Scientist" type="rss" xmlUrl="https://www.newscientist.com/feed/science/" htmlUrl="https://www.newscientist.com"/>
+    <outline text="NASA Breaking News" type="rss" xmlUrl="https://www.nasa.gov/rss/dyn/breaking_news.rss" htmlUrl="https://www.nasa.gov"/>
+    <outline text="Space.com" type="rss" xmlUrl="https://www.space.com/feed" htmlUrl="https://www.space.com"/>
+    <outline text="ESA Brief" type="rss" xmlUrl="https://www.esa.int/About_Us/Newsroom/RSS_Feeds/ESA_in_brief" htmlUrl="https://www.esa.int"/>
+    <outline text="arXiv AI" type="rss" xmlUrl="https://arxiv.org/rss/cs.AI" htmlUrl="https://arxiv.org/list/cs.AI/recent"/>
+    <outline text="arXiv Physics" type="rss" xmlUrl="https://arxiv.org/rss/physics" htmlUrl="https://arxiv.org/list/physics/recent"/>
+  </outline>
+
+  <!-- ===== Open Source ===== -->
+  <outline text="Open Source" title="Open Source">
+    <outline text="Opensource.com" type="rss" xmlUrl="https://opensource.com/feed" htmlUrl="https://opensource.com"/>
+    <outline text="FOSS Bytes" type="rss" xmlUrl="https://fossbytes.com/feed/" htmlUrl="https://fossbytes.com"/>
+    <outline text="Phoronix" type="rss" xmlUrl="https://www.phoronix.com/feed/" htmlUrl="https://www.phoronix.com"/>
+    <outline text="LWN Headlines" type="rss" xmlUrl="https://lwn.net/headlines/newrss" htmlUrl="https://lwn.net"/>
+    <outline text="Kernel.org News" type="rss" xmlUrl="https://www.kernel.org/category/news/feed/" htmlUrl="https://www.kernel.org"/>
+    <outline text="Linux Foundation Blog" type="rss" xmlUrl="https://www.linuxfoundation.org/blog/rss/" htmlUrl="https://www.linuxfoundation.org/blog"/>
+  </outline>
+
+  <!-- ===== Business & Markets ===== -->
+  <outline text="Business &amp; Markets" title="Business &amp; Markets">
+    <outline text="Wall Street Journal Markets" type="rss" xmlUrl="https://feeds.a.dj.com/rss/RSSMarketsMain.xml" htmlUrl="https://www.wsj.com"/>
+    <outline text="Financial Times World" type="rss" xmlUrl="https://www.ft.com/world?format=rss" htmlUrl="https://www.ft.com"/>
+    <outline text="The Economist" type="rss" xmlUrl="https://www.economist.com/latest/rss" htmlUrl="https://www.economist.com"/>
+    <outline text="Bloomberg" type="rss" xmlUrl="https://www.bloomberg.com/news/rss" htmlUrl="https://www.bloomberg.com"/>
+    <outline text="Economic Times — Industry" type="rss" xmlUrl="https://economictimes.indiatimes.com/news/industry/rssfeedsmsid-2146.cms" htmlUrl="https://economictimes.indiatimes.com"/>
+    <outline text="Mint Business" type="rss" xmlUrl="https://www.livemint.com/rss/business" htmlUrl="https://www.livemint.com"/>
+  </outline>
+
+</body>
+</opml>

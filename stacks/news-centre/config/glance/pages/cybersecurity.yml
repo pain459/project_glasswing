@@ -1,0 +1,40 @@
+# Cybersecurity
+
+- type: rss
+  title: Security Research & Advisories
+  limit: 15
+  collapse-after: 5
+  cache: 15m
+  feeds:
+    - url: https://www.krebs-on-security.com/feed/
+      title: Krebs on Security
+    - url: https://thehackernews.com/rss.xml
+      title: The Hacker News
+    - url: https://www.schneier.com/feed/
+      title: Schneier on Security
+    - url: https://www.darkreading.com/rss.xml
+      title: Dark Reading
+
+- type: rss
+  title: Vulnerability Tracking
+  limit: 10
+  collapse-after: 5
+  cache: 15m
+  feeds:
+    - url: https://www.cvedetails.com/rss.php?type=top-10
+      title: CVE Details Top 10
+    - url: https://nvd.nist.gov/vuln/search/rss
+      title: NVD
+    - url: https://www.bleepingcomputer.com/feed/
+      title: BleepingComputer
+
+- type: rss
+  title: Threat Intelligence
+  limit: 10
+  collapse-after: 5
+  cache: 15m
+  feeds:
+    - url: https://www.record31.com/feed/
+      title: Record31
+    - url: https://www.csoonline.com/index.xml
+      title: CSO Online

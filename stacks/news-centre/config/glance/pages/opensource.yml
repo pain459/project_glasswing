@@ -1,0 +1,44 @@
+# Open Source Radar
+
+- type: rss
+  title: Open Source News
+  limit: 15
+  collapse-after: 5
+  cache: 15m
+  feeds:
+    - url: https://opensource.com/feed
+      title: Opensource.com
+    - url: https://fossbytes.com/feed/
+      title: FOSS Bytes
+    - url: https://www.phoronix.com/feed/
+      title: Phoronix
+    - url: https://lwn.net/headlines/newrss
+      title: LWN
+
+- type: rss
+  title: Linux & Kernel
+  limit: 10
+  collapse-after: 5
+  cache: 15m
+  feeds:
+    - url: https://www.kernel.org/category/news/feed/
+      title: Kernel.org
+    - url: https://www.linuxfoundation.org/blog/rss/
+      title: Linux Foundation
+
+- type: releases
+  title: Notable Releases
+  cache: 1d
+  limit: 15
+  repositories:
+    - kubernetes/kubernetes
+    - docker/docker
+    - golang/go
+    - rust-lang/rust
+    - python/cpython
+    - nodejs/node
+
+- type: hacker-news
+  title: Hacker News
+  limit: 10
+  collapse-after: 5

@@ -1,0 +1,38 @@
+# Science & Research
+
+- type: rss
+  title: Science News
+  limit: 15
+  collapse-after: 5
+  cache: 20m
+  feeds:
+    - url: https://www.science.org/rss/news_current.xml
+      title: Science.org
+    - url: https://www.nature.com/nature.rss
+      title: Nature
+    - url: https://www.newscientist.com/feed/science/
+      title: New Scientist
+
+- type: rss
+  title: Space & Astronomy
+  limit: 10
+  collapse-after: 5
+  cache: 20m
+  feeds:
+    - url: https://www.nasa.gov/rss/dyn/breaking_news.rss
+      title: NASA
+    - url: https://www.space.com/feed
+      title: Space.com
+    - url: https://www.esa.int/About_Us/Newsroom/RSS_Feeds/ESA_in_brief
+      title: ESA
+
+- type: rss
+  title: Research Preprints
+  limit: 10
+  collapse-after: 5
+  cache: 30m
+  feeds:
+    - url: https://arxiv.org/rss/cs.AI
+      title: arXiv AI
+    - url: https://arxiv.org/rss/physics
+      title: arXiv Physics
