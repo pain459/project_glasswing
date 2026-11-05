@@ -144,6 +144,13 @@ stacks:
     build-type: external
 
   # ── Application Services ────────────────────────────────────
+  baserow:
+    image: baserow/baserow
+    tag: "2.4.1"
+    mutable: false
+    updated: "2026-11-05"
+    build-type: external
+    notes: "All-in-one image: embedded PostgreSQL, Redis, Caddy reverse proxy, Celery workers"
   vikunja:
     image: vikunja/vikunja
     tag: "2.7.1"

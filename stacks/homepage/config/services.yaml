@@ -229,6 +229,12 @@
         siteMonitor: http://192.168.68.62:3023
 
 - Home Management:
+    - baserow:
+        icon: mdi-database
+        href: http://192.168.68.62:3032
+        description: Open Source No-Code Database — Airtable Alternative
+        container: glasswing-baserow
+        siteMonitor: http://192.168.68.62:3032/api/_health/
     - vikunja:
         icon: mdi-checkbox-marked
         href: http://192.168.68.62:3031
