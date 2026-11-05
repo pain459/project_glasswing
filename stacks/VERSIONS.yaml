@@ -86,14 +86,6 @@ stacks:
     updated: "2026-09-15"
     build-type: external
 
-  langfuse:
-    image: docker.langfuse.com/langfuse/langfuse
-    tag: "4.75.0"
-    mutable: false
-    updated: "2026-10-05"
-    build-type: external
-    notes: "Multi-service stack — worker + app share version"
-
   # ── AI & MCP Servers ────────────────────────────────────────
 
   open-notebook-mcp:

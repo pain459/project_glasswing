@@ -19,7 +19,6 @@ Host IP: `192.168.68.62` (from `GLASSWING_HOST_IP`, else `stacks/infisical/.env`
 | `adguard` | `adguard` | http://192.168.68.62:3007 | 80/tcp | glasswing | LAN |
 | `adguard` | `adguard` | http://192.168.68.62:3008 | 3000/tcp | glasswing | LAN |
 | `excalidraw` | `excalidraw` | http://192.168.68.62:3009 | 80/tcp | glasswing | LAN |
-| `langfuse` | `langfuse-web` | http://192.168.68.62:3010 | 3000/tcp | internal | LAN |
 | `forgejo` | `forgejo` | http://192.168.68.62:3011 | 3000/tcp | glasswing | LAN |
 | `anythingllm` | `anythingllm` | http://192.168.68.62:3012 | 3001/tcp | glasswing | LAN |
 | `cyberchef` | `cyberchef` | http://192.168.68.62:3013 | 8080/tcp | glasswing | LAN |
@@ -58,7 +57,6 @@ Host IP: `192.168.68.62` (from `GLASSWING_HOST_IP`, else `stacks/infisical/.env`
 | `open-notebook` | `open_notebook` | http://192.168.68.62:8502 | 8502/tcp | internal+glasswing | LAN |
 | `vector` | `vector` | http://192.168.68.62:8686 | 8686/tcp | glasswing | LAN |
 | `jupyterlab` | `jupyterlab` | http://192.168.68.62:8889 | 8888/tcp | glasswing | LAN |
-| `langfuse` | `minio` | http://192.168.68.62:9090 | 9000/tcp | internal | LAN |
 | `serena` | `serena` | http://127.0.0.1:9121 | 9121/tcp | glasswing | host-only |
 | `steel` | `steel` | http://192.168.68.62:9223 | 9223/tcp | glasswing | LAN |
 | `portainer` | `portainer` | https://192.168.68.62:9443 | 9443/tcp | glasswing | LAN |

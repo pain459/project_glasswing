@@ -104,13 +104,6 @@
         container: glasswing-flowise
         siteMonitor: http://192.168.68.62:3002
 
-    - Langfuse:
-        icon: sh-langfuse
-        href: http://192.168.68.62:3010
-        description: LLM Tracing & Analytics
-        container: glasswing-langfuse-langfuse-web-1
-        siteMonitor: http://192.168.68.62:3010/api/public/health
-
     - AnythingLLM:
         icon: anything-llm.png
         href: http://192.168.68.62:3012
