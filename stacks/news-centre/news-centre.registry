@@ -1,5 +1,0 @@
-# News Centre secret registry
-# Register these in Infisical at path /news-centre
-# Run: ./scripts/infisical-register.sh /news-centre stacks/news-centre/news-centre.registry
-FRESHRSS_ADMIN_USER=admin
-FRESHRSS_ADMIN_PASSWORD=CHANGE_ME_GENERATE_SECURE_PASSWORD
