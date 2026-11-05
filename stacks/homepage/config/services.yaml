@@ -229,6 +229,12 @@
         siteMonitor: http://192.168.68.62:3023
 
 - Home Management:
+    - vikunja:
+        icon: mdi-checkbox-marked
+        href: http://192.168.68.62:3031
+        description: Task Management — Kanban, Gantt, Lists & Tables
+        container: glasswing-vikunja
+        siteMonitor: http://192.168.68.62:3031/health
     - HomeBox:
         icon: mdi-home-analytics
         href: http://192.168.68.62:3024

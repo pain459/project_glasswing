@@ -144,6 +144,13 @@ stacks:
     build-type: external
 
   # ── Application Services ────────────────────────────────────
+  vikunja:
+    image: vikunja/vikunja
+    tag: "2.7.1"
+    mutable: false
+    updated: "2026-11-05"
+    build-type: external
+    notes: "SQLite backend — no separate database container needed"
 
   adguard:
     image: adguard/adguardhome

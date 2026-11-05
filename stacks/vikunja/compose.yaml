@@ -1,0 +1,51 @@
+
+name: glasswing-vikunja
+
+services:
+  vikunja:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: vikunja/vikunja:2.7.1
+    container_name: glasswing-vikunja
+
+    ports:
+      - "${GLASSWING_HOST_IP:?required}:3031:3456"
+
+    environment:
+      OTEL_SERVICE_NAME: glasswing-vikunja
+      VIKUNJA_DATABASE_TYPE: sqlite
+      VIKUNJA_DATABASE_PATH: /db/vikunja.db
+      VIKUNJA_SERVICE_PUBLICURL: http://192.168.68.62:3031
+      VIKUNJA_SERVICE_SECRET: ${VIKUNJA_SERVICE_SECRET:?Required from Infisical}
+
+    volumes:
+      - vikunja_files:/app/vikunja/files
+      - vikunja_db:/db
+
+    # Note: Vikunja container is distroless (no curl/wget/shell).
+    # Health monitoring is handled by Uptime Kuma via /health endpoint.
+    healthcheck:
+      test:
+        - NONE
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    labels:
+      com.glasswing.service: vikunja
+
+    networks:
+      - glasswing
+
+volumes:
+  vikunja_files:
+    name: glasswing-vikunja_files
+  vikunja_db:
+    name: glasswing-vikunja_db
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

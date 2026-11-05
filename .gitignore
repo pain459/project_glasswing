@@ -7,6 +7,7 @@ stacks/portainer/certs/
 stacks/panchangam/src/
 stacks/*/compose.override.yaml
 stacks/*/repos.env
+stacks/*/*-config.registry
 /tests/__pycache__/*
 stacks/sky/data/ephemeris/
 .agent-memory/

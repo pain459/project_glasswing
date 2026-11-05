@@ -295,6 +295,8 @@ ok "Created compose.yaml"
 ok "Created secrets.list"
 
 # ── Build registry file for Infisical ─────────────────────────────────────
+# NOTE: This file contains raw secret values. It is .gitignored and must
+# never be committed to the repository.
 
 {
   echo "# Stack-specific secrets — Infisical path /${SLUG}"

@@ -136,5 +136,7 @@ SECRET_KEY=value
 - Never overwrite an existing stack directory. Refuse and tell the user.
 - Always use the `hardened` base profile (it adds `no-new-privileges`).
 - Register secrets in Infisical at path `/<slug>`.
+- **NEVER commit `*-config.registry` files** — they contain raw secret values and are `.gitignored`. Only `secrets.list` (which references secret names, not values) should be committed.
 - The script handles file creation, secret registration, VERSIONS.yaml update, and homepage update. Your job is to resolve the inputs and verify the result.
 - If the script fails, diagnose and fix the issue, then retry.
+- After committing, verify with `git status --short` that no `*-config.registry` files are staged.
