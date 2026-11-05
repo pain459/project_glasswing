@@ -247,7 +247,7 @@
         href: http://192.168.68.62:3025
         description: Document Management System — Scan, Index & Archive
         container: glasswing-paperless
-        siteMonitor: http://192.168.68.62:3025/api/status/
+        siteMonitor: http://192.168.68.62:3025/
 
 - Astronomy:
     - Skytoday:
