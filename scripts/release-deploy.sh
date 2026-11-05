@@ -213,13 +213,12 @@ deploy_stack() {
     return 0
   fi
 
-  # If config was fine but up failed, that's a real error
-  if [ "$config_ok" = true ]; then
-    fail "$stack — deployment failed"
-    return 1
-  fi
-
-  # Config had missing vars — check if containers are already running
+  # docker compose up failed — check if containers are already running.
+  # This covers two cases:
+  # 1. Missing env vars (config_ok=false): compose can't interpolate, but
+  #    containers may already be running with secrets from Infisical.
+  # 2. Runtime issues (config_ok=true): e.g. redis RDB incompatibility on
+  #    restart — containers may still be serving from the previous run.
   local containers
   containers=$(docker ps --filter "label=com.docker.compose.project=glasswing-$stack" \
     --format '{{.Names}} {{.Status}}' 2>/dev/null)
@@ -234,11 +233,11 @@ deploy_stack() {
     done <<< "$containers"
 
     if [ "$bad" = true ]; then
-      fail "$stack — containers running but not healthy (env vars missing)"
+      fail "$stack — some containers not healthy"
       return 1
     fi
 
-    log "$stack — already running (env vars from Infisical, skipped redeploy)"
+    log "$stack — already running (skipped redeploy)"
     return 0
   fi
 
