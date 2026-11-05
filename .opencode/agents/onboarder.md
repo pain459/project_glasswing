@@ -70,7 +70,14 @@ echo '<json>' | bash scripts/onboard-service.sh --dry-run
 1. Run `make check STACK=<slug>` to validate compose config.
 2. Check the container is running and healthy with `make ps STACK=<slug>`.
 3. If the service has a health endpoint, verify it responds.
-4. Report success or failure to the user with the access URL.
+4. Update the homepage `siteMonitor` endpoint with the correct health path.
+5. Report success or failure to the user with the access URL.
+
+### Monitoring endpoints
+- Always set the `siteMonitor` field in `stacks/homepage/config/services.yaml` to the service's health endpoint (e.g., `/health`, `/api/v1/status`, `/ping`).
+- If the container is distroless (no `curl`/`wget`/shell), Docker healthcheck will be `NONE`. In this case, the `siteMonitor` endpoint is still valid — Uptime Kuma monitors externally via HTTP.
+- If the service has no health endpoint at all (e.g., a background worker), omit `siteMonitor` or set it to the root path `/`.
+- After deploying, verify the `siteMonitor` URL responds with HTTP 200. If it doesn't, investigate and fix the path.
 
 ## Conventions
 
@@ -140,3 +147,4 @@ SECRET_KEY=value
 - The script handles file creation, secret registration, VERSIONS.yaml update, and homepage update. Your job is to resolve the inputs and verify the result.
 - If the script fails, diagnose and fix the issue, then retry.
 - After committing, verify with `git status --short` that no `*-config.registry` files are staged.
+- **Always maintain `siteMonitor` endpoints** in `stacks/homepage/config/services.yaml`. The health path must match the service's actual health endpoint. If monitoring isn't feasible (e.g., no HTTP endpoint, background worker), note it and use `/` or omit `siteMonitor`.
