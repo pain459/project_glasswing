@@ -136,6 +136,13 @@ stacks:
     build-type: external
 
   # ── Application Services ────────────────────────────────────
+  vaultwarden:
+    image: vaultwarden/server
+    tag: "1.37.2"
+    mutable: false
+    updated: "2026-11-05"
+    build-type: external
+    notes: "SQLite backend — no separate database container needed. Data persisted in /data volume."
   wud:
     image: getwud/wud
     tag: "9.7.0"

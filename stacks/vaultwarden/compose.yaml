@@ -1,0 +1,49 @@
+
+name: glasswing-vaultwarden
+
+services:
+  vaultwarden:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: vaultwarden/server:1.37.2
+    container_name: glasswing-vaultwarden
+
+    ports:
+      - "${GLASSWING_HOST_IP:?required}:3034:80"
+
+    environment:
+      OTEL_SERVICE_NAME: glasswing-vaultwarden
+      DOMAIN: http://192.168.68.62:3034
+      SIGNUPS_ALLOWED: true
+      LOG_LEVEL: warn
+      ADMIN_TOKEN: ${ADMIN_TOKEN:?Required from Infisical}
+
+    volumes:
+      - vaultwarden_data:/data
+
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - "http://127.0.0.1:80/alive"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    labels:
+      com.glasswing.service: vaultwarden
+
+    networks:
+      - glasswing
+
+volumes:
+  vaultwarden_data:
+    name: glasswing-vaultwarden_data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

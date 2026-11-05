@@ -228,6 +228,12 @@
         siteMonitor: http://192.168.68.62:3023
 
 - Home Management:
+    - vaultwarden:
+        icon: mdi-lock-outline
+        href: http://192.168.68.62:3034
+        description: Bitwarden-Compatible Password Manager — Self-Hosted Vault
+        container: glasswing-vaultwarden
+        siteMonitor: http://192.168.68.62:3034/alive
     - baserow:
         icon: mdi-database
         href: http://192.168.68.62:3032
