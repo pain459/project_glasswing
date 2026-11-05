@@ -18,8 +18,10 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Determine bundle root (scripts/ is inside the bundle)
-BUNDLE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Determine bundle root
+# --release-dir overrides the default (SCRIPT_DIR/..) so the Makefile can
+# point at releases/<version>/ without extracting a bundle.
+BUNDLE_ROOT="${GLASSWING_RELEASE_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 STACKS_DIR="$BUNDLE_ROOT/stacks"
 MANIFEST_FILE="$BUNDLE_ROOT/manifest.yaml"
 
@@ -81,33 +83,62 @@ get_manifest_image() {
 load_images() {
   header "Loading Docker images"
 
-  local images_tar="$BUNDLE_ROOT/images/images.tar"
+  local images_dir="$BUNDLE_ROOT/images"
+  local images_tar="$images_dir/images.tar"
 
-  if [ ! -f "$images_tar" ]; then
-    fail "Image tarball not found: $images_tar"
+  if [ ! -d "$images_dir" ] || [ -z "$(ls -A "$images_dir" 2>/dev/null)" ]; then
+    fail "No images directory found: $images_dir"
     exit 1
   fi
 
-  # Verify checksum if available
-  if [ -f "$BUNDLE_ROOT/images/images.tar.sha256" ]; then
-    info "Verifying image tarball checksum..."
-    (cd "$BUNDLE_ROOT/images" && sha256sum -c images.tar.sha256) 2>&1 || {
-      fail "Checksum verification failed — images may be corrupted"
+  # Case 1: Combined images.tar (from release-bundle)
+  if [ -f "$images_tar" ]; then
+    # Verify checksum if available
+    if [ -f "$images_dir/images.tar.sha256" ]; then
+      info "Verifying image tarball checksum..."
+      (cd "$images_dir" && sha256sum -c images.tar.sha256) 2>&1 || {
+        fail "Checksum verification failed — images may be corrupted"
+        exit 1
+      }
+      log "Checksum verified"
+    fi
+
+    local tar_size
+    tar_size=$(du -sh "$images_tar" | cut -f1)
+    info "Loading images from images.tar ($tar_size)..."
+
+    docker load -i "$images_tar" 2>&1 || {
+      fail "Failed to load images"
       exit 1
     }
-    log "Checksum verified"
+    log "Images loaded successfully"
+
+  # Case 2: Individual image tars (from release-build, no bundle yet)
+  else
+    local tar_files
+    tar_files=$(find "$images_dir" -name '*.tar' -not -name 'images.tar' | sort)
+    local tar_count
+    tar_count=$(echo "$tar_files" | wc -l)
+    info "Loading $tar_count individual image tars..."
+
+    local loaded=0 failed=0
+    while IFS= read -r tar_file; do
+      local base
+      base=$(basename "$tar_file")
+      if docker load -i "$tar_file" >/dev/null 2>&1; then
+        loaded=$((loaded + 1))
+      else
+        fail "Failed to load: $base"
+        failed=$((failed + 1))
+      fi
+    done <<< "$tar_files"
+
+    if [ "$failed" -gt 0 ]; then
+      fail "$failed image(s) failed to load"
+      exit 1
+    fi
+    log "Loaded $loaded image(s) successfully"
   fi
-
-  local tar_size
-  tar_size=$(du -sh "$images_tar" | cut -f1)
-  info "Loading images from $images_tar ($tar_size)..."
-
-  docker load -i "$images_tar" 2>&1 || {
-    fail "Failed to load images"
-    exit 1
-  }
-
-  log "Images loaded successfully"
 
   # Count loaded images tagged with this release version
   local version image_count
@@ -194,21 +225,52 @@ Glasswing Release Deployer
 Usage: ./scripts/release-deploy.sh [OPTIONS]
 
 Options:
-  --dry-run     Show what would be deployed without executing
-  --help        Show this help
+  --dry-run              Show what would be deployed without executing
+  --release-dir <path>   Path to the release directory (default: auto-detected)
+  --help                 Show this help
 
-Run from the extracted bundle directory.
+Run from the extracted bundle directory, or set GLASSWING_RELEASE_DIR.
 EOF
 }
 
 main() {
-  local mode="${1:-}"
+  local mode=""
+  local release_dir=""
+
+  # Parse arguments
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --dry-run)
+        mode="--dry-run"
+        ;;
+      --release-dir)
+        release_dir="$2"
+        shift
+        ;;
+      --help)
+        usage
+        exit 0
+        ;;
+      *)
+        # Support positional argument as release dir for Makefile convenience
+        release_dir="$1"
+        ;;
+    esac
+    shift
+  done
+
+  # Allow release dir to be passed as positional arg or via --release-dir
+  if [ -n "$release_dir" ]; then
+    BUNDLE_ROOT="$release_dir"
+    STACKS_DIR="$BUNDLE_ROOT/stacks"
+    MANIFEST_FILE="$BUNDLE_ROOT/manifest.yaml"
+  fi
 
   check_prereqs
 
   # Verify we're in a bundle directory
   if [ ! -f "$MANIFEST_FILE" ]; then
-    fail "Not a valid bundle directory (manifest.yaml not found)"
+    fail "Not a valid bundle directory (manifest.yaml not found at $MANIFEST_FILE)"
     fail "Extract the release bundle first: tar xzf glasswing-*.tar.gz"
     exit 1
   fi

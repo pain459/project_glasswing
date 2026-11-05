@@ -446,7 +446,7 @@ release-deploy:
 	echo " Version: $(RELEASE_VERSION)"; \
 	echo "========================================"; \
 	echo ""; \
-	./scripts/release-deploy.sh
+	./scripts/release-deploy.sh --release-dir "$$release_dir" $(RELEASE_DEPLOY_ARGS)
 
 
 release-list:
