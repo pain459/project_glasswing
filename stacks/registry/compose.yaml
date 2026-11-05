@@ -1,0 +1,35 @@
+name: glasswing-registry
+
+services:
+  registry:
+    image: registry:2
+    container_name: glasswing-registry
+    ports:
+      - "${GLASSWING_HOST_IP:-0.0.0.0}:5000:5000"
+    volumes:
+      - registry_data:/var/lib/registry
+    environment:
+      OTEL_SERVICE_NAME: glasswing-registry
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5000/v2/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+    labels:
+      com.glasswing.service: registry
+      com.glasswing.category: infrastructure
+      com.glasswing.monitoring: "true"
+
+volumes:
+  registry_data:
+    name: glasswing-registry-data

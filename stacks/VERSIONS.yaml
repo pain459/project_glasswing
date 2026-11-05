@@ -3,11 +3,12 @@
 # Central registry of image versions for all stacks.
 #
 # Fields:
-#   image    — full image reference (registry/repo)
-#   tag      — current pinned tag or mutable tag
-#   mutable  — true if eligible for automatic updates via Dagu
-#   updated  — date this version was deployed (YYYY-MM-DD)
-#   notes    — optional context (infra-critical, custom-built, etc.)
+#   image       — full image reference (registry/repo)
+#   tag         — current pinned tag or mutable tag
+#   mutable     — true if eligible for automatic updates via Dagu
+#   updated     — date this version was deployed (YYYY-MM-DD)
+#   build-type  — source | pypi | git-fetch | wrap | external
+#   notes       — optional context (infra-critical, custom-built, etc.)
 #
 # Maintained by: scripts/release-manifest.sh
 # Last synced: 2026-11-04
@@ -21,6 +22,7 @@ stacks:
     tag: "v0.167.4"
     mutable: false
     updated: "2026-10-15"
+    build-type: external
     notes: "Critical infra — secrets management, excluded from auto-update"
 
   ollama:
@@ -28,6 +30,7 @@ stacks:
     tag: "0.40.11"
     mutable: false
     updated: "2026-10-20"
+    build-type: external
     notes: "Inference backend — update manually after testing models"
 
   homepage:
@@ -35,6 +38,7 @@ stacks:
     tag: "v2.7.0"
     mutable: false
     updated: "2026-09-12"
+    build-type: external
 
   # ── Observability ────────────────────────────────────────────
 
@@ -43,12 +47,14 @@ stacks:
     tag: "v1.1.2"
     mutable: false
     updated: "2026-10-10"
+    build-type: external
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib
     tag: "0.164.0"
     mutable: false
     updated: "2026-10-10"
+    build-type: external
     notes: "Critical infra — excluded from auto-update"
 
   vector:
@@ -56,6 +62,7 @@ stacks:
     tag: "0.60.0-debian"
     mutable: false
     updated: "2026-10-10"
+    build-type: external
     notes: "Critical infra — excluded from auto-update"
 
   uptime-kuma:
@@ -63,24 +70,28 @@ stacks:
     tag: "2.5.8"
     mutable: false
     updated: "2026-09-20"
+    build-type: external
 
   beszel:
     image: henrygd/beszel
     tag: "0.21.1"
     mutable: false
     updated: "2026-09-15"
+    build-type: external
 
   glances:
     image: nicolargo/glances
     tag: "ubuntu-4.5.8-full"
     mutable: false
     updated: "2026-09-15"
+    build-type: external
 
   langfuse:
     image: docker.langfuse.com/langfuse/langfuse
     tag: "4.75.0"
     mutable: false
     updated: "2026-10-05"
+    build-type: external
     notes: "Multi-service stack — worker + app share version"
 
   # ── AI & MCP Servers ────────────────────────────────────────
@@ -90,41 +101,47 @@ stacks:
     tag: "0.3.0"
     mutable: false
     updated: "2026-10-25"
-    notes: "Custom-built MCP server"
+    build-type: pypi
+    notes: "Custom-built MCP server — pip install open-notebook-mcp"
 
   steel-mcp:
     image: glasswing/steel-mcp
     tag: "3.0.0"
     mutable: false
     updated: "2026-10-25"
-    notes: "Custom-built MCP server"
+    build-type: git-fetch
+    notes: "Custom-built MCP server — git fetch upstream at build time"
 
   serena:
     image: glasswing/serena
     tag: "2.1.1-node22"
     mutable: false
     updated: "2026-10-28"
-    notes: "Custom-built MCP server"
+    build-type: wrap
+    notes: "Custom-built MCP server — wraps ghcr.io/oraios/serena"
 
   sequential-thinking-mcp:
     image: glasswing/sequential-thinking-mcp
     tag: "0.7.0"
     mutable: false
     updated: "2026-10-25"
-    notes: "Custom-built MCP server"
+    build-type: pypi
+    notes: "Custom-built MCP server — pip install mcp-sequential-thinking"
 
   rea-mcp:
     image: glasswing/rea-mcp
     tag: "6.8.0"
     mutable: false
     updated: "2026-10-25"
-    notes: "Custom-built MCP server"
+    build-type: wrap
+    notes: "Custom-built MCP server — wraps node:22-alpine + npm install"
 
   searxng:
     image: searxng/searxng
     tag: "2026.11.2-cccbc9e15"
     mutable: false
     updated: "2026-11-02"
+    build-type: external
 
   # ── Application Services ────────────────────────────────────
 
@@ -133,90 +150,105 @@ stacks:
     tag: "v0.107.79"
     mutable: false
     updated: "2026-10-01"
+    build-type: external
 
   anythingllm:
     image: mintplexlabs/anythingllm
     tag: "1.19"
     mutable: false
     updated: "2026-10-08"
+    build-type: external
 
   cyberchef:
     image: ghcr.io/gchq/cyberchef
     tag: "11.5.0"
     mutable: false
     updated: "2026-09-10"
+    build-type: external
 
   datetime:
     image: ghcr.io/airyland/datetime.app
-    tag: "1.4.2"
-    mutable: false
+    tag: "latest"
+    mutable: true
     updated: "2026-09-10"
+    build-type: external
 
   dbgate:
     image: dbgate/dbgate
     tag: "7.3.2"
     mutable: false
     updated: "2026-09-10"
+    build-type: external
 
   excalidraw:
     image: excalidraw/excalidraw
     tag: "sha-67fe156"
     mutable: false
     updated: "2026-09-10"
+    build-type: external
 
   flowise:
     image: flowiseai/flowise
     tag: "3.1.3"
     mutable: false
     updated: "2026-11-04"
+    build-type: external
 
   forgejo:
     image: codeberg.org/forgejo/forgejo
     tag: "17.0.1"
     mutable: false
     updated: "2026-10-12"
+    build-type: external
 
   homebox:
     image: ghcr.io/sysadminsmedia/homebox
     tag: "0.27.1"
     mutable: false
     updated: "2026-09-25"
+    build-type: external
 
   it-tools:
     image: ghcr.io/corentinth/it-tools
     tag: "2024.10.22-7ca5933"
     mutable: false
     updated: "2026-09-10"
+    build-type: external
 
   jupyterlab:
     image: quay.io/jupyter/scipy-notebook
     tag: "2026-07-28"
     mutable: false
     updated: "2026-07-28"
+    build-type: external
 
   kavita:
     image: ghcr.io/kareadita/kavita
     tag: "0.9.1"
     mutable: false
     updated: "2026-10-01"
+    build-type: external
 
   news-centre:
     image: glanceapp/glance
     tag: "v0.8.7"
     mutable: false
     updated: "2026-10-15"
+    build-type: external
 
   paperless:
     image: ghcr.io/paperless-ngx/paperless-ngx
     tag: "3.4.0"
     mutable: false
     updated: "2026-10-10"
+    build-type: external
 
   plex:
     image: plexinc/pms-docker
     tag: "public"
     mutable: true
     updated: "2026-09-01"
+    build-type: external
     notes: "Mutable tag — eligible for auto-update"
 
   portainer:
@@ -224,18 +256,21 @@ stacks:
     tag: "2.45.3"
     mutable: false
     updated: "2026-10-18"
+    build-type: external
 
   stirling-pdf:
     image: docker.stirlingpdf.com/stirlingtools/stirling-pdf
     tag: "3.2.2"
     mutable: false
     updated: "2026-10-20"
+    build-type: external
 
   steel:
     image: ghcr.io/steel-dev/steel-browser
-    tag: "0.5.5-beta"
-    mutable: false
+    tag: "latest"
+    mutable: true
     updated: "2026-10-22"
+    build-type: external
 
   # ── Custom-Built Stacks ─────────────────────────────────────
 
@@ -244,6 +279,7 @@ stacks:
     tag: "latest"
     mutable: true
     updated: "2026-10-28"
+    build-type: source
     notes: "Custom-built — api + web + worker, all built from Dockerfile"
 
   panchangam:
@@ -251,13 +287,15 @@ stacks:
     tag: "latest"
     mutable: true
     updated: "2026-10-28"
-    notes: "Custom-built"
+    build-type: git-fetch
+    notes: "Custom-built — clones external repo + npm build at build time"
 
   wiki:
     image: glasswing/wiki
     tag: "latest"
     mutable: true
     updated: "2026-10-28"
+    build-type: source
     notes: "Custom-built"
 
   catalog:
@@ -265,6 +303,7 @@ stacks:
     tag: "latest"
     mutable: true
     updated: "2026-10-28"
+    build-type: source
     notes: "Custom-built"
 
   calculators:
@@ -272,6 +311,7 @@ stacks:
     tag: "latest"
     mutable: true
     updated: "2026-10-28"
+    build-type: source
     notes: "Custom-built"
 
   atlas:
@@ -279,6 +319,7 @@ stacks:
     tag: "0.3.0"
     mutable: false
     updated: "2026-10-28"
+    build-type: source
     notes: "Custom-built — engine + web"
 
   # ── Infrastructure Support ──────────────────────────────────
@@ -288,6 +329,7 @@ stacks:
     tag: "17-alpine"
     mutable: false
     updated: "2026-09-01"
+    build-type: external
     notes: "Shared PostgreSQL — excluded from auto-update"
 
   dagu:
@@ -295,10 +337,12 @@ stacks:
     tag: "2.24.0"
     mutable: false
     updated: "2026-10-15"
+    build-type: external
     notes: "Workflow orchestrator — excluded from auto-update"
 
   open-notebook:
     image: lfnovo/open_notebook
-    tag: "v1.4.2"
-    mutable: false
+    tag: "latest"
+    mutable: true
     updated: "2026-10-20"
+    build-type: external

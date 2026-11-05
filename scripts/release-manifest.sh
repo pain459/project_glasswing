@@ -154,21 +154,21 @@ cmd_status() {
   header "Glasswing Version Manifest"
 
   # Print header
-  printf "${BOLD}%-22s %-45s %-15s %-7s %-10s ${NC}\n" \
-    "STACK" "IMAGE" "TAG" "MUTABLE" "UPDATED"
+  printf "${BOLD}%-22s %-12s %-15s %-7s %-10s ${NC}\n" \
+    "STACK" "BUILD-TYPE" "TAG" "MUTABLE" "UPDATED"
 
-  printf "%-22s %-45s %-15s %-7s %-10s\n" \
-    "──────────────────────" "───────────────────────────────────────────────────" \
-    "───────────────" "───────" "──────────"
+  printf "%-22s %-12s %-15s %-7s %-10s\n" \
+    "──────────────────────" "────────────" "───────────────" "───────" "──────────"
 
   local total=0 mutable_count=0
 
   while IFS= read -r stack; do
-    local image tag mutable_flag updated
+    local image tag mutable_flag updated build_type
     image=$(get_field "$stack" "image")
     tag=$(get_field "$stack" "tag")
     mutable_flag=$(get_field "$stack" "mutable")
     updated=$(get_field "$stack" "updated")
+    build_type=$(get_field "$stack" "build-type")
 
     local mut_display
     if [ "$mutable_flag" = "true" ]; then
@@ -178,14 +178,28 @@ cmd_status() {
       mut_display="no"
     fi
 
-    printf "%-22s %-45s %-15s %-7s %-10s\n" \
-      "$stack" "$image" "$tag" "$mut_display" "$updated"
+    printf "%-22s %-12s %-15s %-7s %-10s\n" \
+      "$stack" "${build_type:-external}" "$tag" "$mut_display" "$updated"
 
     total=$((total + 1))
   done < <(get_manifest_stacks)
 
   echo ""
+  # Count build types
+  local source_count=0 pypi_count=0 git_fetch_count=0 wrap_count=0 external_count=0
+  while IFS= read -r stack; do
+    local bt
+    bt=$(get_field "$stack" "build-type")
+    case "$bt" in
+      source) source_count=$((source_count + 1)) ;;
+      pypi) pypi_count=$((pypi_count + 1)) ;;
+      git-fetch) git_fetch_count=$((git_fetch_count + 1)) ;;
+      wrap) wrap_count=$((wrap_count + 1)) ;;
+      *) external_count=$((external_count + 1)) ;;
+    esac
+  done < <(get_manifest_stacks)
   info "Total stacks: $total | Mutable: $mutable_count | Pinned: $((total - mutable_count))"
+  info "Build types: source=$source_count pypi=$pypi_count git-fetch=$git_fetch_count wrap=$wrap_count external=$external_count"
   echo ""
 
   if [ "$show_updates" = true ]; then
@@ -545,6 +559,67 @@ cmd_diff() {
   fi
 }
 
+# ── Command: release-list ─────────────────────────────────────
+
+cmd_release_list() {
+  local releases_dir="$REPO_DIR/releases"
+
+  if [ ! -d "$releases_dir" ]; then
+    info "No releases directory found"
+    return 0
+  fi
+
+  header "Glasswing Releases"
+
+  local count=0
+  for dir in "$releases_dir"/*/; do
+    [ -d "$dir" ] || continue
+    local version
+    version=$(basename "$dir")
+    # Skip hidden directories
+    [[ "$version" == .* ]] && continue
+
+    local archive="$dir/glasswing-${version}.tar.gz"
+    local manifest="$dir/manifest.yaml"
+    local size="-"
+
+    if [ -f "$archive" ]; then
+      size=$(du -sh "$archive" | cut -f1)
+    fi
+
+    local commit="-"
+    if [ -f "$manifest" ]; then
+      commit=$(grep 'commit_short:' "$manifest" | head -1 | sed 's/.*commit_short: *"\{0,1\}\([^"]*\)"\{0,1\}/\1/')
+    fi
+
+    printf "  ${CYAN}%-20s${NC}  %-10s  %s\n" "$version" "$size" "$commit"
+    count=$((count + 1))
+  done
+
+  echo ""
+  info "Total releases: $count"
+}
+
+# ── Command: release-info ─────────────────────────────────────
+
+cmd_release_info() {
+  if [ $# -lt 1 ]; then
+    fail "Usage: $0 release-info <version>"
+    exit 1
+  fi
+
+  local version="$1"
+  local manifest="$REPO_DIR/releases/$version/manifest.yaml"
+
+  if [ ! -f "$manifest" ]; then
+    fail "Release manifest not found: $manifest"
+    exit 1
+  fi
+
+  header "Release Info: $version"
+  cat "$manifest"
+}
+
 # ── Main ──────────────────────────────────────────────────────
 
 usage() {
@@ -560,13 +635,19 @@ Commands:
   sync                   Sync manifest from current compose files
   diff                   Show drift between manifest and compose files
   history                Show recent release-related commits
+  release-list           List all release bundles
+  release-info <ver>     Show release manifest details
+
+Release Pipeline:
+  make release-build     Build all images and save to tar files
+  make release-bundle    Produce offline bundle (requires VERSION)
+  make release-deploy    Deploy a release bundle (requires VERSION)
 
 Examples:
   ./scripts/release-manifest.sh status
   ./scripts/release-manifest.sh bump ollama 0.40.12
-  ./scripts/release-manifest.sh bump flowise 3.2.0
   ./scripts/release-manifest.sh apply
-  ./scripts/release-manifest.sh rollback
+  ./scripts/release-manifest.sh release-list
 EOF
 }
 
@@ -579,6 +660,8 @@ case "${1:-}" in
   sync)               cmd_sync ;;
   diff)               cmd_diff ;;
   history)            cmd_history ;;
+  release-list)       cmd_release_list ;;
+  release-info)       shift; cmd_release_info "$@" ;;
   help|--help|-h)     usage ;;
   "")                 usage ;;
   *)                  fail "Unknown command: $1"; usage; exit 1 ;;

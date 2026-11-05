@@ -11,3 +11,6 @@ stacks/*/repos.env
 stacks/sky/data/ephemeris/
 .agent-memory/
 stacks/versions.rollback.log
+
+# Release artifacts (built bundles, image tarballs, manifests)
+releases/

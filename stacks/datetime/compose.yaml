@@ -5,7 +5,7 @@ services:
     extends:
       file: ../base.yaml
       service: hardened
-    image: ghcr.io/airyland/datetime.app:1.4.2
+    image: ghcr.io/airyland/datetime.app:latest
     container_name: glasswing-datetime
 
     ports:

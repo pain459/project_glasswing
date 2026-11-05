@@ -364,11 +364,110 @@ Manual spot checks that automation cannot prove:
 
 ---
 
+## Offline Release Deployment
+
+The release pipeline produces self-contained bundles that deploy on any host
+with zero network dependency. The build step requires network; the deploy step
+does not.
+
+### How It Works
+
+The pipeline uses `docker save` / `docker load` — no local registry is needed.
+This avoids the need for insecure registry configuration (which requires sudo
+access to `/etc/docker/daemon.json`).
+
+1. **Build:** Each image is built or pulled, tagged with the release version,
+   and exported to an individual tar file via `docker save`.
+2. **Bundle:** Individual tars are loaded back into Docker, then combined into
+   one `images.tar` via `docker save` (deduplicating shared layers). Compose
+   files are patched to reference the release version tags. Everything is
+   archived into a single `.tar.gz`.
+3. **Deploy:** The bundle is extracted on the target host. Images are loaded
+   via `docker load`, checksums are verified, and stacks are started with
+   patched compose files.
+
+### Build (on a connected host)
+
+```bash
+# Build all images (custom + external), save to tar files
+make release-build
+
+# The script resolves a version like 9c021aa-20261105-1 and writes
+# releases/<version>/manifest.yaml with image digests, plus individual
+# image tar files in releases/<version>/images/.
+```
+
+Custom-built stacks (Sky, Serena, MCP servers, etc.) are built from their
+Dockerfiles. External images are pulled at pinned versions from
+`stacks/VERSIONS.yaml`. All images are tagged with the release version and
+saved directly to tar files — no registry push is involved.
+
+### Bundle
+
+```bash
+# Produce an offline-deployable tarball
+make release-bundle RELEASE_VERSION=9c021aa-20261105-1
+```
+
+This creates `releases/<version>/glasswing-<version>.tar.gz` containing:
+- All Docker images as a single tarball (~15–25 GB, shared layers deduplicated)
+- SHA256 checksums for integrity verification
+- Patched compose files referencing release-versioned images
+- Release manifest with image digests and build provenance
+- Deployment script
+
+### Deploy (on any host, no network needed)
+
+```bash
+# Transfer the bundle to the target host, then:
+tar xzf glasswing-9c021aa-20261105-1.tar.gz
+cd glasswing-9c021aa-20261105-1
+./scripts/release-deploy.sh
+```
+
+The deploy script:
+1. Verifies image tarball checksum against the SHA256 hash
+2. Loads all Docker images into the local daemon via `docker load`
+3. Deploys all stacks using patched compose files (Infisical first, then Ollama, then the rest)
+4. Runs health checks on all containers
+
+### Release Management
+
+```bash
+make release-list                  # List available releases
+make release-cleanup KEEP=5        # Remove old releases, keep last 5
+```
+
+### Versioning
+
+Release versions follow the format `<commit-sha>-<date>-<build-number>`:
+- **Commit SHA:** which repository state produced this release
+- **Date:** when it was built (YYYYMMDD)
+- **Build number:** incrementing counter for rebuilds from the same commit
+
+Example: `9c021aa-20261105-1` means commit `9c021aa`, built on 2026-11-05,
+first build from that commit.
+
+### Build Types
+
+Each stack in `stacks/VERSIONS.yaml` has a `build-type` field:
+
+| Build Type | Description | Examples |
+| --- | --- | --- |
+| `source` | Built from repository source | Sky, Wiki, Catalog, Calculators, Atlas |
+| `pypi` | Installed from PyPI at build time | Open Notebook MCP, Sequential Thinking MCP |
+| `git-fetch` | Fetches upstream source at build time | Steel MCP, Panchangam |
+| `wrap` | Custom Dockerfile wrapping upstream image | Serena, REA MCP |
+| `external` | Pulled from external registry | All other stacks (including SearXNG) |
+
+---
+
 ## Rebuild versus restore
 
 | Situation | Path |
 | --- | --- |
 | New hardware, no data to keep | this document (fresh secrets, fresh volumes) |
+| Offline deployment from release bundle | section above (release-build → release-bundle → release-deploy) |
 | Reinstall on the same disks, keep data | [DR_RUNBOOK.md](DR_RUNBOOK.md) — restore Docker volumes and the repo, skip Phases 5–6 because the Infisical database and `.local/` come back with the snapshot |
 | One stack is broken | `make logs STACK=<name>`, `make check STACK=<name>`, restore that volume only ([DR_RUNBOOK.md](DR_RUNBOOK.md#partial-recovery)) |
 

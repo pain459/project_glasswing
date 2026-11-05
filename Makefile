@@ -40,6 +40,7 @@ export DOCKER_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null)
         secrets-check secrets-injection-check secrets-plan network docker-pool doctor access access-check \
         certificates certificates-check mcp-preflight \
         release-status release-bump release-apply release-rollback release-diff release-history release-sync \
+        release-build release-bundle release-deploy release-list release-cleanup \
 
 
 help:
@@ -81,6 +82,13 @@ help:
 	@echo "make release-diff                 Show drift between manifest and compose files"
 	@echo "make release-history              Show recent release-related commits"
 	@echo "make release-sync                 Sync manifest from current compose files"
+	@echo ""
+	@echo "Release Pipeline (build → bundle → deploy):"
+	@echo "make release-build                Build all images, push to local registry"
+	@echo "make release-bundle VERSION=x     Produce offline deployable bundle"
+	@echo "make release-deploy VERSION=x     Deploy a release bundle (offline)"
+	@echo "make release-list                 List available release bundles"
+	@echo "make release-cleanup KEEP=n       Remove old releases (keep last n, default 5)"
 	@echo ""
 	@echo "Optional: INFISICAL_PATH=/custom/path (default /<stack>)"
 	@echo "Optional: stacks/<name>/pre-up.sh and post-up.sh run automatically with make up"
@@ -398,3 +406,63 @@ release-history:
 
 release-sync:
 	@./scripts/release-manifest.sh sync
+
+
+# --------------------------------------------------
+# Release Pipeline — build → bundle → deploy
+# --------------------------------------------------
+
+RELEASE_VERSION ?=
+
+release-build:
+	@./scripts/release-build.sh
+
+
+release-bundle:
+	@if [ -z "$(RELEASE_VERSION)" ]; then \
+	  echo "Usage: make release-bundle RELEASE_VERSION=<version>"; \
+	  echo "Example: make release-bundle RELEASE_VERSION=9c021aa-20261105-1"; \
+	  exit 1; \
+	fi
+	@./scripts/release-bundle.sh $(RELEASE_VERSION)
+
+
+release-deploy:
+	@if [ -z "$(RELEASE_VERSION)" ]; then \
+	  echo "Usage: make release-deploy RELEASE_VERSION=<version>"; \
+	  echo "Example: make release-deploy RELEASE_VERSION=9c021aa-20261105-1"; \
+	  exit 1; \
+	fi
+	@set -eu; \
+	release_dir="releases/$(RELEASE_VERSION)"; \
+	if [ ! -f "$$release_dir/manifest.yaml" ]; then \
+	  echo "[FAIL] Release not found: $$release_dir"; \
+	  echo "Available releases:"; \
+	  ls -1 releases/ 2>/dev/null | grep -v '^\.' || echo "  (none)"; \
+	  exit 1; \
+	fi; \
+	echo "========================================"; \
+	echo " Glasswing - Release Deploy"; \
+	echo " Version: $(RELEASE_VERSION)"; \
+	echo "========================================"; \
+	echo ""; \
+	./scripts/release-deploy.sh
+
+
+release-list:
+	@./scripts/release-manifest.sh release-list
+
+
+release-cleanup:
+	@set -eu; \
+	keep=$(if $(RELEASE_VERSION),$(RELEASE_VERSION),5); \
+	echo "[INFO] Keeping last $$keep releases, removing older ones"; \
+	cd releases && \
+	  ls -1d */ 2>/dev/null | sed 's|/||' | sort -r | tail -n +$$(($$keep + 1)) | \
+	  while read -r old; do \
+	    if [ -d "$$old" ]; then \
+	      echo "[INFO] Removing release $$old"; \
+	      rm -rf "$$old"; \
+	    fi; \
+	  done; \
+	echo "[PASS] Cleanup complete"

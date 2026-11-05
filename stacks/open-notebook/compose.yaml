@@ -34,7 +34,7 @@ services:
     extends:
       file: ../base.yaml
       service: base
-    image: lfnovo/open_notebook:v1.4.2
+    image: lfnovo/open_notebook:latest
 
     depends_on:
       - surrealdb
