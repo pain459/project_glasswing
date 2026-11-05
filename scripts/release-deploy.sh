@@ -149,34 +149,101 @@ load_images() {
 
 # ── Stack deployment ──────────────────────────────────────────
 
-deploy_stack() {
+# Resolve the compose file for a stack. Prefers patched copies in the
+# bundle (from release-bundle), falls back to the live repo.
+resolve_compose_file() {
   local stack="$1"
-  local stack_dir="$STACKS_DIR/$stack"
-  local compose_file="$stack_dir/compose.yaml"
 
-  if [ ! -f "$compose_file" ]; then
-    warn "$stack — compose file not found in bundle"
-    return 1
+  # 1. Patched compose in the bundle/release dir
+  if [ -f "$STACKS_DIR/$stack/compose.yaml" ]; then
+    echo "$STACKS_DIR/$stack/compose.yaml"
+    return 0
   fi
 
-  # Check compose config
-  if ! docker compose -f "$compose_file" config -q 2>/dev/null; then
-    warn "$stack — compose config invalid, skipping"
+  # 2. Live repo (SCRIPT_DIR/../stacks/)
+  local repo_stacks="$(cd "$SCRIPT_DIR/../stacks" 2>/dev/null && pwd)"
+  if [ -n "$repo_stacks" ] && [ -f "$repo_stacks/$stack/compose.yaml" ]; then
+    echo "$repo_stacks/$stack/compose.yaml"
+    return 0
+  fi
+
+  return 1
+}
+
+deploy_stack() {
+  local stack="$1"
+  local compose_file
+
+  compose_file=$(resolve_compose_file "$stack") || {
+    warn "$stack — compose file not found"
     return 1
+  }
+
+  # Check compose config (best-effort: missing env vars from Infisical
+  # cause config validation to fail, but the containers may already be
+  # running with those vars set.  Only skip if the file is truly broken.)
+  local config_ok=true
+  local config_err
+  config_err=$(docker compose -f "$compose_file" config -q 2>&1 || true)
+  if [ -n "$config_err" ]; then
+    if echo "$config_err" | grep -qi "required variable\|missing a value"; then
+      info "$stack — config check skipped (missing env vars)"
+      config_ok=false
+    else
+      warn "$stack — compose config invalid: $config_err"
+      return 1
+    fi
   fi
 
   info "$stack — deploying"
 
-  # Pull is a no-op since images are local; use --ignore-pull-failures
-  docker compose -f "$compose_file" up -d --wait --wait-timeout 180 2>&1
+  # Try docker compose up.  When config_ok is false (missing env vars),
+  # the up command will also fail.  In that case, check if the containers
+  # are already running and healthy — if so, treat it as success.
+  local up_rc=0
+  if [ "$config_ok" = true ]; then
+    docker compose -f "$compose_file" up -d --wait --wait-timeout 180 2>&1 || up_rc=$?
+  else
+    # Suppress stderr noise from missing env vars
+    docker compose -f "$compose_file" up -d --wait --wait-timeout 180 2>/dev/null || up_rc=$?
+  fi
 
-  if [ $? -eq 0 ]; then
+  if [ "$up_rc" -eq 0 ]; then
     log "$stack — deployed"
     return 0
-  else
+  fi
+
+  # If config was fine but up failed, that's a real error
+  if [ "$config_ok" = true ]; then
     fail "$stack — deployment failed"
     return 1
   fi
+
+  # Config had missing vars — check if containers are already running
+  local containers
+  containers=$(docker ps --filter "label=com.docker.compose.project=glasswing-$stack" \
+    --format '{{.Names}} {{.Status}}' 2>/dev/null)
+
+  if [ -n "$containers" ]; then
+    # Check for unhealthy/exited/restarting
+    local bad=false
+    while IFS= read -r cinfo; do
+      if echo "$cinfo" | grep -qi "unhealthy\|exited\|restarting"; then
+        bad=true
+      fi
+    done <<< "$containers"
+
+    if [ "$bad" = true ]; then
+      fail "$stack — containers running but not healthy (env vars missing)"
+      return 1
+    fi
+
+    log "$stack — already running (env vars from Infisical, skipped redeploy)"
+    return 0
+  fi
+
+  fail "$stack — deployment failed (no containers found)"
+  return 1
 }
 
 # ── Health check ──────────────────────────────────────────────
