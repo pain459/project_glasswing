@@ -1,0 +1,19 @@
+# Pathfinder coding model — Qwen 3.8 variant.
+#
+# Build with OLLAMA_MODELFILE=stacks/ollama/models/qwen3.8-opencode.Modelfile \
+#   OLLAMA_BASE_MODEL=qwen3.8:27b OLLAMA_MODEL=qwen3.8-opencode:latest \
+#   make ollama-model
+#
+# Parameters mirror the 3.6 baseline:
+#   num_ctx      131072  matches OpenCode's context limit
+#   num_predict   32768  matches OpenCode's output limit
+#   temperature     0.3
+#
+# The base model already carries top_p 0.95, top_k 20, min_p 0,
+# repeat_penalty 1 and presence_penalty 0. Do not restate them here unless the
+# base model changes.
+FROM qwen3.8:27b
+
+PARAMETER num_ctx 131072
+PARAMETER num_predict 32768
+PARAMETER temperature 0.3
