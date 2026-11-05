@@ -49,7 +49,7 @@ services:
     networks:
       - internal
 
-  web:
+  frontend:
     extends:
       file: ../base.yaml
       service: hardened
@@ -79,6 +79,7 @@ services:
     networks:
       - internal
       - glasswing
+
 
 volumes:
   atlas-data:

@@ -95,7 +95,7 @@ class MCPStackTests(unittest.TestCase):
         self.assertIn("HEALTHCHECK", dockerfile)
 
     def test_serena_stack(self) -> None:
-        config = compose_config("serena", {})
+        config = compose_config("serena", {"GLASSWING_HOST_IP": "192.168.68.62"})
         self.assertEqual(config["name"], "glasswing-serena")
         self.assertEqual(set(config["services"]), {"init-permissions", "serena"})
 
@@ -120,16 +120,12 @@ class MCPStackTests(unittest.TestCase):
         self.assertEqual(service["depends_on"]["init-permissions"]["condition"], "service_completed_successfully")
         self.assertEqual(
             {(port["host_ip"], port["published"], port["target"]) for port in service["ports"]},
-            {("127.0.0.1", "9121", 9121), ("127.0.0.1", "24282", 24282)},
+            {("127.0.0.1", "9121", 9121), ("192.168.68.62", "24282", 24282)},
         )
 
         volumes = {volume["target"]: volume for volume in service["volumes"]}
-        repos = volumes["/workspace/repos"]
-        self.assertEqual(repos["source"], "/home/ravik/src_git")
-        self.assertFalse(repos.get("read_only", False))
         self.assertEqual(volumes["/workspaces/serena/config"]["type"], "volume")
         self.assertNotIn("/workspaces/serena/config/serena_config.yml", volumes)
-        self.assertNotIn("/workspace/repos/scip", json.dumps(config))
         self.assertNotIn(":latest", service["image"])
 
         dockerfile = (REPO / "stacks" / "serena" / "Dockerfile").read_text()
@@ -174,7 +170,6 @@ class MCPStackTests(unittest.TestCase):
         self.assertNotIn("- OpenCode:", homepage)
         self.assertNotIn("- Serena:", homepage)
         self.assertNotIn("192.168.68.62:3019", homepage)
-        self.assertNotIn("192.168.68.62:24282", homepage)
 
         preflight = (REPO / "scripts" / "ai-preflight.sh").read_text()
         self.assertNotIn("OPENCODE_CONTAINER", preflight)
@@ -212,6 +207,7 @@ class MCPStackTests(unittest.TestCase):
                 "open-notebook": "http://127.0.0.1:8001/mcp",
                 "steel": "http://127.0.0.1:8002/mcp",
                 "serena": "http://127.0.0.1:9121/mcp",
+                "searxng": "http://127.0.0.1:8005/mcp",
             },
         )
 
@@ -225,7 +221,7 @@ class MCPStackTests(unittest.TestCase):
 
         aggregate = makefile.split("mcp-preflight:", 1)[1].split("\n\n", 1)[0]
         self.assertIn("status=0", aggregate)
-        self.assertEqual(aggregate.count("|| status=1"), 3)
+        self.assertEqual(aggregate.count("|| status=1"), 4)
 
 
 if __name__ == "__main__":

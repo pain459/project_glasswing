@@ -36,10 +36,17 @@ Host IP: `192.168.68.62` (from `GLASSWING_HOST_IP`, else `stacks/infisical/.env`
 | `news-centre` | `glance` | http://192.168.68.62:3026 | 8080/tcp | glasswing | LAN |
 | `news-centre` | `freshrss` | http://192.168.68.62:3027 | 80/tcp | glasswing | LAN |
 | `searxng` | `searxng` | http://192.168.68.62:3028 | 8080/tcp | glasswing+internal | LAN |
+| `catalog` | `catalog` | http://192.168.68.62:3029 | 80/tcp | glasswing | LAN |
+| `wiki` | `wiki` | http://192.168.68.62:3030 | 80/tcp | glasswing | LAN |
+| `vikunja` | `vikunja` | http://192.168.68.62:3031 | 3456/tcp | glasswing | LAN |
+| `baserow` | `baserow` | http://192.168.68.62:3032 | 80/tcp | glasswing | LAN |
+| `wud` | `wud` | http://192.168.68.62:3033 | 3000/tcp | glasswing | LAN |
 | `steel` | `steel` | http://192.168.68.62:3100 | 3000/tcp | glasswing | LAN |
 | `otel-collector` | `otel-collector` | http://192.168.68.62:4318 | 4318/tcp | glasswing | LAN |
+| `registry` | `registry` | http://192.168.68.62:5000 | 5000/tcp | default | LAN |
 | `open-notebook` | `open_notebook` | http://192.168.68.62:5055 | 5055/tcp | internal+glasswing | LAN |
 | `sky` | `web` | http://192.168.68.62:5088 | 3000/tcp | internal+glasswing | LAN |
+| `atlas` | `frontend` | http://192.168.68.62:5090 | 80/tcp | internal+glasswing | LAN |
 | `postgres` | `postgres` | postgres://192.168.68.62:5432 | 5432/tcp | glasswing | LAN |
 | `open-notebook-mcp` | `open-notebook-mcp` | http://127.0.0.1:8001 | 8000/tcp | glasswing | host-only |
 | `steel-mcp` | `steel-mcp` | http://127.0.0.1:8002 | 8000/tcp | glasswing | host-only |
