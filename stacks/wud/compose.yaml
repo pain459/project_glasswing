@@ -1,0 +1,50 @@
+
+name: glasswing-wud
+
+services:
+  wud:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: getwud/wud:9.7.0
+    container_name: glasswing-wud
+
+    ports:
+      - "${GLASSWING_HOST_IP:?required}:3033:3000"
+
+    environment:
+      OTEL_SERVICE_NAME: glasswing-wud
+      WUD_WATCHER_LOCAL_CRON: 0 * * * *
+      WUD_WATCHER_LOCAL_WATCHALL: true
+      WUD_AUTH_ADMIN_PASSWORD: ${WUD_AUTH_ADMIN_PASSWORD:?Required from Infisical}
+      WUD_AUTH_ADMIN_USER: ${WUD_AUTH_ADMIN_USER:?Required from Infisical}
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - wud_store:/store
+
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - -f
+        - "http://127.0.0.1:3000/health"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    labels:
+      com.glasswing.service: wud
+
+    networks:
+      - glasswing
+
+volumes:
+  wud_store:
+    name: glasswing-wud_store
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

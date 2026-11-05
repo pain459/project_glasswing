@@ -3,6 +3,12 @@
 # Base URL: 192.168.68.62
 
 - Core Infrastructure:
+    - wud:
+        icon: mdi-update
+        href: http://192.168.68.62:3033
+        description: Container Update Monitor — Track Latest Image Versions
+        container: glasswing-wud
+        siteMonitor: http://192.168.68.62:3033/health
     - Infisical:
         icon: infisical.png
         href: https://192.168.68.62:8095

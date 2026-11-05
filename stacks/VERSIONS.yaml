@@ -144,6 +144,13 @@ stacks:
     build-type: external
 
   # ── Application Services ────────────────────────────────────
+  wud:
+    image: getwud/wud
+    tag: "9.7.0"
+    mutable: false
+    updated: "2026-11-05"
+    build-type: external
+    notes: "Monitors all Glasswing containers for image updates via Docker socket"
   baserow:
     image: baserow/baserow
     tag: "2.4.1"
