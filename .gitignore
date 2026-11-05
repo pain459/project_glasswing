@@ -8,6 +8,7 @@ stacks/panchangam/src/
 stacks/*/compose.override.yaml
 stacks/*/repos.env
 stacks/*/*.registry
+!stacks/global-secrets.registry
 /tests/__pycache__/*
 stacks/sky/data/ephemeris/
 .agent-memory/
