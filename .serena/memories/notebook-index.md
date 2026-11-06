@@ -29,6 +29,7 @@ Open Notebook index for project_glasswing (commit 2c22a7f, 2026-11-06):
 - Decision - project_glasswing - Langfuse Stack Removal (note:0prkukcx59sq6777ju34)
 
 ## Fixes
+- Fix - project_glasswing - Electricity Pricing Idle Amortization Inconsistent (note:um2fbafn789e4b3j18yr)
 - Fix - project_glasswing - Infisical Redis RDB Format Version 12 Incompatibility (note:e0kzddj977hsgvbczcno)
 - Fix - project_glasswing - Serena No Active Project on Startup (note:d0nz2qh8czn2hf0fbv5i)
 - Fix - project_glasswing - Open Notebook SurrealDB Tag Not Found (note:x640bmomovtmgpet5ugq)

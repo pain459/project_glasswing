@@ -17,8 +17,8 @@
           "limit": { "context": 131072, "output": 32768 },
           "body": { "reasoning_effort": "none", "temperature": 0.3 },
           "cost": {
-            "input": 0.0485,
-            "output": 0.2063,
+            "input": 0.17,
+            "output": 0.288,
             "cache_read": 0,
             "cache_write": 0
           }
@@ -28,8 +28,8 @@
           "limit": { "context": 131072, "output": 32768 },
           "body": { "reasoning_effort": "none", "temperature": 0.3 },
           "cost": {
-            "input": 0.0485,
-            "output": 0.2063,
+            "input": 0.17,
+            "output": 0.288,
             "cache_read": 0,
             "cache_write": 0
           }
