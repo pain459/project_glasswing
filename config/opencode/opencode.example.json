@@ -1,6 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "ollama/qwen3.6-opencode:latest",
+  "model": "ollama/qwen3.8-opencode:latest",
   "shell": "/bin/bash",
   "update": "disable",
   "providers": {
@@ -10,8 +10,8 @@
         "baseURL": "http://192.168.68.62:11434/v1"
       },
       "models": {
-        "qwen3.6-opencode:latest": {
-          "name": "Qwen 3.6 OpenCode (Ollama, 128k)",
+        "qwen3.8-opencode:latest": {
+          "name": "Qwen 3.8 OpenCode (Ollama, 128k)",
           "limit": { "context": 131072, "output": 32768 },
           "body": { "reasoning_effort": "none", "temperature": 0.3 },
           "cost": {
@@ -21,8 +21,8 @@
             "cache_write": 0
           }
         },
-        "qwen3.6-resilient:latest": {
-          "name": "Qwen 3.6 Resilient (Ollama, 128k)",
+        "qwen3.8-resilient:latest": {
+          "name": "Qwen 3.8 Resilient (Ollama, 128k)",
           "limit": { "context": 131072, "output": 32768 },
           "body": { "reasoning_effort": "none", "temperature": 0.3 },
           "cost": {
@@ -32,8 +32,8 @@
             "cache_write": 0
           }
         },
-        "qwen3.6:27b": {
-          "name": "Qwen 3.6 27B Base (Ollama)",
+        "qwen3.8:27b": {
+          "name": "Qwen 3.8 27B Base (Ollama)",
           "limit": { "context": 131072, "output": 32768 },
           "cost": {
             "input": 0.0485,

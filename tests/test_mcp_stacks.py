@@ -200,7 +200,7 @@ class MCPStackTests(unittest.TestCase):
         self.assertIn("host-installed OpenCode", readme)
 
         example = json.loads((REPO / "config" / "opencode" / "opencode.example.json").read_text())
-        self.assertEqual(example["model"], "ollama/qwen3.6-opencode:latest")
+        self.assertEqual(example["model"], "ollama/qwen3.8-opencode:latest")
         self.assertEqual(
             {name: value["url"] for name, value in example["mcp"].items()},
             {

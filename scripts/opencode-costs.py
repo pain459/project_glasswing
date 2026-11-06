@@ -32,11 +32,11 @@ from datetime import datetime, timezone
 PRICING = {
     # Pattern: (input $/MTok, output $/MTok)
     # Full-cost: includes active inference + model-loaded idle time (~45s/turn)
-    "qwen3.6": (0.0485, 0.2063),   # RTX 4090, ~66 tok/s output
+    "qwen3.8": (0.0485, 0.2063),   # RTX 4090, ~66 tok/s output
     "llama3.1": (0.0434, 0.1104),  # RTX 4090, ~160 tok/s output
 }
 
-DEFAULT_PRICING = (0.0485, 0.2063)  # fallback: Qwen 3.6 full-cost electricity
+DEFAULT_PRICING = (0.0485, 0.2063)  # fallback: Qwen 3.8 full-cost electricity
 
 # ── Comparison pricing: what you'd pay on other cloud providers ──
 # These are approximate equivalents for a ~27B-34B parameter coding model.

@@ -29,8 +29,8 @@ prove the container can use it; the preflight checks the container itself.
 
 ## Model
 
-`qwen3.6-opencode:latest` is built from the checked-in
-[`models/qwen3.6-opencode.Modelfile`](models/qwen3.6-opencode.Modelfile) as part
+`qwen3.8-opencode:latest` is built from the checked-in
+[`models/qwen3.8-opencode.Modelfile`](models/qwen3.8-opencode.Modelfile) as part
 of the normal deployment:
 
 ```bash
@@ -39,8 +39,8 @@ make up STACK=ollama
 
 After the container is healthy, `stacks/ollama/post-up.sh`:
 
-1. Pulls `qwen3.6:27b` if it is missing.
-2. Builds or refreshes `qwen3.6-opencode:latest` from the Modelfile.
+1. Pulls `qwen3.8:27b` if it is missing.
+2. Builds or refreshes `qwen3.8-opencode:latest` from the Modelfile.
 3. Runs the Ollama preflight.
 
 The model is only rebuilt when its effective `num_ctx`, `num_predict` or
@@ -54,13 +54,13 @@ FORCE=1 make ollama-model
 running. To build against a different base without editing the file:
 
 ```bash
-make ollama-model OLLAMA_BASE_MODEL=qwen3.6:27b
+make ollama-model OLLAMA_BASE_MODEL=qwen3.8:27b
 ```
 
 The effective parameters are visible with:
 
 ```bash
-docker exec glasswing-ollama ollama show qwen3.6-opencode:latest --modelfile
+docker exec glasswing-ollama ollama show qwen3.8-opencode:latest --modelfile
 ```
 
 ## GPU residency

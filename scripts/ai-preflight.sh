@@ -38,7 +38,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 OLLAMA_CONTAINER="${OLLAMA_CONTAINER:-glasswing-ollama}"
 OLLAMA_URL="${OLLAMA_URL:-http://192.168.68.62:11434}"
-MODEL="${OLLAMA_MODEL:-qwen3.6-opencode:latest}"
+MODEL="${OLLAMA_MODEL:-qwen3.8-opencode:latest}"
 OPENCODE_BIN="${OPENCODE_BIN:-$HOME/.opencode/bin/opencode}"
 OPENCODE_CONFIG="${OPENCODE_CONFIG:-$HOME/.config/opencode/opencode.json}"
 

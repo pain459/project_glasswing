@@ -13,9 +13,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
 OLLAMA_CONTAINER="${OLLAMA_CONTAINER:-glasswing-ollama}"
-OLLAMA_MODEL="${OLLAMA_MODEL:-qwen3.6-opencode:latest}"
-OLLAMA_BASE_MODEL="${OLLAMA_BASE_MODEL:-qwen3.6:27b}"
-OLLAMA_MODELFILE="${OLLAMA_MODELFILE:-stacks/ollama/models/qwen3.6-opencode.Modelfile}"
+OLLAMA_MODEL="${OLLAMA_MODEL:-qwen3.8-opencode:latest}"
+OLLAMA_BASE_MODEL="${OLLAMA_BASE_MODEL:-qwen3.8:27b}"
+OLLAMA_MODELFILE="${OLLAMA_MODELFILE:-stacks/ollama/models/qwen3.8-opencode.Modelfile}"
 FORCE="${FORCE:-0}"
 
 log() { printf '[INFO] %s\n' "$*"; }
