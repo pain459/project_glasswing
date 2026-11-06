@@ -42,6 +42,22 @@ stacks:
 
   # ── Observability ────────────────────────────────────────────
 
+  umami:
+    image: umamisoftware/umami
+    tag: "3.4.1"
+    mutable: false
+    updated: "2026-11-05"
+    build-type: external
+    notes: "Privacy-focused web analytics. Uses shared PostgreSQL."
+
+  mcp-proxy:
+    image: caddy
+    tag: "2.11.7-alpine"
+    mutable: false
+    updated: "2026-11-05"
+    build-type: external
+    notes: "Caddy reverse proxy for MCP servers — logs to OpenObserve"
+
   openobserve:
     image: public.ecr.aws/zinclabs/openobserve
     tag: "v1.1.2"

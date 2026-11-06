@@ -3,6 +3,13 @@
 # Base URL: 192.168.68.62
 
 - Core Infrastructure:
+    - Umami:
+        icon: mdi-chart-box
+        href: http://192.168.68.62:3020
+        description: Privacy-Focused Web Analytics — No Cookies
+        container: glasswing-umami
+        siteMonitor: http://192.168.68.62:3020/
+
     - wud:
         icon: mdi-update
         href: http://192.168.68.62:3033
@@ -119,6 +126,11 @@
         siteMonitor: http://192.168.68.62:3028/healthz
 
 - MCP Servers:
+    - MCP Proxy:
+        icon: mdi-network
+        description: MCP Analytics Proxy — Logs to OpenObserve
+        container: glasswing-mcp-proxy
+
     - Open Notebook MCP:
         icon: open-notebook.png
         href: http://192.168.68.62:8502

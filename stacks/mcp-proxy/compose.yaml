@@ -1,0 +1,63 @@
+
+name: glasswing-mcp-proxy
+
+# Caddy reverse proxy in front of all MCP servers.
+# Logs every request as structured JSON to stdout (Vector -> OpenObserve).
+#
+# Port mapping (proxy -> MCP server):
+#   9001 -> Serena :9121
+#   9002 -> Steel MCP :8000
+#   9003 -> Open Notebook MCP :8000
+#   9004 -> SearXNG MCP :8000
+#   9005 -> REA MCP :8000
+#   9006 -> Sequential Thinking MCP :8000
+
+services:
+  mcp-proxy:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: caddy:2.11.7-alpine
+    container_name: glasswing-mcp-proxy
+
+    ports:
+      - "127.0.0.1:9001:9001"
+      - "127.0.0.1:9002:9002"
+      - "127.0.0.1:9003:9003"
+      - "127.0.0.1:9004:9004"
+      - "127.0.0.1:9005:9005"
+      - "127.0.0.1:9006:9006"
+
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - mcp_proxy_data:/data
+
+    environment:
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+      OTEL_SERVICE_NAME: glasswing-mcp-proxy
+
+    healthcheck:
+      test: ["CMD-SHELL", "caddy validate --config /etc/caddy/Caddyfile > /dev/null 2>&1 && exit 0 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    mem_limit: 128m
+    pids_limit: 64
+    cpus: 0.25
+
+    labels:
+      com.glasswing.service: mcp-proxy
+
+    networks:
+      - glasswing
+
+volumes:
+  mcp_proxy_data:
+    name: glasswing-mcp-proxy-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
