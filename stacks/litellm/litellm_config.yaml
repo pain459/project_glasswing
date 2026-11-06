@@ -39,8 +39,13 @@ model_list:
       # GPU-marginal only would be $0.0042/$0.1224; full-cost adds the
       # whole-server idle overlay (₹47/day ÷ 3M tokens). See the header.
       # Input: $0.170/MTok, Output: $0.288/MTok
+      # Cached input (KV prefix reuse) is charged 0: Ollama reports
+      # prompt_tokens_details.cached_tokens and those tokens are never
+      # re-prefilled. Verified 2026-11-06: 18,430/18,942 tokens cached on a
+      # repeat call, prefill only ~510 tokens.
       input_cost_per_token: 0.00000017
       output_cost_per_token: 0.000000288
+      cache_read_input_token_cost: 0
 
   # ── Failback coding model ────────────────────────────────────
   # Must be the *tuned* qwen3.6-opencode alias, not the qwen3.6:27b base
@@ -52,8 +57,10 @@ model_list:
       model: openai/qwen3.6-opencode:latest
       api_base: http://glasswing-ollama:11434/v1
       api_key: ollama
+      # Same rates as primary; cached input priced 0 (see primary entry).
       input_cost_per_token: 0.00000017
       output_cost_per_token: 0.000000288
+      cache_read_input_token_cost: 0
 
   # ── Llama 3.1 8B (lightweight) ───────────────────────────────
   - model_name: llama3.1

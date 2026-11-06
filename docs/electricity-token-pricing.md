@@ -95,6 +95,7 @@ as usage falls. Output stays marginal-dominated at every realistic volume.
 |---|---|
 | Input | $0.170/MTok (0.00000017 per token) |
 | Output | $0.288/MTok (0.000000288 per token) |
+| **Cached input (KV prefix reuse)** | **$0 — `cache_read_input_token_cost: 0`** |
 | Basis | GPU-marginal (₹0.40/₹11.6) + ₹15.7 overlay, ref 3M tokens/day |
 
 Booked for both `qwen3.8-opencode` (primary) and `qwen3.6` (failback, same
@@ -110,7 +111,9 @@ The heavy coding day: 152 gateway requests → 11 agent turn-clusters, 7.19M
 prompt tokens (median 48,362/turn, max 91,120), 8,150 completion tokens
 (median 41/turn). GPU busy ≈ 0.33 kWh, idle overlay 5.23 kWh → ₹50 total.
 At the booked (3M-reference) prices the ledger shows ₹115 for that day; the
-truth was ₹50 and a light day under the same prices would overstate — the
+truth is lower still — most of those 7.2M billed input tokens were KV-reuse
+carried into agent loops (measured ~97% cached on repeats), so the actual
+prefill energy was a fraction of the full-input billing and a light day under the same prices would overstate — the
 ladder above is the calibration map. Median turns are prefill-dominated:
 completion work (41 tokens/turn) is negligible against 48k-token prompts.
 
@@ -139,6 +142,11 @@ kwh_per_million_tokens = power_watts / (3.6 × tokens_per_second)
 cost_inr = kwh_per_million_tokens × 9
 cost_usd_param = cost_inr / 94.91
 idle_overlay_per_million_tokens = (idle_watts × 24 / 1000) × 9 / (reference_Mtok_per_day)
+
+# gateway billing (litellm):
+billed = (prompt_tokens - cached_tokens) × input_rate   # cached: free
+       + cached_tokens × 0
+       + output_tokens × output_rate
 ```
 
 ## Assumptions & Limitations
@@ -155,7 +163,15 @@ idle_overlay_per_million_tokens = (idle_watts × 24 / 1000) × 9 / (reference_Mt
 4. **Generation throughput band 75-113 tok/s.** Booked price uses 89 tok/s
    (measured with matched power sampling); faster output would lower the
    marginal ₹/MTok by up to ~30%.
-5. **Cache reads are free** (KV-reuse; negligible power).
+5. **Cached tokens are truly free, implemented at the gateway.** Ollama reports
+   `prompt_tokens_details.cached_tokens` on every response (measured: an
+   18,942-token repeat call carried 18,430 cached tokens and prefilled ~512;
+   0.54 s vs 3.13 s wall time). The gateway charges cached tokens $0 via
+   `cache_read_input_token_cost: 0` — only fresh tokens pay. OpenCode's own
+   token accounting mirrors this (`cache.read`), so both displays agree to the
+   bit. Residual attention-over-cache cost is inside the prefill power figure.
+   Rows billed before 2026-11-06 08:52 UTC were charged at full input — the
+   ledger overstates session-days that used heavy agent loops.
 6. **FX ₹94.91/$** dates from Oct 2026 — display-only; verify before quoting
    USD externally.
 7. **llama3.1 basis is stale** (2026-10-30) pending a safe re-benchmark.
