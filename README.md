@@ -198,6 +198,7 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 | Stack | Port(s) | Purpose |
 | --- | --- | --- |
 | `ollama` | 11434 | Local LLM inference on the RTX 4090 |
+| `litellm` | 3035 | OpenAI-compatible gateway with token and cost tracking |
 | `flowise` | 3002 | Visual agent flows |
 | `uptime-kuma` | 3003 | Availability checks |
 | `dbgate` | 3004 | Database client |

@@ -135,7 +135,9 @@ To recalibrate pricing after hardware changes, model updates, or rate changes:
 
 3. **Recalculate pricing** using the formula above.
 
-4. **Update** `/home/ravik/.config/opencode/opencode.json` and `config/opencode/opencode.example.json`.
+4. **Update** `stacks/litellm/litellm_config.yaml` (the authoritative rates used
+   for spend tracking), then mirror them in `/home/ravik/.config/opencode/opencode.json`
+   and `config/opencode/opencode.example.json` for client-side display.
 
 5. **Reload OpenCode:**
    ```bash
@@ -148,8 +150,13 @@ To recalibrate pricing after hardware changes, model updates, or rate changes:
 |---|---|
 | `/home/ravik/.config/opencode/opencode.json` | Active OpenCode config with cost values |
 | `config/opencode/opencode.example.json` | Repository reference copy |
-| `scripts/opencode-costs.py` | Cost estimation and comparison script |
+| `stacks/litellm/litellm_config.yaml` | Authoritative rates used by the gateway ledger |
+| `scripts/opencode-costs.py` | Reads the LiteLLM spend ledger and compares cloud costs |
 
 ## Verification
 
-Run `python3 scripts/opencode-costs.py` to see current session costs. The "Local (Ollama)" row shows nonzero electricity-based costs that include both active inference and model-loaded idle time.
+Run `python3 scripts/opencode-costs.py` to see usage recorded by the LiteLLM
+gateway. OpenCode no longer reports or estimates costs itself: every request is
+priced at the gateway from `stacks/litellm/litellm_config.yaml` and stored in the
+`litellm` Postgres database. The same totals are available in the LiteLLM Admin
+UI at `http://192.168.68.62:3035/ui`.

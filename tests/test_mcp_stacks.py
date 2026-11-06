@@ -200,7 +200,16 @@ class MCPStackTests(unittest.TestCase):
         self.assertIn("host-installed OpenCode", readme)
 
         example = json.loads((REPO / "config" / "opencode" / "opencode.example.json").read_text())
-        self.assertEqual(example["model"], "ollama/qwen3.8-opencode:latest")
+        self.assertEqual(example["model"], "litellm/qwen3.8-opencode")
+        self.assertEqual(
+            example["providers"]["litellm"]["settings"]["baseURL"],
+            "http://192.168.68.62:3035/v1",
+        )
+        self.assertEqual(
+            example["providers"]["litellm"]["package"],
+            "@opencode/ai/providers/openai-compatible",
+        )
+        self.assertNotIn("ollama", example["providers"])
         self.assertEqual(
             {name: value["url"] for name, value in example["mcp"].items()},
             {

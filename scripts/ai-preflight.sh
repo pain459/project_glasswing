@@ -11,8 +11,9 @@
 #   - Ollama can see the host GPU
 #   - the agreed runtime flags are set in the Ollama container
 #   - the coding model was built with the agreed context and output limits
+#   - the LiteLLM gateway container is running
 #   - the OpenCode limits, temperature, reasoning and compaction agree with it
-#   - host OpenCode can reach Ollama
+#   - host OpenCode can reach LiteLLM
 #   - the effective host OpenCode configuration selects the expected model
 #   - a real standalone host OpenCode prompt completes with the default model
 #   - a small coding prompt returns a complete answer with thinking disabled
@@ -38,9 +39,21 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 OLLAMA_CONTAINER="${OLLAMA_CONTAINER:-glasswing-ollama}"
 OLLAMA_URL="${OLLAMA_URL:-http://192.168.68.62:11434}"
-MODEL="${OLLAMA_MODEL:-qwen3.8-opencode:latest}"
+OLLAMA_MODEL="${OLLAMA_MODEL:-qwen3.8-opencode:latest}"
+
+# LiteLLM is the only path OpenCode uses; Ollama is the backend behind it.
+LITELLM_CONTAINER="${LITELLM_CONTAINER:-glasswing-litellm}"
+LITELLM_URL="${LITELLM_URL:-http://192.168.68.62:3035}"
+LITELLM_MODEL="${LITELLM_MODEL:-qwen3.8-opencode}"
+LITELLM_MASTER_KEY="${LITELLM_MASTER_KEY:-}"
+if [ -z "$LITELLM_MASTER_KEY" ] && [ -f "$ROOT_DIR/stacks/litellm/litellm-config.registry" ]; then
+  LITELLM_MASTER_KEY="$(sed -n 's/^LITELLM_MASTER_KEY=//p' \
+    "$ROOT_DIR/stacks/litellm/litellm-config.registry" | head -n1)"
+fi
+
 OPENCODE_BIN="${OPENCODE_BIN:-$HOME/.opencode/bin/opencode}"
 OPENCODE_CONFIG="${OPENCODE_CONFIG:-$HOME/.config/opencode/opencode.json}"
+OPENCODE_MODEL="litellm/$LITELLM_MODEL"
 
 EXPECTED_CONTEXT=131072
 EXPECTED_OUTPUT=32768
@@ -67,6 +80,19 @@ get_url() {
 post_json_url() {
   local timeout=$1 payload=$2 url=$3
   printf '%s' "$payload" | curl -fsS --max-time "$timeout" \
+    -H 'Content-Type: application/json' --data-binary @- "$url"
+}
+
+get_litellm() {
+  local timeout=$1 url=$2
+  curl -fsS --max-time "$timeout" \
+    -H "Authorization: Bearer $LITELLM_MASTER_KEY" "$url"
+}
+
+post_litellm() {
+  local timeout=$1 payload=$2 url=$3
+  printf '%s' "$payload" | curl -fsS --max-time "$timeout" \
+    -H "Authorization: Bearer $LITELLM_MASTER_KEY" \
     -H 'Content-Type: application/json' --data-binary @- "$url"
 }
 
@@ -104,8 +130,8 @@ check_env OLLAMA_NUM_PARALLEL 1
 check_env OLLAMA_MAX_LOADED_MODELS 1
 check_env OLLAMA_KEEP_ALIVE 30m
 
-log "Model parameters ($MODEL)"
-if modelfile="$(docker exec "$OLLAMA_CONTAINER" ollama show "$MODEL" --modelfile 2>/dev/null)"; then
+log "Model parameters ($OLLAMA_MODEL)"
+if modelfile="$(docker exec "$OLLAMA_CONTAINER" ollama show "$OLLAMA_MODEL" --modelfile 2>/dev/null)"; then
   check_param() {
     local name=$1 expected=$2 actual
     actual="$(printf '%s\n' "$modelfile" | tr -d '\r' \
@@ -120,10 +146,27 @@ if modelfile="$(docker exec "$OLLAMA_CONTAINER" ollama show "$MODEL" --modelfile
   check_param num_predict "$EXPECTED_OUTPUT"
   check_param temperature "$EXPECTED_TEMPERATURE"
 else
-  fail "Model $MODEL is not present (run: make ollama-model)"
+  fail "Model $OLLAMA_MODEL is not present (run: make ollama-model)"
 fi
 
 if [ "$WITH_OPENCODE" = "1" ]; then
+  log "LiteLLM gateway"
+  if container_running "$LITELLM_CONTAINER"; then
+    pass "$LITELLM_CONTAINER is running"
+  else
+    fail "$LITELLM_CONTAINER is not running (make up STACK=litellm)"
+  fi
+
+  if [ -z "$LITELLM_MASTER_KEY" ]; then
+    fail "LITELLM_MASTER_KEY is unavailable; export it or populate stacks/litellm/litellm-config.registry"
+  elif models_json="$(get_litellm 10 "$LITELLM_URL/v1/models" 2>/dev/null)" \
+      && printf '%s' "$models_json" | jq -e --arg m "$LITELLM_MODEL" \
+        '[.data[]?.id] | index($m) != null' >/dev/null 2>&1; then
+    pass "gateway exposes $LITELLM_MODEL"
+  else
+    fail "gateway does not expose '$LITELLM_MODEL' at $LITELLM_URL/v1/models"
+  fi
+
   log "Host OpenCode configuration"
   if [ -x "$OPENCODE_BIN" ]; then
     pass "host OpenCode binary is executable: $OPENCODE_BIN"
@@ -133,19 +176,40 @@ if [ "$WITH_OPENCODE" = "1" ]; then
 
   if config_json="$(grep -v '^[[:space:]]*//' "$OPENCODE_CONFIG" 2>/dev/null)" \
       && printf '%s' "$config_json" | jq -e . >/dev/null 2>&1; then
-    cfg() { printf '%s' "$config_json" | jq -r --arg m "$MODEL" "$1"; }
+    cfg() { printf '%s' "$config_json" | jq -r --arg m "$LITELLM_MODEL" "$1"; }
 
     cfg_model="$(cfg '.model')"
-    if [ "$cfg_model" = "ollama/$MODEL" ]; then
+    if [ "$cfg_model" = "$OPENCODE_MODEL" ]; then
       pass "default model is $cfg_model"
     else
-      fail "default model is '${cfg_model:-unset}', expected 'ollama/$MODEL'"
+      fail "default model is '${cfg_model:-unset}', expected '$OPENCODE_MODEL'"
     fi
 
-    cfg_context="$(cfg '.providers.ollama.models[$m].limit.context // empty')"
-    cfg_output="$(cfg '.providers.ollama.models[$m].limit.output // empty')"
-    cfg_temp="$(cfg '.providers.ollama.models[$m].body.temperature // empty')"
-    cfg_reasoning="$(cfg '.providers.ollama.models[$m].body.reasoning_effort // empty')"
+    cfg_pkg="$(cfg '.providers.litellm.package // empty')"
+    if [ "$cfg_pkg" = "@opencode/ai/providers/openai-compatible" ]; then
+      pass "provider package is $cfg_pkg"
+    else
+      fail "provider package is '${cfg_pkg:-unset}', expected '@opencode/ai/providers/openai-compatible'"
+    fi
+
+    cfg_base="$(cfg '.providers.litellm.settings.baseURL // empty')"
+    if [ "$cfg_base" = "$LITELLM_URL/v1" ]; then
+      pass "provider baseURL is $cfg_base"
+    else
+      fail "provider baseURL is '${cfg_base:-unset}', expected '$LITELLM_URL/v1'"
+    fi
+
+    cfg_key="$(cfg '.providers.litellm.settings.apiKey // empty')"
+    if [ -n "$cfg_key" ]; then
+      pass "provider API key is set"
+    else
+      fail "provider API key is unset; set LITELLM_MASTER_KEY in $OPENCODE_CONFIG"
+    fi
+
+    cfg_context="$(cfg '.providers.litellm.models[$m].limit.context // empty')"
+    cfg_output="$(cfg '.providers.litellm.models[$m].limit.output // empty')"
+    cfg_temp="$(cfg '.providers.litellm.models[$m].body.temperature // empty')"
+    cfg_reasoning="$(cfg '.providers.litellm.models[$m].body.reasoning_effort // empty')"
 
     [ "$cfg_context" = "$EXPECTED_CONTEXT" ] \
       && pass "limit.context $cfg_context" \
@@ -178,17 +242,17 @@ if [ "$WITH_OPENCODE" = "1" ]; then
       && effective_config="$($OPENCODE_BIN debug config 2>/dev/null)" \
       && effective_model="$(printf '%s' "$effective_config" | jq -r \
         '[.[].info.model | select(.providerID != null)][0] | "\(.providerID)/\(.model)"' 2>/dev/null)" \
-      && [ "$effective_model" = "ollama/$MODEL" ]; then
+      && [ "$effective_model" = "$OPENCODE_MODEL" ]; then
     pass "effective default model is $effective_model"
   else
-    fail "effective default model is '${effective_model:-unavailable}', expected 'ollama/$MODEL'"
+    fail "effective default model is '${effective_model:-unavailable}', expected '$OPENCODE_MODEL'"
   fi
 
-  log "Host OpenCode -> Ollama connectivity"
-  if curl -fsS --max-time 10 "$OLLAMA_URL/v1/models" >/dev/null 2>&1; then
-    pass "host OpenCode endpoint is reachable at $OLLAMA_URL"
+  log "Host OpenCode -> LiteLLM connectivity"
+  if get_litellm 10 "$LITELLM_URL/v1/models" >/dev/null 2>&1; then
+    pass "host OpenCode endpoint is reachable at $LITELLM_URL"
   else
-    fail "host cannot reach $OLLAMA_URL"
+    fail "host cannot reach $LITELLM_URL"
   fi
 fi
 
@@ -197,7 +261,7 @@ fi
 chat_test() {
   local think=$1 budget=$2 payload
   payload="$(jq -cn \
-    --arg model "$MODEL" \
+    --arg model "$OLLAMA_MODEL" \
     --argjson think "$think" \
     --argjson budget "$budget" \
     --argjson temperature "$EXPECTED_TEMPERATURE" \
@@ -242,6 +306,49 @@ else
 fi
 
 if [ "$WITH_OPENCODE" = "1" ]; then
+  log "LiteLLM gateway round trip"
+  gateway_payload="$(jq -cn \
+    --arg model "$LITELLM_MODEL" \
+    --argjson temperature "$EXPECTED_TEMPERATURE" \
+    '{
+      model: $model,
+      messages: [{
+        role: "user",
+        content: "Write a Python function that returns the reverse of a string. Reply with the code only."
+      }],
+      stream: false,
+      max_tokens: 512,
+      temperature: $temperature,
+      reasoning_effort: "none"
+    }')"
+
+  if gw_response="$(post_litellm 600 "$gateway_payload" "$LITELLM_URL/v1/chat/completions" 2>/dev/null)"; then
+    gw_done="$(printf '%s' "$gw_response" | jq -r '.choices[0].finish_reason // "missing"')"
+    gw_total="$(printf '%s' "$gw_response" | jq -r '.usage.total_tokens // 0')"
+    gw_content="$(printf '%s' "$gw_response" | jq -r '.choices[0].message.content // ""')"
+    if [ "$gw_done" = "stop" ] && [ -n "$gw_content" ] \
+        && printf '%s' "$gw_total" | grep -Eq '^[0-9]+$' && [ "$gw_total" -gt 0 ]; then
+      pass "gateway returned a complete answer ($gw_total tokens)"
+    else
+      fail "gateway response incomplete (finish_reason=$gw_done, tokens=$gw_total)"
+    fi
+
+    recent_spend="$(get_litellm 10 "$LITELLM_URL/spend/logs" 2>/dev/null \
+      | jq -r --arg m "$LITELLM_MODEL" \
+        '[.[]? | select(.model_group == $m) | .created_at] | max // empty' 2>/dev/null || true)"
+    recent_epoch="$(date -d "${recent_spend:-1970-01-01}" +%s 2>/dev/null || echo 0)"
+    now_epoch="$(date -u +%s)"
+    if [ -n "$recent_spend" ] && [ $((now_epoch - recent_epoch)) -le 600 ]; then
+      pass "spend log recorded the request ($recent_spend)"
+    else
+      fail "no recent spend log for '$LITELLM_MODEL' (latest: ${recent_spend:-none})"
+    fi
+  else
+    fail "gateway chat completion request failed"
+  fi
+fi
+
+if [ "$WITH_OPENCODE" = "1" ]; then
   log "Native OpenCode default-model prompt"
   if [ -x "$OPENCODE_BIN" ] \
       && opencode_response="$(timeout 600 "$OPENCODE_BIN" --standalone run --auto --format json \
@@ -271,10 +378,10 @@ ps_json="$(get_url 10 "$OLLAMA_URL/api/ps" 2>/dev/null || true)"
 if [ -n "$ps_json" ] && printf '%s' "$ps_json" | jq -e '.models | length > 0' >/dev/null 2>&1; then
   printf '%s' "$ps_json" | jq -r '
     .models[] | "  \(.name): \(.size_vram / 1000000000 * 10 | floor / 10) GB VRAM / \(.size / 1000000000 * 10 | floor / 10) GB total, context \(.context_length), \(if .size > 0 then (.size_vram / .size * 1000 | floor / 10) else 0 end)% GPU"'
-  gpu_pct="$(printf '%s' "$ps_json" | jq -r --arg m "$MODEL" '
+  gpu_pct="$(printf '%s' "$ps_json" | jq -r --arg m "$OLLAMA_MODEL" '
     [.models[] | select(.name == $m) | (.size_vram / .size * 1000 | floor / 10)] | first // empty')"
   if [ -z "$gpu_pct" ]; then
-    warn "$MODEL is not loaded; another model is resident"
+    warn "$OLLAMA_MODEL is not loaded; another model is resident"
   elif [ "$gpu_pct" = "100" ]; then
     pass "coding model is fully resident on the GPU"
   else

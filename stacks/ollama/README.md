@@ -1,7 +1,8 @@
 # Ollama
 
 Local inference on Pathfinder's RTX 4090. OpenCode reaches it through the
-OpenAI-compatible `/v1` endpoint at `http://192.168.68.62:11434/v1`.
+LiteLLM gateway, which forwards OpenAI-compatible `/v1` requests to
+`http://192.168.68.62:11434/v1` and records token usage per request.
 
 ## Services
 

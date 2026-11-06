@@ -40,6 +40,8 @@ Host IP: `192.168.68.62` (from `GLASSWING_HOST_IP`, else `stacks/infisical/.env`
 | `vikunja` | `vikunja` | http://192.168.68.62:3031 | 3456/tcp | glasswing | LAN |
 | `baserow` | `baserow` | http://192.168.68.62:3032 | 80/tcp | glasswing | LAN |
 | `wud` | `wud` | http://192.168.68.62:3033 | 3000/tcp | glasswing | LAN |
+| `vaultwarden` | `vaultwarden` | http://192.168.68.62:3034 | 80/tcp | glasswing | LAN |
+| `litellm` | `litellm` | http://192.168.68.62:3035 | 4000/tcp | glasswing | LAN |
 | `steel` | `steel` | http://192.168.68.62:3100 | 3000/tcp | glasswing | LAN |
 | `otel-collector` | `otel-collector` | http://192.168.68.62:4318 | 4318/tcp | glasswing | LAN |
 | `registry` | `registry` | http://192.168.68.62:5000 | 5000/tcp | default | LAN |

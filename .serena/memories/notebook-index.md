@@ -1,4 +1,4 @@
-Open Notebook index for project_glasswing (commit 6785659, 2026-11-05):
+Open Notebook index for project_glasswing (commit d9a2c05, 2026-11-06):
 
 ## Release Pipeline
 - Code Map - project_glasswing - Release Pipeline (note:4q0t878d4ge0i9skctet)
@@ -10,6 +10,7 @@ Open Notebook index for project_glasswing (commit 6785659, 2026-11-05):
 - Code Map - project_glasswing - Secret Injection Pipeline (note:ljqjqf5qi1wc0a4c54tr)
 - Code Map - project_glasswing - Observability Stack (note:yqijkmlopa793ry2rfnz)
 - Code Map - project_glasswing - AI & MCP Infrastructure (note:kt8xikmgdvzaa6vmjb5q)
+- Code Map - project_glasswing - OpenCode LiteLLM Token Tracking (note:7ucgrzhromzfac7mxffp)
 - Code Map - project_glasswing - Backup System (note:d7piqw0hdmtir3ubh93q)
 
 ## Configuration & Operations
@@ -35,6 +36,7 @@ Open Notebook index for project_glasswing (commit 6785659, 2026-11-05):
 - Gotcha - project_glasswing - Serena REPL Mode Shows Only 3 Exposed Tools (note:tl38vh4mbti9gxogru41)
 
 ## Sessions
+- Session - 2026-11-06 - OpenCode LiteLLM Token Tracking (note:lwjgptp5rg2aphui6ofs)
 - Session - 2026-11-05 - Qwen 3.8 Model, Langfuse Removal, and Diagnostics (note:b8phlwa2c5zp2qy1r0ew)
 - Session - 2026-11-05 - Release Deploy Fixes and Infisical Redis Debug (note:69lvrukahn4yqzqy36wi)
 - Session - 2026-11-04 - Serena Deployment Fix (note:hcgrpxiirs6r8zodxj96)

@@ -22,6 +22,15 @@ model_list:
       input_cost_per_token: 0.0000000485
       output_cost_per_token: 0.0000002063
 
+  # ── Qwen 3.8 Resilient (alias for OpenCode) ──────────────────
+  - model_name: qwen3.8-resilient
+    litellm_params:
+      model: openai/qwen3.8-opencode
+      api_base: http://glasswing-ollama:11434/v1
+      api_key: ollama
+      input_cost_per_token: 0.0000000485
+      output_cost_per_token: 0.0000002063
+
   # ── Qwen 3.6 27B (base model) ────────────────────────────────
   - model_name: qwen3.6
     litellm_params:
