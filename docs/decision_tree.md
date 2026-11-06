@@ -13,11 +13,13 @@ Related: Decision - MCP Stack - Sequential Thinking Integration (note:0mo3x0gqj2
 
 This document captures the complete decision tree for how AI agents operate in this repository using four MCP servers: **Serena** (code intelligence), **Open Notebook** (persistent memory), **Sequential Thinking** (working memory), and **Steel** (browser access). It is derived from the local `AGENTS.md` at `/home/ravik/src_git/project_glasswing/AGENTS.md`.
 
+> **Survey mode** is packaged as the global `repo-survey` skill (`~/.config/opencode/skills/repo-survey/`). Load it with the `skill` tool (ID `repo-survey`) when asked to survey, map, onboard, or document a repo. Serena symbol operations are issued via `serena_repl` (Python), not direct tool calls.
+
 ## Server Roles
 
 | Server | Config Key | Role | Analogy |
 |---|---|---|---|
-| **Serena** | `serena` | Code intelligence: symbol-level navigation, editing, diagnostics | Eyes & hands on the code |
+| **Serena** | `serena` | Code intelligence: symbol-level navigation, editing, diagnostics. **Accessed via `serena_repl` (Python REPL)** — `lsp.*`, `fs.*`, `edit.*` are not direct tools | Eyes & hands on the code |
 | **Open Notebook** | `open-notebook` | Long-term persistent memory: session history, decisions, code maps, fixes | Disk |
 | **Sequential Thinking** | `sequential-thinking` | Working memory: structured scratchpad, survives compaction | RAM |
 | **Steel** | `steel` | Real browser access: scrape, navigate, interact, screenshot | Web browser |
@@ -38,7 +40,7 @@ This document captures the complete decision tree for how AI agents operate in t
 ```
 START
   │
-  ├─→ Serena: initial_instructions → list_memories
+  ├─→ Serena: initial_instructions → activate_project → (symbol ops via serena_repl)
   │     └─→ Onboarding exists? ─yes─→ read relevant memories
   │                           └─no──→ run onboarding (once), write_memory
   │
@@ -88,7 +90,7 @@ User asks about architecture, config, errors, code location, or past decisions
   │     └─→ Complex task? → check for existing session, read if found
   │
   ├─→ STEP 3: Serena navigation (only if nothing in memory covers it)
-  │     └─→ get_symbols_overview → find_symbol → find_referencing_symbols
+  │     └─→ serena_repl: lsp.get_symbols_overview → lsp.find_symbol → lsp.find_referencing_symbols
   │
   └─→ STEP 4: Verify & cite
         ├─→ Cite note title / source ID / symbol path
@@ -136,20 +138,20 @@ Need to find code?
   ├─→ No code map, cold start needed?
   │     └─→ Read root manifests (pyproject.toml, package.json, etc.)
   │     └─→ Shallow listing (depth ≤ 2) of top-level source dirs
-  │     └─→ get_symbols_overview on 1-2 candidate files
+  │     └─→ serena_repl: lsp.get_symbols_overview on 1-2 candidate files
   │
   ├─→ Symbol located?
   │     ├─→ include_body: false first (signatures only)
   │     └─→ include_body: true only for symbols you actually need
   │
   ├─→ Need callers/usages?
-  │     └─→ find_referencing_symbols
+  │     └─→ serena_repl: lsp.find_referencing_symbols
   │
   ├─→ Need implementations?
-  │     └─→ find_implementations
+  │     └─→ serena_repl: lsp.find_implementations
   │
   ├─→ Non-symbol files (Helm, Dockerfiles, properties, SQL)?
-  │     └─→ search_for_pattern with relative_path + context_lines_after: 10-15
+  │     └─→ serena_repl: fs.search_for_pattern with relative_path + context_lines_after: 10-15
   │
   └─→ Budget limits:
         ├─→ Scouting: 3-5 calls max, then stop
