@@ -32,6 +32,7 @@ Open Notebook index for project_glasswing (commit d9a2c05, 2026-11-06):
 - Fix - project_glasswing - Open Notebook SurrealDB Tag Not Found (note:x640bmomovtmgpet5ugq)
 
 ## Gotchas
+- Gotcha - project_glasswing - Partial GPU Offload Halves Inference Throughput (note:b6v46dgy99utph3ugaah)
 - Gotcha - project_glasswing - Docker DNS Service Name Collision (note:xg3keujci6tqw45dl9bw)
 - Gotcha - project_glasswing - Serena REPL Mode Shows Only 3 Exposed Tools (note:tl38vh4mbti9gxogru41)
 

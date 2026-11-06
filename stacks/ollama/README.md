@@ -19,9 +19,9 @@ validated by `make ai-preflight`.
 | Variable | Value | Why |
 | --- | --- | --- |
 | `OLLAMA_FLASH_ATTENTION` | `1` | Required for a quantized KV cache and faster long-context attention |
-| `OLLAMA_KV_CACHE_TYPE` | `q8_0` | Halves KV-cache memory so more of the 131k context fits in VRAM |
+| `OLLAMA_KV_CACHE_TYPE` | `q4_0` | Halves the KV cache again versus `q8_0`, which fits the whole 131k context on the GPU |
 | `OLLAMA_NUM_PARALLEL` | `1` | One request at a time; two sessions would each allocate a KV cache |
-| `OLLAMA_MAX_LOADED_MODELS` | `1` | Never page two models in and out of 24 GB of VRAM |
+| `OLLAMA_MAX_LOADED_MODELS` | `2` | Lets the embedding model stay resident beside the coding model instead of evicting it |
 | `OLLAMA_KEEP_ALIVE` | `30m` | Keeps the coding model warm between prompts |
 
 `gpus: all` only works when the NVIDIA Container Toolkit is installed and the
@@ -40,7 +40,7 @@ make up STACK=ollama
 
 After the container is healthy, `stacks/ollama/post-up.sh`:
 
-1. Pulls `qwen3.8:27b` if it is missing.
+1. Pulls `qwen3.8:27b` and `nomic-embed-text:latest` if they are missing.
 2. Builds or refreshes `qwen3.8-opencode:latest` from the Modelfile.
 3. Runs the Ollama preflight.
 
@@ -83,10 +83,36 @@ curl -s http://192.168.68.62:11434/api/ps \
   | jq '.models[] | {name, size, size_vram}'
 ```
 
-A 27B model at a 131k context is close to the limit of 24 GB, so partial CPU
-offload is expected. `q8_0` KV cache plus flash attention is what keeps the
-majority on the GPU. If residency drops, check for a second loaded model, a
-second concurrent request, or a model rebuilt without `num_ctx`.
+A 27B model at a 131k context is at the limit of 24 GB. Partial CPU offload is not a
+small loss: layers run in order, so every CPU-resident layer stalls the GPU. Measured
+on Pathfinder with `qwen3.8-opencode` (Q4_K_M, 200 output tokens, temperature 0):
+
+| Config | Context | Residency | Generation |
+| --- | --- | --- | --- |
+| `q8_0` KV | 131072 | 88.3% | ~57 tok/s |
+| `q8_0` KV | 106496 | 100% | ~106 tok/s |
+| `q4_0` KV | 131072 | 100% | ~110 tok/s |
+
+`q4_0` is what keeps the full 131k context on the card. The trade-off is KV-cache
+precision, which is most visible on long-context recall. If quality regresses, drop
+`num_ctx` to 106496 and set `OLLAMA_KV_CACHE_TYPE=q8_0` instead.
+
+If residency drops, check for a second loaded model, a second concurrent request, or a
+model rebuilt without `num_ctx`.
+
+## Embedding co-residency
+
+Open Notebook embeds notes through this same server (see `nomic-embed-text:latest`).
+With `OLLAMA_MAX_LOADED_MODELS=1` an embed request evicts the 19 GB coding model, so the
+next prompt pays a cold reload. `OLLAMA_MAX_LOADED_MODELS=2` keeps both resident:
+
+```bash
+curl -s http://192.168.68.62:11434/api/ps \
+  | jq -r '.models[] | "\(.name) \(.size_vram / .size * 1000 | floor / 10)%"'
+```
+
+Both should report 100%, and the coding model must still hold the full 131k context.
+The embedder costs ~772 MiB of VRAM, which the `q4_0` configuration leaves free.
 
 ## Validation
 
@@ -97,11 +123,11 @@ without redeploying:
 ./scripts/ai-preflight.sh --ollama
 ```
 
-The script is read-only. It verifies container GPU access, the runtime flags
-above, the model's effective parameters, a non-truncated coding response with
-thinking disabled, and the resulting GPU residency. `make ai-preflight` also
-checks the host-installed OpenCode configuration and runs a real standalone
-default-model prompt.
+The script makes no configuration changes. It verifies container GPU access, the runtime
+flags above, the model's effective parameters, a non-truncated coding response with
+thinking disabled, the resulting GPU residency, and that an embedding request leaves the
+coding model resident and fully on the GPU. `make ai-preflight` also checks the
+host-installed OpenCode configuration and runs a real standalone default-model prompt.
 
 ## Data
 

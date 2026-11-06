@@ -125,9 +125,9 @@ check_env() {
   fi
 }
 check_env OLLAMA_FLASH_ATTENTION 1
-check_env OLLAMA_KV_CACHE_TYPE q8_0
+check_env OLLAMA_KV_CACHE_TYPE q4_0
 check_env OLLAMA_NUM_PARALLEL 1
-check_env OLLAMA_MAX_LOADED_MODELS 1
+check_env OLLAMA_MAX_LOADED_MODELS 2
 check_env OLLAMA_KEEP_ALIVE 30m
 
 log "Model parameters ($OLLAMA_MODEL)"
@@ -322,6 +322,13 @@ if [ "$WITH_OPENCODE" = "1" ]; then
       reasoning_effort: "none"
     }')"
 
+  # Watermark of the newest spend row before the request, so the check below can
+  # assert that THIS request was recorded rather than trusting wall-clock time.
+  spend_watermark="$(get_litellm 10 "$LITELLM_URL/spend/logs" 2>/dev/null \
+    | jq -r --arg m "$LITELLM_MODEL" \
+      '[.[]? | select(.model_group == $m) | .created_at] | max // "1970-01-01T00:00:00Z"' 2>/dev/null \
+    || echo "1970-01-01T00:00:00Z")"
+
   if gw_response="$(post_litellm 600 "$gateway_payload" "$LITELLM_URL/v1/chat/completions" 2>/dev/null)"; then
     gw_done="$(printf '%s' "$gw_response" | jq -r '.choices[0].finish_reason // "missing"')"
     gw_total="$(printf '%s' "$gw_response" | jq -r '.usage.total_tokens // 0')"
@@ -333,15 +340,24 @@ if [ "$WITH_OPENCODE" = "1" ]; then
       fail "gateway response incomplete (finish_reason=$gw_done, tokens=$gw_total)"
     fi
 
-    recent_spend="$(get_litellm 10 "$LITELLM_URL/spend/logs" 2>/dev/null \
-      | jq -r --arg m "$LITELLM_MODEL" \
-        '[.[]? | select(.model_group == $m) | .created_at] | max // empty' 2>/dev/null || true)"
-    recent_epoch="$(date -d "${recent_spend:-1970-01-01}" +%s 2>/dev/null || echo 0)"
-    now_epoch="$(date -u +%s)"
-    if [ -n "$recent_spend" ] && [ $((now_epoch - recent_epoch)) -le 600 ]; then
-      pass "spend log recorded the request ($recent_spend)"
+    # LiteLLM flushes spend rows in batches, so the row for this request may land
+    # several seconds after the response. Compare against the watermark captured
+    # before the request instead of against wall-clock time.
+    recorded_spend=""
+    for _ in $(seq 1 12); do
+      latest_spend="$(get_litellm 10 "$LITELLM_URL/spend/logs" 2>/dev/null \
+        | jq -r --arg m "$LITELLM_MODEL" \
+          '[.[]? | select(.model_group == $m) | .created_at] | max // empty' 2>/dev/null || true)"
+      if [ -n "$latest_spend" ] && [ "$latest_spend" \> "$spend_watermark" ]; then
+        recorded_spend="$latest_spend"
+        break
+      fi
+      sleep 5
+    done
+    if [ -n "$recorded_spend" ]; then
+      pass "spend log recorded this request ($recorded_spend)"
     else
-      fail "no recent spend log for '$LITELLM_MODEL' (latest: ${recent_spend:-none})"
+      fail "no new spend log for '$LITELLM_MODEL' after 60s (latest: ${latest_spend:-none})"
     fi
   else
     fail "gateway chat completion request failed"
@@ -385,10 +401,36 @@ if [ -n "$ps_json" ] && printf '%s' "$ps_json" | jq -e '.models | length > 0' >/
   elif [ "$gpu_pct" = "100" ]; then
     pass "coding model is fully resident on the GPU"
   else
-    warn "coding model is ${gpu_pct}% on the GPU; compare with the previous ~91% baseline"
+    warn "coding model is ${gpu_pct}% on the GPU; each CPU-resident layer roughly halves throughput, so full residency is the target"
   fi
 else
   warn "no model is loaded yet; run the preflight again while a session is warm"
+fi
+
+log "Embedding co-residency"
+EMBED_MODEL="${OLLAMA_EMBED_MODEL:-nomic-embed-text:latest}"
+embed_payload="$(jq -cn --arg m "$EMBED_MODEL" '{model: $m, input: "preflight co-residency check"}')"
+if embed_response="$(post_json_url 180 "$embed_payload" "$OLLAMA_URL/api/embed" 2>/dev/null)" \
+    && printf '%s' "$embed_response" | jq -e '.embeddings[0] | length > 0' >/dev/null 2>&1; then
+  embed_dims="$(printf '%s' "$embed_response" | jq -r '.embeddings[0] | length')"
+  pass "$EMBED_MODEL returned a ${embed_dims}-dimension embedding"
+
+  # Open Notebook writes notes while a coding session is warm. With
+  # OLLAMA_MAX_LOADED_MODELS=1 the embed request evicts the 19 GB coding model,
+  # forcing a cold reload on the next prompt.
+  if co_ps="$(get_url 10 "$OLLAMA_URL/api/ps" 2>/dev/null)" \
+      && printf '%s' "$co_ps" | jq -e --arg q "$OLLAMA_MODEL" --arg e "$EMBED_MODEL" \
+        '([.models[].name] | index($q) != null) and ([.models[].name] | index($e) != null)' \
+        >/dev/null 2>&1; then
+    co_state="$(printf '%s' "$co_ps" | jq -r --arg q "$OLLAMA_MODEL" --arg e "$EMBED_MODEL" \
+      '[.models[] | select(.name == $q or .name == $e)
+        | "\(.name) \(if .size > 0 then (.size_vram / .size * 1000 | floor / 10) else 0 end)%"] | join(", ")')"
+    pass "coding and embedding models are resident together ($co_state)"
+  else
+    fail "the embedding request evicted the coding model; OLLAMA_MAX_LOADED_MODELS must allow both"
+  fi
+else
+  warn "$EMBED_MODEL is unavailable; skipping the co-residency check (make ollama-model pulls it)"
 fi
 
 log "Summary"

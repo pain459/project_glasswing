@@ -310,9 +310,9 @@ restart-all:
 # --------------------------------------------------
 
 OLLAMA_CONTAINER ?= glasswing-ollama
-OLLAMA_MODEL ?= qwen3.6-opencode:latest
-OLLAMA_BASE_MODEL ?= qwen3.6:27b
-OLLAMA_MODELFILE ?= stacks/ollama/models/qwen3.6-opencode.Modelfile
+OLLAMA_MODEL ?= qwen3.8-opencode:latest
+OLLAMA_BASE_MODEL ?= qwen3.8:27b
+OLLAMA_MODELFILE ?= stacks/ollama/models/qwen3.8-opencode.Modelfile
 
 # Stack hooks and the build script read these; command-line overrides still win.
 export OLLAMA_CONTAINER OLLAMA_MODEL OLLAMA_BASE_MODEL OLLAMA_MODELFILE

@@ -18,9 +18,11 @@ services:
       OLLAMA_MODELS: ${OLLAMA_MODELS:?Required from Infisical}
 
       # Inference baseline shared with host-installed OpenCode.
-      # Flash attention plus an 8-bit KV cache keeps more of the 131k context
-      # on the 4090. One request and one loaded model prevent a second session
-      # from splitting VRAM with the coding model.
+      # Flash attention plus a 4-bit KV cache keeps the whole 131k context on
+      # the 4090, so no layer spills to the CPU (a partial offload halves
+      # throughput). Two loaded models let the nomic embedding model stay
+      # resident alongside the coding model instead of evicting it, which
+      # otherwise forces a cold 19 GB reload on the next prompt.
       OLLAMA_FLASH_ATTENTION: ${OLLAMA_FLASH_ATTENTION:?Required from Infisical}
       OLLAMA_KV_CACHE_TYPE: ${OLLAMA_KV_CACHE_TYPE:?Required from Infisical}
       OLLAMA_NUM_PARALLEL: ${OLLAMA_NUM_PARALLEL:?Required from Infisical}

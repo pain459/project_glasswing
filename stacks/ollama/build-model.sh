@@ -4,9 +4,10 @@
 # Called by `make ollama-model` and by the Ollama stack post-up hook, so a
 # normal `make up STACK=ollama` builds the model without a second command.
 #
-# The base model is pulled automatically when it is missing. The derived model
-# is only rebuilt when its effective parameters differ from the Modelfile;
-# set FORCE=1 to rebuild anyway.
+# The base model is pulled automatically when it is missing, and so is the
+# embedding model that Open Notebook needs for searchable notes. The derived
+# coding model is only rebuilt when its effective parameters differ from the
+# Modelfile; set FORCE=1 to rebuild anyway.
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -15,6 +16,7 @@ cd "$ROOT_DIR"
 OLLAMA_CONTAINER="${OLLAMA_CONTAINER:-glasswing-ollama}"
 OLLAMA_MODEL="${OLLAMA_MODEL:-qwen3.8-opencode:latest}"
 OLLAMA_BASE_MODEL="${OLLAMA_BASE_MODEL:-qwen3.8:27b}"
+OLLAMA_EMBED_MODEL="${OLLAMA_EMBED_MODEL:-nomic-embed-text:latest}"
 OLLAMA_MODELFILE="${OLLAMA_MODELFILE:-stacks/ollama/models/qwen3.8-opencode.Modelfile}"
 FORCE="${FORCE:-0}"
 
@@ -28,6 +30,13 @@ die() { printf '[FAIL] %s\n' "$*" >&2; exit 1; }
 if ! docker exec "$OLLAMA_CONTAINER" ollama show "$OLLAMA_BASE_MODEL" >/dev/null 2>&1; then
   log "Base model $OLLAMA_BASE_MODEL is missing; pulling it"
   docker exec "$OLLAMA_CONTAINER" ollama pull "$OLLAMA_BASE_MODEL"
+fi
+
+# Open Notebook embeds every note it stores; the model must exist for notes to
+# become searchable, and it is kept resident alongside the coding model.
+if ! docker exec "$OLLAMA_CONTAINER" ollama show "$OLLAMA_EMBED_MODEL" >/dev/null 2>&1; then
+  log "Embedding model $OLLAMA_EMBED_MODEL is missing; pulling it"
+  docker exec "$OLLAMA_CONTAINER" ollama pull "$OLLAMA_EMBED_MODEL"
 fi
 
 current_modelfile=""
