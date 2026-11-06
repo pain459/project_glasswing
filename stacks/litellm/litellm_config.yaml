@@ -1,0 +1,47 @@
+# LiteLLM Proxy Configuration — Glasswing
+#
+# Purpose: Route OpenCode's Ollama models through LiteLLM for unified
+# cost and token tracking. Spend logs are stored in the shared Postgres
+# database (litellm DB) and viewable in the Admin UI at /ui.
+#
+# Models are registered with electricity-based pricing (measured on
+# Pathfinder: RTX 4090, ₹9/kWh) so the Admin UI shows real cost.
+#
+# To add a new model, append to model_list. The model_name is what
+# OpenCode (or any client) uses in the API request.
+
+model_list:
+  # ── OpenCode coding model (primary) ──────────────────────────
+  - model_name: qwen3.8-opencode
+    litellm_params:
+      model: openai/qwen3.8-opencode
+      api_base: http://glasswing-ollama:11434/v1
+      api_key: ollama
+      # Electricity-based pricing (measured 2026-10-30)
+      # Input: $0.0485/MTok, Output: $0.2063/MTok
+      input_cost_per_token: 0.0000000485
+      output_cost_per_token: 0.0000002063
+
+  # ── Qwen 3.6 27B (base model) ────────────────────────────────
+  - model_name: qwen3.6
+    litellm_params:
+      model: openai/qwen3.6:27b
+      api_base: http://glasswing-ollama:11434/v1
+      api_key: ollama
+      input_cost_per_token: 0.0000000485
+      output_cost_per_token: 0.0000002063
+
+  # ── Llama 3.1 8B (lightweight) ───────────────────────────────
+  - model_name: llama3.1
+    litellm_params:
+      model: openai/llama3.1:8b
+      api_base: http://glasswing-ollama:11434/v1
+      api_key: ollama
+      input_cost_per_token: 0.0000000434
+      output_cost_per_token: 0.0000001104
+
+litellm_settings:
+  # Drop unsupported params instead of failing
+  drop_params: true
+  request_timeout: 300
+  num_retries: 2

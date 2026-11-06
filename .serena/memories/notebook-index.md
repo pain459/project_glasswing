@@ -22,7 +22,7 @@ Open Notebook index for project_glasswing (commit 6785659, 2026-11-05):
 - Gotcha - project_glasswing - Critical Invariants (note:8mku18pr5646tapzcgr2)
 
 ## Decisions
-- Decision - project_glasswing - Qwen 3.8 Model Addition (note:eg4jgo9gxxi1lnwv0j81)
+- Decision - project_glasswing - Qwen 3.8 as Default Model (note:eg4jgo9gxxi1lnwv0j81)
 - Decision - project_glasswing - Langfuse Stack Removal (note:0prkukcx59sq6777ju34)
 
 ## Fixes

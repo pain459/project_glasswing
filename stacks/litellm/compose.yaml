@@ -1,0 +1,49 @@
+
+name: glasswing-litellm
+
+services:
+  litellm:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: ghcr.io/berriai/litellm:v1.108.1
+    container_name: glasswing-litellm
+    command: ["--config", "/app/config.yaml"]
+
+    ports:
+      - "${GLASSWING_HOST_IP:?required}:3035:4000"
+
+    environment:
+      OTEL_SERVICE_NAME: glasswing-litellm
+      DATABASE_URL: postgresql://litellm:litellm@glasswing-postgres:5432/litellm
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?Required from Infisical}
+      LITELLM_SALT_KEY: ${LITELLM_SALT_KEY:?Required from Infisical}
+
+    volumes:
+      - litellm_data:/data
+      - ./litellm_config.yaml:/app/config.yaml:ro
+
+    # LiteLLM image is distroless (no curl/wget/shell).
+    # Health monitoring is handled by Uptime Kuma via /health/liveliness.
+    healthcheck:
+      test:
+        - NONE
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    labels:
+      com.glasswing.service: litellm
+
+    networks:
+      - glasswing
+
+volumes:
+  litellm_data:
+    name: glasswing-litellm_data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

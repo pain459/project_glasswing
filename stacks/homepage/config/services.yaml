@@ -90,6 +90,12 @@
         container: glasswing-postgres
 
 - AI Platform:
+    - litellm:
+        icon: mdi-currency-usd
+        href: http://192.168.68.62:3035
+        description: LLM Gateway — Cost & Token Tracking for OpenCode
+        container: glasswing-litellm
+        siteMonitor: http://192.168.68.62:3035/health/liveliness
     - Ollama:
         icon: ollama.png
         href: http://192.168.68.62:11434

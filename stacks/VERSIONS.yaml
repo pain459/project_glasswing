@@ -136,6 +136,13 @@ stacks:
     build-type: external
 
   # ── Application Services ────────────────────────────────────
+  litellm:
+    image: ghcr.io/berriai/litellm
+    tag: "v1.108.1"
+    mutable: false
+    updated: "2026-11-06"
+    build-type: external
+    notes: "LLM gateway for cost tracking — routes OpenCode Ollama models, tracks spend via Postgres"
   vaultwarden:
     image: vaultwarden/server
     tag: "1.37.2"
