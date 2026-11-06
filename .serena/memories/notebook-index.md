@@ -1,4 +1,4 @@
-Open Notebook index for project_glasswing (commit d9a2c05, 2026-11-06):
+Open Notebook index for project_glasswing (commit 2c22a7f, 2026-11-06):
 
 ## Release Pipeline
 - Code Map - project_glasswing - Release Pipeline (note:4q0t878d4ge0i9skctet)
@@ -14,6 +14,7 @@ Open Notebook index for project_glasswing (commit d9a2c05, 2026-11-06):
 - Code Map - project_glasswing - Backup System (note:d7piqw0hdmtir3ubh93q)
 
 ## Configuration & Operations
+- Ref - project_glasswing - Local Inference Baseline (note:pde0wf50ft38giffvoa9)
 - Ref - project_glasswing - Data Model and Persistence (note:w01zn93o8nmrsvw2g7se)
 - Ref - project_glasswing - Integrations and Interfaces (note:xh8m87n8mmwbr2atn10l)
 - Ref - project_glasswing - Comprehensive Configuration Properties (note:pc4keuhsp8eopzfi4y2z)
@@ -23,6 +24,7 @@ Open Notebook index for project_glasswing (commit d9a2c05, 2026-11-06):
 - Gotcha - project_glasswing - Critical Invariants (note:8mku18pr5646tapzcgr2)
 
 ## Decisions
+- Decision - project_glasswing - GPU Residency and KV Cache Defaults (note:bljxn2yl68f4kieweecx)
 - Decision - project_glasswing - Qwen 3.8 as Default Model (note:eg4jgo9gxxi1lnwv0j81)
 - Decision - project_glasswing - Langfuse Stack Removal (note:0prkukcx59sq6777ju34)
 

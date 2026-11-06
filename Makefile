@@ -59,6 +59,7 @@ help:
 	@echo "make check STACK=name             Validate Compose configuration and show status"
 	@echo "make status                       Show all Docker containers"
 	@echo "make ollama-model                 Rebuild the coding model from its Modelfile"
+	@echo "make ollama-failback              Build the tuned qwen3.6 failback model"
 	@echo "make ai-preflight                 Validate the Ollama/OpenCode inference baseline"
 	@echo "make mcp-preflight                Validate all host-only MCP endpoints"
 	@echo "make secrets-check                Verify Infisical integration"
@@ -253,7 +254,7 @@ secrets-injection-check:
 # Glasswing platform-wide lifecycle management
 # --------------------------------------------------
 
-.PHONY: list-stacks restart-all ollama-model ai-preflight
+.PHONY: list-stacks restart-all ollama-model ollama-failback ai-preflight
 
 # Discover all independently managed Compose projects.
 STACKS := $(patsubst stacks/%/compose.yaml,%,$(wildcard stacks/*/compose.yaml))
@@ -322,6 +323,15 @@ export SKIP_PREFLIGHT FORCE
 # stacks/ollama/post-up.sh, including pulling the base model when it is missing.
 ollama-model:
 	@./stacks/ollama/build-model.sh
+
+# The failback is the same tuning on the previous base model. It is built on
+# demand rather than on every deploy, because it costs another ~17 GB of
+# weights that are only needed if the primary model has to be replaced.
+ollama-failback:
+	@OLLAMA_MODEL=qwen3.6-opencode:latest \
+	 OLLAMA_BASE_MODEL=qwen3.6:27b \
+	 OLLAMA_MODELFILE=stacks/ollama/models/qwen3.6-opencode.Modelfile \
+	 ./stacks/ollama/build-model.sh
 
 ai-preflight:
 	@./scripts/ai-preflight.sh --opencode

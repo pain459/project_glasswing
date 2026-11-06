@@ -58,6 +58,30 @@ running. To build against a different base without editing the file:
 make ollama-model OLLAMA_BASE_MODEL=qwen3.8:27b
 ```
 
+### Failback model
+
+`qwen3.6-opencode:latest` is the failback, built from
+[`models/qwen3.6-opencode.Modelfile`](models/qwen3.6-opencode.Modelfile) with the same
+budget as the primary (`num_ctx 131072`, `num_predict 32768`, `temperature 0.3`). It is
+built on demand, because it costs another ~17 GB of weights that are only needed if the
+primary model has to be replaced:
+
+```bash
+make ollama-failback
+```
+
+LiteLLM exposes it as `qwen3.6`, so failing over is a model switch:
+
+```bash
+opencode --model litellm/qwen3.6
+```
+
+The gateway must point at the *tuned* `qwen3.6-opencode` alias, never at the `qwen3.6:27b`
+base model. The base carries a small default context and default thinking, so a failover
+to it would silently lose most of the window and burn the output budget on reasoning.
+
+The preflight warns when the failback is missing or its budget drifts from the primary.
+
 The effective parameters are visible with:
 
 ```bash

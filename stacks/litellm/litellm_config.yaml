@@ -11,7 +11,11 @@
 # OpenCode (or any client) uses in the API request.
 
 model_list:
-  # ── OpenCode coding model (primary) ──────────────────────────
+  # ── Primary coding model ─────────────────────────────────────
+  # Serve qwen3.8-opencode with:
+  #   OLLAMA_KV_CACHE_TYPE=q4_0, OLLAMA_MAX_LOADED_MODELS=2, num_ctx 131072
+  # which keeps all 66 layers on the GPU and leaves the embedding model
+  # resident beside it. See stacks/ollama/README.md.
   - model_name: qwen3.8-opencode
     litellm_params:
       model: openai/qwen3.8-opencode
@@ -22,19 +26,14 @@ model_list:
       input_cost_per_token: 0.0000000485
       output_cost_per_token: 0.0000002063
 
-  # ── Qwen 3.8 Resilient (alias for OpenCode) ──────────────────
-  - model_name: qwen3.8-resilient
-    litellm_params:
-      model: openai/qwen3.8-opencode
-      api_base: http://glasswing-ollama:11434/v1
-      api_key: ollama
-      input_cost_per_token: 0.0000000485
-      output_cost_per_token: 0.0000002063
-
-  # ── Qwen 3.6 27B (base model) ────────────────────────────────
+  # ── Failback coding model ────────────────────────────────────
+  # Must be the *tuned* qwen3.6-opencode alias, not the qwen3.6:27b base
+  # model: the base carries a small default context and default thinking, so
+  # a failover to it would silently lose most of the window. Build it with
+  # `make ollama-failback`. Same budget and temperature as the primary.
   - model_name: qwen3.6
     litellm_params:
-      model: openai/qwen3.6:27b
+      model: openai/qwen3.6-opencode:latest
       api_base: http://glasswing-ollama:11434/v1
       api_key: ollama
       input_cost_per_token: 0.0000000485

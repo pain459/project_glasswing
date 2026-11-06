@@ -259,9 +259,17 @@ any MCP stack and `make ai-preflight` after changing the native OpenCode or
 Ollama configuration.
 
 Ollama and host OpenCode share one inference baseline: 131k context, 32k
-generation, temperature 0.3, thinking disabled, and a `q8_0` KV cache with
-flash attention. `make ai-preflight` validates the container settings, effective
-host OpenCode model configuration, and a real standalone prompt.
+generation, temperature 0.3, thinking disabled, and a `q4_0` KV cache with flash
+attention. `q4_0` is what keeps all 66 layers of the primary model on the 4090 at
+the full 131k context; a partial offload roughly halves throughput, so the
+preflight fails rather than warns when residency drops. `OLLAMA_MAX_LOADED_MODELS=2`
+keeps `nomic-embed-text` resident beside the coding model, which is what makes
+Open Notebook notes searchable without evicting it.
+
+`qwen3.8-opencode` is the primary model and `qwen3.6` is the failback, both on the
+same budget. `make ai-preflight` validates the container settings, the effective
+host OpenCode model configuration, GPU residency, embedding co-residency, VRAM
+headroom, and a real standalone prompt.
 
 ## Image management
 

@@ -23,20 +23,10 @@
             "cache_write": 0
           }
         },
-        "qwen3.8-resilient": {
-          "name": "Qwen 3.8 Resilient (via LiteLLM, 128k)",
+        "qwen3.6": {
+          "name": "Qwen 3.6 27B Failback (via LiteLLM, 128k)",
           "limit": { "context": 131072, "output": 32768 },
           "body": { "reasoning_effort": "none", "temperature": 0.3 },
-          "cost": {
-            "input": 0.0485,
-            "output": 0.2063,
-            "cache_read": 0,
-            "cache_write": 0
-          }
-        },
-        "qwen3.6": {
-          "name": "Qwen 3.6 27B (via LiteLLM)",
-          "limit": { "context": 131072, "output": 32768 },
           "cost": {
             "input": 0.0485,
             "output": 0.2063,

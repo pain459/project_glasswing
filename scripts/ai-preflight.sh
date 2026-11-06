@@ -40,11 +40,13 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OLLAMA_CONTAINER="${OLLAMA_CONTAINER:-glasswing-ollama}"
 OLLAMA_URL="${OLLAMA_URL:-http://192.168.68.62:11434}"
 OLLAMA_MODEL="${OLLAMA_MODEL:-qwen3.8-opencode:latest}"
+OLLAMA_FAILBACK_MODEL="${OLLAMA_FAILBACK_MODEL:-qwen3.6-opencode:latest}"
 
 # LiteLLM is the only path OpenCode uses; Ollama is the backend behind it.
 LITELLM_CONTAINER="${LITELLM_CONTAINER:-glasswing-litellm}"
 LITELLM_URL="${LITELLM_URL:-http://192.168.68.62:3035}"
 LITELLM_MODEL="${LITELLM_MODEL:-qwen3.8-opencode}"
+LITELLM_FAILBACK_MODEL="${LITELLM_FAILBACK_MODEL:-qwen3.6}"
 LITELLM_MASTER_KEY="${LITELLM_MASTER_KEY:-}"
 if [ -z "$LITELLM_MASTER_KEY" ] && [ -f "$ROOT_DIR/stacks/litellm/litellm-config.registry" ]; then
   LITELLM_MASTER_KEY="$(sed -n 's/^LITELLM_MASTER_KEY=//p' \
@@ -149,6 +151,29 @@ else
   fail "Model $OLLAMA_MODEL is not present (run: make ollama-model)"
 fi
 
+log "Failback model ($OLLAMA_FAILBACK_MODEL)"
+# The failback must carry the same budget as the primary. It is built on demand
+# (make ollama-failback), so a missing model is a warning, not a deploy failure.
+if failback_modelfile="$(docker exec "$OLLAMA_CONTAINER" \
+    ollama show "$OLLAMA_FAILBACK_MODEL" --modelfile 2>/dev/null)"; then
+  failback_param() {
+    printf '%s\n' "$failback_modelfile" | tr -d '\r' \
+      | awk -v n="$1" '$1=="PARAMETER" && $2==n {print $3; exit}'
+  }
+  failback_ctx="$(failback_param num_ctx)"
+  failback_output="$(failback_param num_predict)"
+  failback_temp="$(failback_param temperature)"
+  if [ "$failback_ctx" = "$EXPECTED_CONTEXT" ] \
+      && [ "$failback_output" = "$EXPECTED_OUTPUT" ] \
+      && [ "$failback_temp" = "$EXPECTED_TEMPERATURE" ]; then
+    pass "$OLLAMA_FAILBACK_MODEL matches the primary budget (ctx $failback_ctx, output $failback_output, temp $failback_temp)"
+  else
+    warn "failback params are ctx='${failback_ctx:-unset}' output='${failback_output:-unset}' temp='${failback_temp:-unset}', expected $EXPECTED_CONTEXT/$EXPECTED_OUTPUT/$EXPECTED_TEMPERATURE (run: make ollama-failback)"
+  fi
+else
+  warn "$OLLAMA_FAILBACK_MODEL is not built; run: make ollama-failback"
+fi
+
 if [ "$WITH_OPENCODE" = "1" ]; then
   log "LiteLLM gateway"
   if container_running "$LITELLM_CONTAINER"; then
@@ -165,6 +190,14 @@ if [ "$WITH_OPENCODE" = "1" ]; then
     pass "gateway exposes $LITELLM_MODEL"
   else
     fail "gateway does not expose '$LITELLM_MODEL' at $LITELLM_URL/v1/models"
+  fi
+
+  if failback_models="$(get_litellm 10 "$LITELLM_URL/v1/models" 2>/dev/null)" \
+      && printf '%s' "$failback_models" | jq -e --arg m "$LITELLM_FAILBACK_MODEL" \
+        '[.data[]?.id] | index($m) != null' >/dev/null 2>&1; then
+    pass "gateway exposes failback $LITELLM_FAILBACK_MODEL"
+  else
+    fail "gateway does not expose failback '$LITELLM_FAILBACK_MODEL' at $LITELLM_URL/v1/models"
   fi
 
   log "Host OpenCode configuration"
@@ -397,11 +430,11 @@ if [ -n "$ps_json" ] && printf '%s' "$ps_json" | jq -e '.models | length > 0' >/
   gpu_pct="$(printf '%s' "$ps_json" | jq -r --arg m "$OLLAMA_MODEL" '
     [.models[] | select(.name == $m) | (.size_vram / .size * 1000 | floor / 10)] | first // empty')"
   if [ -z "$gpu_pct" ]; then
-    warn "$OLLAMA_MODEL is not loaded; another model is resident"
+    fail "$OLLAMA_MODEL is not loaded, so residency cannot be verified"
   elif [ "$gpu_pct" = "100" ]; then
     pass "coding model is fully resident on the GPU"
   else
-    warn "coding model is ${gpu_pct}% on the GPU; each CPU-resident layer roughly halves throughput, so full residency is the target"
+    fail "coding model is only ${gpu_pct}% on the GPU; partial offload roughly halves throughput. Free VRAM for another process, lower num_ctx, or use a more aggressive OLLAMA_KV_CACHE_TYPE"
   fi
 else
   warn "no model is loaded yet; run the preflight again while a session is warm"
@@ -431,6 +464,23 @@ if embed_response="$(post_json_url 180 "$embed_payload" "$OLLAMA_URL/api/embed" 
   fi
 else
   warn "$EMBED_MODEL is unavailable; skipping the co-residency check (make ollama-model pulls it)"
+fi
+
+log "VRAM headroom"
+# Residency is decided at load and the KV cache is preallocated for the whole
+# context, so VRAM does not grow with conversation length (measured: +48 MiB
+# across a 66k-token prompt). What headroom buys is a stable load-time fit when
+# another process briefly holds GPU memory.
+MIN_FREE_MIB="${MIN_FREE_MIB:-512}"
+if free_mib="$(docker exec "$OLLAMA_CONTAINER" \
+    nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits 2>/dev/null | head -n1 | tr -d ' ')"; then
+  if [ -n "$free_mib" ] && [ "$free_mib" -ge "$MIN_FREE_MIB" ]; then
+    pass "${free_mib} MiB free on the GPU (minimum ${MIN_FREE_MIB} MiB)"
+  else
+    fail "only ${free_mib:-unknown} MiB free on the GPU; need at least ${MIN_FREE_MIB} MiB of load-time slack"
+  fi
+else
+  warn "cannot read GPU free memory from inside the container"
 fi
 
 log "Summary"
