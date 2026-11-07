@@ -34,6 +34,270 @@
           "color": {
             "mode": "thresholds"
           },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "sum(litellm_prompt_tokens)",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": false,
+          "legendFormat": "Input Tokens",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Input Tokens (7 days)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PDC628E2375F40484"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "sum(litellm_completion_tokens)",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": false,
+          "legendFormat": "Output Tokens",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Output Tokens (7 days)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PDC628E2375F40484"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 8,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "sum(litellm_cached_tokens)",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": false,
+          "legendFormat": "Cached Tokens",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Cached Tokens (7 days)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PDC628E2375F40484"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 12,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "sum(litellm_spend)",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": false,
+          "legendFormat": "Local Spend",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Local Spend (7 days)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PDC628E2375F40484"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
           "custom": {
             "align": "auto",
             "cellOptions": {
@@ -72,9 +336,9 @@
         "h": 16,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 4
       },
-      "id": 1,
+      "id": 5,
       "options": {
         "cellHeight": "sm",
         "footer": {
