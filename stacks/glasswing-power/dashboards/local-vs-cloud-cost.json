@@ -69,7 +69,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "col"
+              "options": "period"
             },
             "properties": [
               {
@@ -114,14 +114,158 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "label_replace(sum(sum by (date) (litellm_spend{date=~\"2026-11-07\"})), \"col\", \"Today\", \"\", \"\") or label_replace(sum(sum by (date) (litellm_spend{date=~\"2026W45.*\"})), \"col\", \"This Week\", \"\", \"\") or label_replace(sum(sum by (date) (litellm_spend{date=~\"2026-11.*\"})), \"col\", \"This Month\", \"\", \"\") or label_replace(sum(sum by (date) (litellm_spend{date=~\"2026.*\"})), \"col\", \"This Year\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 0.14 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 0.28 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.014 / 1000000, \"col\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 0.14 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 0.28 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.014 / 1000000, \"col\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 0.14 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 0.28 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.014 / 1000000, \"col\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 0.14 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 0.28 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.014 / 1000000, \"col\", \"This Year\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 0.075 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 0.3 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.0075 / 1000000, \"col\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 0.075 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 0.3 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.0075 / 1000000, \"col\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 0.075 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 0.3 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.0075 / 1000000, \"col\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 0.075 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 0.3 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.0075 / 1000000, \"col\", \"This Year\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 0.28 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 0.42 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.028 / 1000000, \"col\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 0.28 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 0.42 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.028 / 1000000, \"col\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 0.28 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 0.42 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.028 / 1000000, \"col\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 0.28 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 0.42 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.028 / 1000000, \"col\", \"This Year\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 0.19 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 0.75 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.019 / 1000000, \"col\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 0.19 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 0.75 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.019 / 1000000, \"col\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 0.19 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 0.75 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.019 / 1000000, \"col\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 0.19 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 0.75 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.019 / 1000000, \"col\", \"This Year\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 1.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 5.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.1 / 1000000, \"col\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 1.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 5.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.1 / 1000000, \"col\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 1.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 5.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.1 / 1000000, \"col\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 1.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 5.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.1 / 1000000, \"col\", \"This Year\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 3.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.3 / 1000000, \"col\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 3.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.3 / 1000000, \"col\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 3.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.3 / 1000000, \"col\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 3.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.3 / 1000000, \"col\", \"This Year\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 1.25 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 10.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.125 / 1000000, \"col\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 1.25 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 10.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.125 / 1000000, \"col\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 1.25 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 10.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.125 / 1000000, \"col\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 1.25 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 10.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.125 / 1000000, \"col\", \"This Year\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 15.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 75.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 1.5 / 1000000, \"col\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 15.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 75.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 1.5 / 1000000, \"col\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 15.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 75.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 1.5 / 1000000, \"col\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 15.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 75.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 1.5 / 1000000, \"col\", \"This Year\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 2.5 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.25 / 1000000, \"col\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 2.5 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.25 / 1000000, \"col\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 2.5 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.25 / 1000000, \"col\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 2.5 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.25 / 1000000, \"col\", \"This Year\", \"\", \"\")",
+          "expr": "label_replace(sum(sum by (date) (litellm_spend{date=~\"2026-11-07\"})), \"period\", \"Today\", \"\", \"\") or label_replace(sum(sum by (date) (litellm_spend{date=~\"2026W45.*\"})), \"period\", \"This Week\", \"\", \"\") or label_replace(sum(sum by (date) (litellm_spend{date=~\"2026-11.*\"})), \"period\", \"This Month\", \"\", \"\") or label_replace(sum(sum by (date) (litellm_spend{date=~\"2026.*\"})), \"period\", \"This Year\", \"\", \"\")",
           "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
           "instant": true,
-          "legendFormat": "{{provider}}",
+          "legendFormat": "Local (LiteLLM)",
           "range": false,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 0.14 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 0.28 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.014 / 1000000, \"period\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 0.14 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 0.28 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.014 / 1000000, \"period\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 0.14 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 0.28 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.014 / 1000000, \"period\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 0.14 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 0.28 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.014 / 1000000, \"period\", \"This Year\", \"\", \"\")",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "DeepSeek V4.1 Flash",
+          "range": false,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 0.075 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 0.3 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.0075 / 1000000, \"period\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 0.075 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 0.3 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.0075 / 1000000, \"period\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 0.075 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 0.3 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.0075 / 1000000, \"period\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 0.075 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 0.3 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.0075 / 1000000, \"period\", \"This Year\", \"\", \"\")",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "Gemini 3.1 Flash-Lite",
+          "range": false,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 0.28 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 0.42 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.028 / 1000000, \"period\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 0.28 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 0.42 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.028 / 1000000, \"period\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 0.28 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 0.42 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.028 / 1000000, \"period\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 0.28 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 0.42 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.028 / 1000000, \"period\", \"This Year\", \"\", \"\")",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "DeepSeek V4 Pro",
+          "range": false,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 0.19 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 0.75 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.019 / 1000000, \"period\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 0.19 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 0.75 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.019 / 1000000, \"period\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 0.19 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 0.75 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.019 / 1000000, \"period\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 0.19 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 0.75 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.019 / 1000000, \"period\", \"This Year\", \"\", \"\")",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "Gemini 3.8 Flash",
+          "range": false,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 1.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 5.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.1 / 1000000, \"period\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 1.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 5.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.1 / 1000000, \"period\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 1.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 5.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.1 / 1000000, \"period\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 1.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 5.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.1 / 1000000, \"period\", \"This Year\", \"\", \"\")",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "Claude Haiku 4.5",
+          "range": false,
+          "refId": "F"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 3.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.3 / 1000000, \"period\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 3.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.3 / 1000000, \"period\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 3.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.3 / 1000000, \"period\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 3.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.3 / 1000000, \"period\", \"This Year\", \"\", \"\")",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "Claude Sonnet 5.5",
+          "range": false,
+          "refId": "G"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 1.25 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 10.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.125 / 1000000, \"period\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 1.25 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 10.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.125 / 1000000, \"period\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 1.25 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 10.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.125 / 1000000, \"period\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 1.25 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 10.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.125 / 1000000, \"period\", \"This Year\", \"\", \"\")",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "GPT-5.4",
+          "range": false,
+          "refId": "H"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 15.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 75.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 1.5 / 1000000, \"period\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 15.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 75.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 1.5 / 1000000, \"period\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 15.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 75.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 1.5 / 1000000, \"period\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 15.0 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 75.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 1.5 / 1000000, \"period\", \"This Year\", \"\", \"\")",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "Claude Opus 5.5",
+          "range": false,
+          "refId": "I"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11-07\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"}))) * 2.5 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11-07\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11-07\"})) * 0.25 / 1000000, \"period\", \"Today\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026W45.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"}))) * 2.5 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026W45.*\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026W45.*\"})) * 0.25 / 1000000, \"period\", \"This Week\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026-11.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"}))) * 2.5 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026-11.*\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026-11.*\"})) * 0.25 / 1000000, \"period\", \"This Month\", \"\", \"\") or label_replace((sum(sum by (date) (litellm_prompt_tokens{date=~\"2026.*\"})) + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"}))) * 2.5 / 1000000 + sum(sum by (date) (litellm_completion_tokens{date=~\"2026.*\"})) * 15.0 / 1000000 + sum(sum by (date) (litellm_cached_tokens{date=~\"2026.*\"})) * 0.25 / 1000000, \"period\", \"This Year\", \"\", \"\")",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "GPT-5.5",
+          "range": false,
+          "refId": "J"
         }
       ],
       "title": "Estimated Cost by AI Provider (Time Periods)",
@@ -172,7 +316,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "col"
+              "options": "period"
             },
             "properties": [
               {
@@ -217,14 +361,158 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "label_replace(sum(litellm_spend_total), \"col\", \"All-Time\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 0.14 / 1000000 + sum(litellm_completion_tokens_total) * 0.28 / 1000000 + sum(litellm_cached_tokens_total) * 0.014 / 1000000, \"col\", \"All-Time\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 0.075 / 1000000 + sum(litellm_completion_tokens_total) * 0.3 / 1000000 + sum(litellm_cached_tokens_total) * 0.0075 / 1000000, \"col\", \"All-Time\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 0.28 / 1000000 + sum(litellm_completion_tokens_total) * 0.42 / 1000000 + sum(litellm_cached_tokens_total) * 0.028 / 1000000, \"col\", \"All-Time\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 0.19 / 1000000 + sum(litellm_completion_tokens_total) * 0.75 / 1000000 + sum(litellm_cached_tokens_total) * 0.019 / 1000000, \"col\", \"All-Time\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 1.0 / 1000000 + sum(litellm_completion_tokens_total) * 5.0 / 1000000 + sum(litellm_cached_tokens_total) * 0.1 / 1000000, \"col\", \"All-Time\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 3.0 / 1000000 + sum(litellm_completion_tokens_total) * 15.0 / 1000000 + sum(litellm_cached_tokens_total) * 0.3 / 1000000, \"col\", \"All-Time\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 1.25 / 1000000 + sum(litellm_completion_tokens_total) * 10.0 / 1000000 + sum(litellm_cached_tokens_total) * 0.125 / 1000000, \"col\", \"All-Time\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 15.0 / 1000000 + sum(litellm_completion_tokens_total) * 75.0 / 1000000 + sum(litellm_cached_tokens_total) * 1.5 / 1000000, \"col\", \"All-Time\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 2.5 / 1000000 + sum(litellm_completion_tokens_total) * 15.0 / 1000000 + sum(litellm_cached_tokens_total) * 0.25 / 1000000, \"col\", \"All-Time\", \"\", \"\")",
+          "expr": "sum(litellm_spend_total)",
           "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
           "instant": true,
-          "legendFormat": "{{provider}}",
+          "legendFormat": "Local (LiteLLM)",
           "range": false,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 0.14 / 1000000 + sum(litellm_completion_tokens_total) * 0.28 / 1000000 + sum(litellm_cached_tokens_total) * 0.014 / 1000000",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "DeepSeek V4.1 Flash",
+          "range": false,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 0.075 / 1000000 + sum(litellm_completion_tokens_total) * 0.3 / 1000000 + sum(litellm_cached_tokens_total) * 0.0075 / 1000000",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "Gemini 3.1 Flash-Lite",
+          "range": false,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 0.28 / 1000000 + sum(litellm_completion_tokens_total) * 0.42 / 1000000 + sum(litellm_cached_tokens_total) * 0.028 / 1000000",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "DeepSeek V4 Pro",
+          "range": false,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 0.19 / 1000000 + sum(litellm_completion_tokens_total) * 0.75 / 1000000 + sum(litellm_cached_tokens_total) * 0.019 / 1000000",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "Gemini 3.8 Flash",
+          "range": false,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 1.0 / 1000000 + sum(litellm_completion_tokens_total) * 5.0 / 1000000 + sum(litellm_cached_tokens_total) * 0.1 / 1000000",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "Claude Haiku 4.5",
+          "range": false,
+          "refId": "F"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 3.0 / 1000000 + sum(litellm_completion_tokens_total) * 15.0 / 1000000 + sum(litellm_cached_tokens_total) * 0.3 / 1000000",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "Claude Sonnet 5.5",
+          "range": false,
+          "refId": "G"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 1.25 / 1000000 + sum(litellm_completion_tokens_total) * 10.0 / 1000000 + sum(litellm_cached_tokens_total) * 0.125 / 1000000",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "GPT-5.4",
+          "range": false,
+          "refId": "H"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 15.0 / 1000000 + sum(litellm_completion_tokens_total) * 75.0 / 1000000 + sum(litellm_cached_tokens_total) * 1.5 / 1000000",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "Claude Opus 5.5",
+          "range": false,
+          "refId": "I"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens_total) + sum(litellm_cached_tokens_total)) * 2.5 / 1000000 + sum(litellm_completion_tokens_total) * 15.0 / 1000000 + sum(litellm_cached_tokens_total) * 0.25 / 1000000",
+          "format": "table",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": true,
+          "legendFormat": "GPT-5.5",
+          "range": false,
+          "refId": "J"
         }
       ],
       "title": "Actual Cost \u2014 Total Recorded Tokens (All-Time)",
