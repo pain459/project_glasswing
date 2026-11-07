@@ -1,0 +1,54 @@
+# Custom metrics for LiteLLM token usage
+# Source: LiteLLM_DailyModelUsage table in the litellm Postgres database
+
+litellm_daily_prompt_tokens:
+  query: "SELECT date, model_group, prompt_tokens FROM \"LiteLLM_DailyModelUsage\" ORDER BY date DESC LIMIT 90"
+  metrics:
+    - date:
+        usage: "LABEL"
+        description: "Date of usage"
+    - model_group:
+        usage: "LABEL"
+        description: "Model group name"
+    - prompt_tokens:
+        usage: "VALUE"
+        description: "Input tokens used"
+
+litellm_daily_completion_tokens:
+  query: "SELECT date, model_group, completion_tokens FROM \"LiteLLM_DailyModelUsage\" ORDER BY date DESC LIMIT 90"
+  metrics:
+    - date:
+        usage: "LABEL"
+        description: "Date of usage"
+    - model_group:
+        usage: "LABEL"
+        description: "Model group name"
+    - completion_tokens:
+        usage: "VALUE"
+        description: "Output tokens used"
+
+litellm_daily_spend:
+  query: "SELECT date, model_group, spend FROM \"LiteLLM_DailyModelUsage\" ORDER BY date DESC LIMIT 90"
+  metrics:
+    - date:
+        usage: "LABEL"
+        description: "Date of usage"
+    - model_group:
+        usage: "LABEL"
+        description: "Model group name"
+    - spend:
+        usage: "VALUE"
+        description: "Spend in USD"
+
+litellm_daily_requests:
+  query: "SELECT date, model_group, request_count FROM \"LiteLLM_DailyModelUsage\" ORDER BY date DESC LIMIT 90"
+  metrics:
+    - date:
+        usage: "LABEL"
+        description: "Date of usage"
+    - model_group:
+        usage: "LABEL"
+        description: "Model group name"
+    - request_count:
+        usage: "VALUE"
+        description: "Number of requests"

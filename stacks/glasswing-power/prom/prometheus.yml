@@ -33,3 +33,12 @@ scrape_configs:
     static_configs:
       - targets: ['glasswing-power:8080']
     fallback_scrape_protocol: PrometheusText0.0.4
+
+  - job_name: 'litellm-exporter'
+         # metrics_path defaults to '/metrics'
+         # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: ['litellm-exporter:9188']
+        labels:
+          service: litellm
