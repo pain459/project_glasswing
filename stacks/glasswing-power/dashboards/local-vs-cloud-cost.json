@@ -516,39 +516,14 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
+            "mode": "thresholds"
           },
           "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "USD",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
             },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "inspect": false
           },
           "mappings": [],
           "thresholds": {
@@ -562,27 +537,47 @@
           },
           "unit": "currencyUSD"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Provider"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 250
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
-        "h": 8,
+        "h": 12,
         "w": 24,
         "x": 0,
         "y": 12
       },
       "id": 7,
       "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Estimated Total"
+          }
+        ]
       },
+      "pluginVersion": "11.1.0",
       "targets": [
         {
           "datasource": {
@@ -592,11 +587,12 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "expr": "sum(litellm_spend)",
+          "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
-          "instant": false,
+          "instant": true,
           "legendFormat": "Local (LiteLLM)",
-          "range": true,
+          "range": false,
           "refId": "A"
         },
         {
@@ -607,11 +603,12 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.14 / 1000000 + sum(litellm_completion_tokens) * 0.28 / 1000000 + sum(litellm_cached_tokens) * 0.014 / 1000000",
+          "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
-          "instant": false,
+          "instant": true,
           "legendFormat": "DeepSeek V4.1 Flash",
-          "range": true,
+          "range": false,
           "refId": "B"
         },
         {
@@ -622,11 +619,12 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.075 / 1000000 + sum(litellm_completion_tokens) * 0.30 / 1000000 + sum(litellm_cached_tokens) * 0.0075 / 1000000",
+          "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
-          "instant": false,
+          "instant": true,
           "legendFormat": "Gemini 3.1 Flash-Lite",
-          "range": true,
+          "range": false,
           "refId": "C"
         },
         {
@@ -637,11 +635,12 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.28 / 1000000 + sum(litellm_completion_tokens) * 0.42 / 1000000 + sum(litellm_cached_tokens) * 0.028 / 1000000",
+          "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
-          "instant": false,
+          "instant": true,
           "legendFormat": "DeepSeek V4 Pro",
-          "range": true,
+          "range": false,
           "refId": "D"
         },
         {
@@ -652,11 +651,12 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.19 / 1000000 + sum(litellm_completion_tokens) * 0.75 / 1000000 + sum(litellm_cached_tokens) * 0.019 / 1000000",
+          "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
-          "instant": false,
+          "instant": true,
           "legendFormat": "Gemini 3.8 Flash",
-          "range": true,
+          "range": false,
           "refId": "E"
         },
         {
@@ -667,11 +667,12 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 1.00 / 1000000 + sum(litellm_completion_tokens) * 5.00 / 1000000 + sum(litellm_cached_tokens) * 0.10 / 1000000",
+          "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
-          "instant": false,
+          "instant": true,
           "legendFormat": "Claude Haiku 4.5",
-          "range": true,
+          "range": false,
           "refId": "F"
         },
         {
@@ -682,11 +683,12 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 3.00 / 1000000 + sum(litellm_completion_tokens) * 15.00 / 1000000 + sum(litellm_cached_tokens) * 0.30 / 1000000",
+          "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
-          "instant": false,
+          "instant": true,
           "legendFormat": "Claude Sonnet 5.5",
-          "range": true,
+          "range": false,
           "refId": "G"
         },
         {
@@ -697,11 +699,12 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 1.25 / 1000000 + sum(litellm_completion_tokens) * 10.00 / 1000000 + sum(litellm_cached_tokens) * 0.125 / 1000000",
+          "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
-          "instant": false,
+          "instant": true,
           "legendFormat": "GPT-5.4",
-          "range": true,
+          "range": false,
           "refId": "H"
         },
         {
@@ -712,11 +715,12 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 15.00 / 1000000 + sum(litellm_completion_tokens) * 75.00 / 1000000 + sum(litellm_cached_tokens) * 1.50 / 1000000",
+          "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
-          "instant": false,
+          "instant": true,
           "legendFormat": "Claude Opus 5.5",
-          "range": true,
+          "range": false,
           "refId": "I"
         },
         {
@@ -727,16 +731,17 @@
           "disableTextWrap": false,
           "editorMode": "code",
           "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 2.50 / 1000000 + sum(litellm_completion_tokens) * 15.00 / 1000000 + sum(litellm_cached_tokens) * 0.25 / 1000000",
+          "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
-          "instant": false,
+          "instant": true,
           "legendFormat": "GPT-5.5",
-          "range": true,
+          "range": false,
           "refId": "J"
         }
       ],
       "title": "Estimated Cost by AI Provider (7 days total)",
-      "type": "timeseries"
+      "type": "table"
     }
   ],
   "refresh": "1m",
