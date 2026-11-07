@@ -57,12 +57,36 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Provider"
+              "options": "Input Tokens"
             },
             "properties": [
               {
-                "id": "custom.width",
-                "value": 250
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Output Tokens"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cached Tokens"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
               }
             ]
           }
