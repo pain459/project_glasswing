@@ -23,31 +23,31 @@ PORT = int(os.getenv('PORT', '9188'))
 litellm_prompt_tokens = Gauge(
     'litellm_prompt_tokens',
     'Input tokens used (uncached)',
-    ['date', 'model_group']
+    ['date', 'week', 'model_group']
 )
 
 litellm_completion_tokens = Gauge(
     'litellm_completion_tokens',
     'Output tokens used',
-    ['date', 'model_group']
+    ['date', 'week', 'model_group']
 )
 
 litellm_spend = Gauge(
     'litellm_spend',
     'Spend in USD',
-    ['date', 'model_group']
+    ['date', 'week', 'model_group']
 )
 
 litellm_requests = Gauge(
     'litellm_requests',
     'Number of requests',
-    ['date', 'model_group']
+    ['date', 'week', 'model_group']
 )
 
 litellm_cached_tokens = Gauge(
     'litellm_cached_tokens',
     'Cached input tokens',
-    ['date', 'model_group']
+    ['date', 'week', 'model_group']
 )
 
 # Prometheus metrics — all-time totals (for "total from start" table)
@@ -107,10 +107,14 @@ def update_metrics():
         # Update per-date metrics
         for row in rows:
             date, model_group, prompt_tokens, completion_tokens, spend, request_count = row
-            litellm_prompt_tokens.labels(date=date, model_group=model_group).set(prompt_tokens)
-            litellm_completion_tokens.labels(date=date, model_group=model_group).set(completion_tokens)
-            litellm_spend.labels(date=date, model_group=model_group).set(spend)
-            litellm_requests.labels(date=date, model_group=model_group).set(request_count)
+            # Calculate ISO week (e.g., 2026W45)
+            date_obj = datetime.strptime(date, '%Y-%m-%d')
+            iso_year, iso_week, _ = date_obj.isocalendar()
+            week = f"{iso_year}W{iso_week:02d}"
+            litellm_prompt_tokens.labels(date=date, week=week, model_group=model_group).set(prompt_tokens)
+            litellm_completion_tokens.labels(date=date, week=week, model_group=model_group).set(completion_tokens)
+            litellm_spend.labels(date=date, week=week, model_group=model_group).set(spend)
+            litellm_requests.labels(date=date, week=week, model_group=model_group).set(request_count)
 
         # Query cached tokens from LiteLLM_SpendLogs (all time).
         # Group by model_group (not model) so that the same model stored under
@@ -132,7 +136,11 @@ def update_metrics():
         for row in cached_rows:
             date, model, cached_tokens = row
             if cached_tokens and cached_tokens > 0:
-                litellm_cached_tokens.labels(date=str(date), model_group=model).set(cached_tokens)
+                # Calculate ISO week
+                date_obj = datetime.strptime(str(date), '%Y-%m-%d')
+                iso_year, iso_week, _ = date_obj.isocalendar()
+                week = f"{iso_year}W{iso_week:02d}"
+                litellm_cached_tokens.labels(date=str(date), week=week, model_group=model).set(cached_tokens)
 
         # All-time totals (single value, no labels)
         total_prompt = sum(r[2] for r in rows)
