@@ -57,7 +57,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "Provider"
+              "options": "provider"
             },
             "properties": [
               {
@@ -102,7 +102,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "label_replace(sum(litellm_spend), \"provider\", \"Local (LiteLLM)\", \"\", \"\")",
+          "expr": "label_replace(sum(litellm_spend), \"provider\", \"Local (LiteLLM)\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.14 / 1000000 + sum(litellm_completion_tokens) * 0.28 / 1000000 + sum(litellm_cached_tokens) * 0.014 / 1000000, \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.075 / 1000000 + sum(litellm_completion_tokens) * 0.30 / 1000000 + sum(litellm_cached_tokens) * 0.0075 / 1000000, \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.28 / 1000000 + sum(litellm_completion_tokens) * 0.42 / 1000000 + sum(litellm_cached_tokens) * 0.028 / 1000000, \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.19 / 1000000 + sum(litellm_completion_tokens) * 0.75 / 1000000 + sum(litellm_cached_tokens) * 0.019 / 1000000, \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 1.00 / 1000000 + sum(litellm_completion_tokens) * 5.00 / 1000000 + sum(litellm_cached_tokens) * 0.10 / 1000000, \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 3.00 / 1000000 + sum(litellm_completion_tokens) * 15.00 / 1000000 + sum(litellm_cached_tokens) * 0.30 / 1000000, \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 1.25 / 1000000 + sum(litellm_completion_tokens) * 10.00 / 1000000 + sum(litellm_cached_tokens) * 0.125 / 1000000, \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 15.00 / 1000000 + sum(litellm_completion_tokens) * 75.00 / 1000000 + sum(litellm_cached_tokens) * 1.50 / 1000000, \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 2.50 / 1000000 + sum(litellm_completion_tokens) * 15.00 / 1000000 + sum(litellm_cached_tokens) * 0.25 / 1000000, \"provider\", \"GPT-5.5\", \"\", \"\")",
           "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
@@ -110,150 +110,6 @@
           "legendFormat": "{{provider}}",
           "range": false,
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDC628E2375F40484"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.14 / 1000000 + sum(litellm_completion_tokens) * 0.28 / 1000000 + sum(litellm_cached_tokens) * 0.014 / 1000000, \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\")",
-          "format": "table",
-          "fullMetaSearch": false,
-          "includeNull": true,
-          "instant": true,
-          "legendFormat": "{{provider}}",
-          "range": false,
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDC628E2375F40484"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.075 / 1000000 + sum(litellm_completion_tokens) * 0.30 / 1000000 + sum(litellm_cached_tokens) * 0.0075 / 1000000, \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\")",
-          "format": "table",
-          "fullMetaSearch": false,
-          "includeNull": true,
-          "instant": true,
-          "legendFormat": "{{provider}}",
-          "range": false,
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDC628E2375F40484"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.28 / 1000000 + sum(litellm_completion_tokens) * 0.42 / 1000000 + sum(litellm_cached_tokens) * 0.028 / 1000000, \"provider\", \"DeepSeek V4 Pro\", \"\", \"\")",
-          "format": "table",
-          "fullMetaSearch": false,
-          "includeNull": true,
-          "instant": true,
-          "legendFormat": "{{provider}}",
-          "range": false,
-          "refId": "D"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDC628E2375F40484"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.19 / 1000000 + sum(litellm_completion_tokens) * 0.75 / 1000000 + sum(litellm_cached_tokens) * 0.019 / 1000000, \"provider\", \"Gemini 3.8 Flash\", \"\", \"\")",
-          "format": "table",
-          "fullMetaSearch": false,
-          "includeNull": true,
-          "instant": true,
-          "legendFormat": "{{provider}}",
-          "range": false,
-          "refId": "E"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDC628E2375F40484"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 1.00 / 1000000 + sum(litellm_completion_tokens) * 5.00 / 1000000 + sum(litellm_cached_tokens) * 0.10 / 1000000, \"provider\", \"Claude Haiku 4.5\", \"\", \"\")",
-          "format": "table",
-          "fullMetaSearch": false,
-          "includeNull": true,
-          "instant": true,
-          "legendFormat": "{{provider}}",
-          "range": false,
-          "refId": "F"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDC628E2375F40484"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 3.00 / 1000000 + sum(litellm_completion_tokens) * 15.00 / 1000000 + sum(litellm_cached_tokens) * 0.30 / 1000000, \"provider\", \"Claude Sonnet 5.5\", \"\", \"\")",
-          "format": "table",
-          "fullMetaSearch": false,
-          "includeNull": true,
-          "instant": true,
-          "legendFormat": "{{provider}}",
-          "range": false,
-          "refId": "G"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDC628E2375F40484"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 1.25 / 1000000 + sum(litellm_completion_tokens) * 10.00 / 1000000 + sum(litellm_cached_tokens) * 0.125 / 1000000, \"provider\", \"GPT-5.4\", \"\", \"\")",
-          "format": "table",
-          "fullMetaSearch": false,
-          "includeNull": true,
-          "instant": true,
-          "legendFormat": "{{provider}}",
-          "range": false,
-          "refId": "H"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDC628E2375F40484"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 15.00 / 1000000 + sum(litellm_completion_tokens) * 75.00 / 1000000 + sum(litellm_cached_tokens) * 1.50 / 1000000, \"provider\", \"Claude Opus 5.5\", \"\", \"\")",
-          "format": "table",
-          "fullMetaSearch": false,
-          "includeNull": true,
-          "instant": true,
-          "legendFormat": "{{provider}}",
-          "range": false,
-          "refId": "I"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDC628E2375F40484"
-          },
-          "disableTextWrap": false,
-          "editorMode": "code",
-          "expr": "label_replace((sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 2.50 / 1000000 + sum(litellm_completion_tokens) * 15.00 / 1000000 + sum(litellm_cached_tokens) * 0.25 / 1000000, \"provider\", \"GPT-5.5\", \"\", \"\")",
-          "format": "table",
-          "fullMetaSearch": false,
-          "includeNull": true,
-          "instant": true,
-          "legendFormat": "{{provider}}",
-          "range": false,
-          "refId": "J"
         }
       ],
       "title": "Estimated Cost by AI Provider (7 days total)",
