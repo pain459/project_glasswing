@@ -45,6 +45,12 @@ litellm_requests = Gauge(
     ['date', 'model_group']
 )
 
+litellm_cached_tokens = Gauge(
+    'litellm_cached_tokens',
+    'Cached input tokens',
+    ['date', 'model_group']
+)
+
 litellm_scrape_errors = Counter(
     'litellm_scrape_errors_total',
     'Total number of scrape errors'
@@ -77,14 +83,35 @@ def update_metrics():
         litellm_completion_tokens.clear()
         litellm_spend.clear()
         litellm_requests.clear()
+        litellm_cached_tokens.clear()
         
-        # Update metrics
+        # Update metrics from LiteLLM_DailyModelUsage
         for row in rows:
             date, model_group, prompt_tokens, completion_tokens, spend, request_count = row
             litellm_prompt_tokens.labels(date=date, model_group=model_group).set(prompt_tokens)
             litellm_completion_tokens.labels(date=date, model_group=model_group).set(completion_tokens)
             litellm_spend.labels(date=date, model_group=model_group).set(spend)
             litellm_requests.labels(date=date, model_group=model_group).set(request_count)
+        
+        # Query cached tokens from LiteLLM_SpendLogs (last 7 days)
+        cur.execute("""
+            SELECT 
+                DATE(created_at) as date,
+                model,
+                SUM(CASE WHEN metadata->'usage_object'->'prompt_tokens_details'->>'cached_tokens' IS NOT NULL 
+                     THEN (metadata->'usage_object'->'prompt_tokens_details'->>'cached_tokens')::bigint 
+                     ELSE 0 END) as cached_tokens
+            FROM "LiteLLM_SpendLogs"
+            WHERE created_at >= NOW() - INTERVAL '7 days'
+            GROUP BY DATE(created_at), model
+            ORDER BY date DESC
+        """)
+        
+        cached_rows = cur.fetchall()
+        for row in cached_rows:
+            date, model, cached_tokens = row
+            if cached_tokens and cached_tokens > 0:
+                litellm_cached_tokens.labels(date=str(date), model_group=model).set(cached_tokens)
         
         cur.close()
         conn.close()

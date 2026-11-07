@@ -1,0 +1,65 @@
+{
+  "description": "Cloud provider pricing reference for cost comparison (November 2026)",
+  "providers": {
+    "deepseek_v4_flash": {
+      "name": "DeepSeek V4.1 Flash (off-peak)",
+      "input_cost_per_mtok": 0.14,
+      "output_cost_per_mtok": 0.28,
+      "cache_read_cost_per_mtok": 0.014
+    },
+    "gemini_3_flash_lite": {
+      "name": "Google Gemini 3.1 Flash-Lite",
+      "input_cost_per_mtok": 0.075,
+      "output_cost_per_mtok": 0.30,
+      "cache_read_cost_per_mtok": 0.0075
+    },
+    "deepseek_v4_pro": {
+      "name": "DeepSeek V4 Pro (off-peak)",
+      "input_cost_per_mtok": 0.28,
+      "output_cost_per_mtok": 0.42,
+      "cache_read_cost_per_mtok": 0.028
+    },
+    "gemini_3_flash": {
+      "name": "Google Gemini 3.8 Flash",
+      "input_cost_per_mtok": 0.19,
+      "output_cost_per_mtok": 0.75,
+      "cache_read_cost_per_mtok": 0.019
+    },
+    "claude_haiku_4_5": {
+      "name": "Anthropic Claude Haiku 4.5",
+      "input_cost_per_mtok": 1.00,
+      "output_cost_per_mtok": 5.00,
+      "cache_read_cost_per_mtok": 0.10
+    },
+    "claude_sonnet_5_5": {
+      "name": "Anthropic Claude Sonnet 5.5",
+      "input_cost_per_mtok": 3.00,
+      "output_cost_per_mtok": 15.00,
+      "cache_read_cost_per_mtok": 0.30
+    },
+    "gpt_5_4": {
+      "name": "OpenAI GPT-5.4",
+      "input_cost_per_mtok": 1.25,
+      "output_cost_per_mtok": 10.00,
+      "cache_read_cost_per_mtok": 0.125
+    },
+    "claude_opus_5_5": {
+      "name": "Anthropic Claude Opus 5.5",
+      "input_cost_per_mtok": 15.00,
+      "output_cost_per_mtok": 75.00,
+      "cache_read_cost_per_mtok": 1.50
+    },
+    "claude_sonnet_4_6": {
+      "name": "Anthropic Claude Sonnet 4.6",
+      "input_cost_per_mtok": 3.00,
+      "output_cost_per_mtok": 15.00,
+      "cache_read_cost_per_mtok": 0.30
+    },
+    "gpt_5_5": {
+      "name": "OpenAI GPT-5.5",
+      "input_cost_per_mtok": 2.50,
+      "output_cost_per_mtok": 15.00,
+      "cache_read_cost_per_mtok": 0.25
+    }
+  }
+}
