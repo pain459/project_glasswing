@@ -78,7 +78,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum(litellm_spend) by (date) * 0 + sum(litellm_spend)",
+          "expr": "sum(litellm_spend)",
           "fullMetaSearch": false,
           "includeNull": true,
           "instant": false,
@@ -144,7 +144,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum(litellm_prompt_tokens) by (date) * 0 + sum(litellm_prompt_tokens)",
+          "expr": "sum(litellm_prompt_tokens)",
           "fullMetaSearch": false,
           "includeNull": true,
           "instant": false,
@@ -210,7 +210,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum(litellm_completion_tokens) by (date) * 0 + sum(litellm_completion_tokens)",
+          "expr": "sum(litellm_completion_tokens)",
           "fullMetaSearch": false,
           "includeNull": true,
           "instant": false,
@@ -276,7 +276,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "sum(litellm_cached_tokens) by (date) * 0 + sum(litellm_cached_tokens)",
+          "expr": "sum(litellm_cached_tokens)",
           "fullMetaSearch": false,
           "includeNull": true,
           "instant": false,
@@ -506,6 +506,236 @@
         }
       ],
       "title": "Daily Token Usage (Input, Output, Cached)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PDC628E2375F40484"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "USD",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "sum(litellm_spend)",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": false,
+          "legendFormat": "Local (LiteLLM)",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.14 / 1000000 + sum(litellm_completion_tokens) * 0.28 / 1000000 + sum(litellm_cached_tokens) * 0.014 / 1000000",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": false,
+          "legendFormat": "DeepSeek V4.1 Flash",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.075 / 1000000 + sum(litellm_completion_tokens) * 0.30 / 1000000 + sum(litellm_cached_tokens) * 0.0075 / 1000000",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": false,
+          "legendFormat": "Gemini 3.1 Flash-Lite",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.28 / 1000000 + sum(litellm_completion_tokens) * 0.42 / 1000000 + sum(litellm_cached_tokens) * 0.028 / 1000000",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": false,
+          "legendFormat": "DeepSeek V4 Pro",
+          "range": true,
+          "refId": "D"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 0.19 / 1000000 + sum(litellm_completion_tokens) * 0.75 / 1000000 + sum(litellm_cached_tokens) * 0.019 / 1000000",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": false,
+          "legendFormat": "Gemini 3.8 Flash",
+          "range": true,
+          "refId": "E"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 1.00 / 1000000 + sum(litellm_completion_tokens) * 5.00 / 1000000 + sum(litellm_cached_tokens) * 0.10 / 1000000",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": false,
+          "legendFormat": "Claude Haiku 4.5",
+          "range": true,
+          "refId": "F"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 3.00 / 1000000 + sum(litellm_completion_tokens) * 15.00 / 1000000 + sum(litellm_cached_tokens) * 0.30 / 1000000",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": false,
+          "legendFormat": "Claude Sonnet 5.5",
+          "range": true,
+          "refId": "G"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 1.25 / 1000000 + sum(litellm_completion_tokens) * 10.00 / 1000000 + sum(litellm_cached_tokens) * 0.125 / 1000000",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": false,
+          "legendFormat": "GPT-5.4",
+          "range": true,
+          "refId": "H"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 15.00 / 1000000 + sum(litellm_completion_tokens) * 75.00 / 1000000 + sum(litellm_cached_tokens) * 1.50 / 1000000",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": false,
+          "legendFormat": "Claude Opus 5.5",
+          "range": true,
+          "refId": "I"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PDC628E2375F40484"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "(sum(litellm_prompt_tokens) - sum(litellm_cached_tokens)) * 2.50 / 1000000 + sum(litellm_completion_tokens) * 15.00 / 1000000 + sum(litellm_cached_tokens) * 0.25 / 1000000",
+          "fullMetaSearch": false,
+          "includeNull": true,
+          "instant": false,
+          "legendFormat": "GPT-5.5",
+          "range": true,
+          "refId": "J"
+        }
+      ],
+      "title": "Estimated Cost by AI Provider (7 days total)",
       "type": "timeseries"
     }
   ],
