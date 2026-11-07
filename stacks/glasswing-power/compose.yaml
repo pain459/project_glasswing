@@ -1,0 +1,141 @@
+name: glasswing-glasswing-power
+
+# Glasswing Power — host power/energy consumption metering agent
+#
+# A Rust metrology agent (Scaphandre fork) that measures electric power and
+# energy consumption of the host and its containers, exposing metrics as a
+# Prometheus HTTP exporter on :8080.
+#
+# It reads /proc and /sys/class/powercap (RAPL) to compute per-process and
+# per-container power, so it requires:
+#   - privileged mode (or the equivalent CAP_SYS_ADMIN + /proc + /sys mounts)
+#   - the host /proc and /sys/class/powercap bind-mounted read-only
+#
+# Because it needs those privileges it extends `base` (not `hardened`, which
+# strips no-new-privileges and would break RAPL access) — the same trade-off
+# as the glances host monitor.
+#
+# This stack includes:
+#   - glasswing-power: the metering agent (Prometheus exporter)
+#   - prometheus: scrapes glasswing-power and stores metrics
+#   - grafana: visualizes the metrics with pre-built dashboards
+
+services:
+  glasswing-power:
+    extends:
+      file: ../base.yaml
+      service: base
+    build:
+      context: ./src
+      dockerfile: ../Dockerfile
+    image: glasswing/glasswing-power:1.0.0
+    container_name: glasswing-glasswing-power
+    init: true
+
+    # Run as a Prometheus exporter (default in the Dockerfile CMD).
+    command: ["prometheus"]
+
+    environment:
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-glasswing-power
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3036:8080"
+
+    # Power metering needs host /proc + RAPL powercap.
+    privileged: true
+    volumes:
+      - /proc:/proc:ro
+      - /sys/class/powercap:/sys/class/powercap:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    pid: host
+
+    pids_limit: 512
+    mem_limit: 512m
+
+    labels:
+      com.glasswing.service: glasswing-power
+      com.glasswing.category: core
+      com.glasswing.monitoring: "true"
+
+    networks:
+      - glasswing
+
+  prometheus:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    build:
+      context: ./prom
+    image: glasswing/glasswing-power-prometheus:1.0.0
+    container_name: glasswing-glasswing-power-prometheus
+    init: true
+
+    environment:
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-glasswing-power-prometheus
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3037:9090"
+
+    volumes:
+      - prometheus_data:/prometheus
+
+    labels:
+      com.glasswing.service: glasswing-power-prometheus
+      com.glasswing.category: core
+      com.glasswing.monitoring: "true"
+
+    networks:
+      - glasswing
+
+  grafana:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: grafana/grafana:11.1.0
+    container_name: glasswing-glasswing-power-grafana
+    init: true
+
+    environment:
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-glasswing-power-grafana
+      # Grafana admin password (from Infisical)
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:?Required from Infisical}
+      # Set the default home dashboard
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/sample/sample-dashboard.json
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3038:3000"
+
+    volumes:
+      - grafana_data:/var/lib/grafana
+      # Mount dashboards
+      - ./dashboards/sample-dashboard.json:/var/lib/grafana/dashboards/sample/sample-dashboard.json:ro
+      - ./dashboards/power-cost-dashboard.json:/var/lib/grafana/dashboards/power-cost/power-cost-dashboard.json:ro
+      # Mount provisioning files
+      - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
+      - ./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+
+    labels:
+      com.glasswing.service: glasswing-power-grafana
+      com.glasswing.category: core
+      com.glasswing.monitoring: "true"
+
+    networks:
+      - glasswing
+
+volumes:
+  prometheus_data:
+    name: glasswing-glasswing-power-prometheus-data
+  grafana_data:
+    name: glasswing-glasswing-power-grafana-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

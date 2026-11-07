@@ -136,6 +136,13 @@ stacks:
     build-type: external
 
   # ── Application Services ────────────────────────────────────
+  glasswing-power:
+    image: glasswing/glasswing-power
+    tag: "1.0.0"
+    mutable: false
+    updated: "2026-11-07"
+    build-type: source
+    notes: "Rust power/energy metering agent (Scaphandre fork) — built from source at commit 6de2e9c, Prometheus exporter on :3036, Prometheus on :3037, Grafana on :3038"
   litellm:
     image: ghcr.io/berriai/litellm
     tag: "v1.108.1"
