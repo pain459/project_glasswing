@@ -93,17 +93,20 @@ def update_metrics():
             litellm_spend.labels(date=date, model_group=model_group).set(spend)
             litellm_requests.labels(date=date, model_group=model_group).set(request_count)
         
-        # Query cached tokens from LiteLLM_SpendLogs (last 7 days)
+        # Query cached tokens from LiteLLM_SpendLogs (last 7 days).
+        # Group by model_group (not model) so that the same model stored under
+        # different names (e.g. "openai/qwen3.8-opencode" vs "qwen3.8-opencode")
+        # is not double-counted.
         cur.execute("""
-            SELECT 
+            SELECT
                 DATE(created_at) as date,
-                model,
-                SUM(CASE WHEN metadata->'usage_object'->'prompt_tokens_details'->>'cached_tokens' IS NOT NULL 
-                     THEN (metadata->'usage_object'->'prompt_tokens_details'->>'cached_tokens')::bigint 
+                COALESCE(NULLIF(model_group, ''), model) as model_group,
+                SUM(CASE WHEN metadata->'usage_object'->'prompt_tokens_details'->>'cached_tokens' IS NOT NULL
+                     THEN (metadata->'usage_object'->'prompt_tokens_details'->>'cached_tokens')::bigint
                      ELSE 0 END) as cached_tokens
             FROM "LiteLLM_SpendLogs"
             WHERE created_at >= NOW() - INTERVAL '7 days'
-            GROUP BY DATE(created_at), model
+            GROUP BY DATE(created_at), COALESCE(NULLIF(model_group, ''), model)
             ORDER BY date DESC
         """)
         
