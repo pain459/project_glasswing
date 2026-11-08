@@ -88,10 +88,18 @@ def update_metrics():
         )
         cur = conn.cursor()
 
-        # Query ALL usage from LiteLLM_DailyModelUsage (no date limit)
+        # Query ALL usage from LiteLLM_DailyModelUsage (no date limit).
+        # GROUP BY date + model_group with SUM() so that duplicate rows for the
+        # same (date, model_group) are aggregated instead of overwriting each
+        # other when written to the same Prometheus label bucket.
         cur.execute("""
-            SELECT date, model_group, prompt_tokens, completion_tokens, spend, request_count
+            SELECT date, model_group,
+                   SUM(prompt_tokens) AS prompt_tokens,
+                   SUM(completion_tokens) AS completion_tokens,
+                   SUM(spend) AS spend,
+                   SUM(request_count) AS request_count
             FROM "LiteLLM_DailyModelUsage"
+            GROUP BY date, model_group
             ORDER BY date DESC
         """)
 

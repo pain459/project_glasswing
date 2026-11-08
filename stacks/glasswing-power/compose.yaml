@@ -191,6 +191,7 @@ services:
       - ./dashboards/power-cost-dashboard.json:/var/lib/grafana/dashboards/power-cost/power-cost-dashboard.json:ro
       - ./dashboards/litellm-cost-dashboard.json:/var/lib/grafana/dashboards/litellm-cost/litellm-cost-dashboard.json:ro
       - ./dashboards/local-vs-cloud-cost.json:/var/lib/grafana/dashboards/local-vs-cloud-cost/local-vs-cloud-cost.json:ro
+      - ./dashboards/token-cost-comparison.json:/var/lib/grafana/dashboards/token-cost-comparison/token-cost-comparison.json:ro
       # Mount provisioning files
       - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
       - ./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
