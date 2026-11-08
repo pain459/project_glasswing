@@ -1,3 +1,5 @@
+
+
 # my global config
 global:
   scrape_interval:     10s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
@@ -34,6 +36,13 @@ scrape_configs:
       - targets: ['glasswing-power:8080']
     fallback_scrape_protocol: PrometheusText0.0.4
 
+  - job_name: 'gpu-power'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['gpu-power-exporter:8082']
+        labels:
+          service: gpu
+
   - job_name: 'litellm-exporter'
          # metrics_path defaults to '/metrics'
          # scheme defaults to 'http'.
@@ -42,3 +51,4 @@ scrape_configs:
       - targets: ['litellm-exporter:9188']
         labels:
           service: litellm
+
