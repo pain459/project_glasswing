@@ -22,13 +22,13 @@ VENDORS = [
     ("GPT-5.5",             2.50, 15.00, 0.25),
 ]
 
-# Period -> (title, date filter, week filter, GPU increase window)
+# Period -> (title, date filter, week filter, GPU window, GPU days)
 PERIODS = [
-    ("Today (2026-11-08)",    'date="${today}"', None, "1d"),
-    ("This Week (2026W45)",   None, 'week="2026W45"', "7d"),
-    ("This Month (2026-11)",  'date=~"2026-11.*"', None, "30d"),
-    ("This Year (2026)",      'date=~"2026.*"', None, "365d"),
-    ("All-Time (Total Recorded)", None, None, "365d"),
+    ("Today (2026-11-08)",    'date="${today}"', None, "1d", 1),
+    ("This Week (2026W45)",   None, 'week="2026W45"', "7d", 7),
+    ("This Month (2026-11)",  'date=~"2026-11.*"', None, "30d", 30),
+    ("This Year (2026)",      'date=~"2026.*"', None, "365d", 365),
+    ("All-Time (Total Recorded)", None, None, "365d", 365),
 ]
 
 def sel(metric, date_f, week_f):
@@ -49,25 +49,22 @@ def cloud_cost_expr(date_f, week_f, in_r, out_r, cache_r):
     k = sum_by('litellm_cached_tokens', date_f, week_f)
     return (f'({p} * {in_r} + {c} * {out_r} + {k} * {cache_r}) / 1000000')
 
-def local_cost_expr(date_f, week_f, gpu_window):
-    """Period-aware local cost: CPU energy (daily gauge) + GPU energy (increase over window).
+def local_cost_expr(gpu_window, gpu_days):
+    """Period-aware local cost: CPU energy (counter increase) + GPU energy (avg power × time).
 
-    CPU: sum(scaph_host_energy_daily_microjoules{filters}) — gauge, energy since midnight per date.
-    GPU: sum(increase(nvidia_gpu_power_watts[window])) * 3600 — W * s = J.
-    Both in microjoules (CPU) and joules (GPU) → normalize to kWh → INR → USD.
+    CPU: sum(increase(scaph_host_energy_microjoules[window])) — counter, energy in microjoules.
+    GPU: sum(avg_over_time(nvidia_gpu_power_watts[window]) * 86400 * days) — avg W × seconds = J.
+    Both wrapped in sum() to strip labels before adding.
+    Units: CPU in uJ, GPU in J. Convert GPU to uJ (×1e6), sum, then /3.6e12 → kWh → INR → USD.
     """
-    # CPU energy in microjoules (gauge, per-day, resets at midnight)
-    cpu = sum_by('scaph_host_energy_daily_microjoules', date_f, week_f)
-    # GPU energy in joules (W * seconds = J)
-    gpu = f'sum(increase(nvidia_gpu_power_watts[{gpu_window}])) * 3600'
-    # CPU is in microjoules, GPU is in joules. Convert GPU to microjoules: * 1000000
-    # Total microjoules → kWh: / 1000000 (MJ) / 3600 (s/h) = kWh
-    # kWh * 9 INR/kWh / 94.66 INR/USD = USD
-    return (f'({cpu} + {gpu} * 1000000) / 1000000 / 3600 * 9 / 94.66')
+    cpu = f'sum(increase(scaph_host_energy_microjoules[{gpu_window}]))'
+    gpu = f'sum(avg_over_time(nvidia_gpu_power_watts[{gpu_window}]) * 86400 * {gpu_days})'
+    # (cpu_uJ + gpu_J * 1e6) / 3.6e12 * 9 / 94.66
+    return (f'({cpu} + {gpu} * 1000000) / 3600000000000 * 9 / 94.66')
 
-def build_period_expr(date_f, week_f, gpu_window):
+def build_period_expr(date_f, week_f, gpu_window, gpu_days):
     """Build a single 'or'-joined expression for one period (all providers as rows)."""
-    parts = [f'label_replace({local_cost_expr(date_f, week_f, gpu_window)}, "provider", "Local (LiteLLM)", "", "")']
+    parts = [f'label_replace({local_cost_expr(gpu_window, gpu_days)}, "provider", "Local (LiteLLM)", "", "")']
     for name, in_r, out_r, cache_r in VENDORS:
         parts.append(f'label_replace({cloud_cost_expr(date_f, week_f, in_r, out_r, cache_r)}, "provider", "{name}", "", "")')
     return ' or '.join(parts)
@@ -118,8 +115,8 @@ def make_panel(panel_id, title, expr, grid_y):
 
 def build_dashboard():
     panels = []
-    for i, (title, date_f, week_f, gpu_window) in enumerate(PERIODS):
-        expr = build_period_expr(date_f, week_f, gpu_window)
+    for i, (title, date_f, week_f, gpu_window, gpu_days) in enumerate(PERIODS):
+        expr = build_period_expr(date_f, week_f, gpu_window, gpu_days)
         panels.append(make_panel(i + 1, title, expr, i * 12))
 
     dashboard = {
