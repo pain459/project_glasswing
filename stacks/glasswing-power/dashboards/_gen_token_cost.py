@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-"""Generate the 'Token Cost Comparison' dashboard (single table).
+"""Generate the 'Token Cost Comparison' dashboard.
 
-Rows  = Local (LiteLLM) + cloud vendors
-Cols  = Day / Week / Month / Year
-Cell  = "<tokens> tok -> $<cost>"  (cloud)  |  power-based cost (Local)
-
-Each (provider, period) is its own PromQL series joined with `or`, so a single
-query returns every row. The table is then pivoted with Grafana transformations.
+5 separate tables (one per period: Today, This Week, This Month, This Year, All-Time).
+Each table shows all 10 providers as rows using a single 'or'-joined query.
+No transformations — the table panel auto-expands series into rows.
 """
 import json
 
@@ -25,16 +22,16 @@ VENDORS = [
     ("GPT-5.5",             2.50, 15.00, 0.25),
 ]
 
-# Period -> (date filter, week filter)
+# Period -> (title, date filter, week filter, GPU increase window)
 PERIODS = [
-    ("Day",   'date="${today}"', None),
-    ("Week",  None, 'week="${week}"'),
-    ("Month", 'date=~"2026-11.*"', None),
-    ("Year",  'date=~"2026.*"', None),
+    ("Today (2026-11-08)",    'date="${today}"', None, "1d"),
+    ("This Week (2026W45)",   None, 'week="2026W45"', "7d"),
+    ("This Month (2026-11)",  'date=~"2026-11.*"', None, "30d"),
+    ("This Year (2026)",      'date=~"2026.*"', None, "365d"),
+    ("All-Time (Total Recorded)", None, None, "365d"),
 ]
 
 def sel(metric, date_f, week_f):
-    """Build a selector with whichever filter is present."""
     if date_f and week_f:
         return f'{metric}{{{date_f},{week_f}}}'
     if date_f:
@@ -52,69 +49,78 @@ def cloud_cost_expr(date_f, week_f, in_r, out_r, cache_r):
     k = sum_by('litellm_cached_tokens', date_f, week_f)
     return (f'({p} * {in_r} + {c} * {out_r} + {k} * {cache_r}) / 1000000')
 
-def local_cost_expr():
-    # (CPU energy + GPU energy) in kWh * rate(9 INR/kWh) / FX(94.66) -> USD.
-    # sum() strips the differing instance/job labels so the two series add cleanly.
-    return ('(sum(scaph_host_energy_microjoules) + sum(increase(nvidia_gpu_power_watts[30d])) * 3600) '
-            '/ 1000000 / 3600 * 9 / 94.66')
+def local_cost_expr(date_f, week_f, gpu_window):
+    """Period-aware local cost: CPU energy (daily gauge) + GPU energy (increase over window).
 
-def tag_period(expr, provider, period):
-    """Add provider + period labels. `and on()` keeps the LEFT labels, so the
-    period label must be applied by an OUTER label_replace on the AND result."""
-    return (f'label_replace(label_replace({expr}, "provider", "{provider}", "", "") '
-            f'and on() label_replace(vector(1), "period", "{period}", "", ""), '
-            f'"period", "{period}", "", "")')
+    CPU: sum(scaph_host_energy_daily_microjoules{filters}) — gauge, energy since midnight per date.
+    GPU: sum(increase(nvidia_gpu_power_watts[window])) * 3600 — W * s = J.
+    Both in microjoules (CPU) and joules (GPU) → normalize to kWh → INR → USD.
+    """
+    # CPU energy in microjoules (gauge, per-day, resets at midnight)
+    cpu = sum_by('scaph_host_energy_daily_microjoules', date_f, week_f)
+    # GPU energy in joules (W * seconds = J)
+    gpu = f'sum(increase(nvidia_gpu_power_watts[{gpu_window}])) * 3600'
+    # CPU is in microjoules, GPU is in joules. Convert GPU to microjoules: * 1000000
+    # Total microjoules → kWh: / 1000000 (MJ) / 3600 (s/h) = kWh
+    # kWh * 9 INR/kWh / 94.66 INR/USD = USD
+    return (f'({cpu} + {gpu} * 1000000) / 1000000 / 3600 * 9 / 94.66')
 
-def build_expr():
-    parts = []
-    for period, date_f, week_f in PERIODS:
-        # Local row (same power-based value for every period)
-        parts.append(tag_period(local_cost_expr(), "Local (LiteLLM)", period))
-        # Cloud vendors
-        for name, in_r, out_r, cache_r in VENDORS:
-            parts.append(tag_period(cloud_cost_expr(date_f, week_f, in_r, out_r, cache_r), name, period))
+def build_period_expr(date_f, week_f, gpu_window):
+    """Build a single 'or'-joined expression for one period (all providers as rows)."""
+    parts = [f'label_replace({local_cost_expr(date_f, week_f, gpu_window)}, "provider", "Local (LiteLLM)", "", "")']
+    for name, in_r, out_r, cache_r in VENDORS:
+        parts.append(f'label_replace({cloud_cost_expr(date_f, week_f, in_r, out_r, cache_r)}, "provider", "{name}", "", "")')
     return ' or '.join(parts)
 
-def build_dashboard():
-    expr = build_expr()
-    panel = {
-        "type": "table",
-        "title": "Token Cost Comparison (Local power-based vs Cloud token-based)",
+def make_panel(panel_id, title, expr, grid_y):
+    return {
         "datasource": DS,
-        "targets": [{"refId": "A", "expr": expr, "instant": True, "datasource": DS}],
         "fieldConfig": {
-            "defaults": {"color": {"mode": "thresholds"},
-                         "custom": {"align": "auto", "cellOptions": {"type": "auto"}, "inspect": False},
-                         "mappings": [],
-                         "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": None}]}},
-            "overrides": [],
+            "defaults": {
+                "color": {"mode": "thresholds"},
+                "custom": {"align": "auto", "cellOptions": {"type": "auto"}, "inspect": False},
+                "mappings": [],
+                "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": None}]},
+                "unit": "currencyUSD",
+            },
+            "overrides": [
+                {
+                    "matcher": {"id": "byName", "options": "provider"},
+                    "properties": [{"id": "custom.width", "value": 220}],
+                }
+            ],
         },
+        "gridPos": {"h": 12, "w": 12, "x": 0, "y": grid_y},
+        "id": panel_id,
         "options": {
             "cellHeight": "sm",
+            "footer": {"countRows": False, "fields": "", "reducer": ["sum"], "show": False},
             "showHeader": True,
-            "footer": {"show": False, "countRows": False, "reducer": ["sum"], "fields": ""},
-            "sortBy": [{"desc": False, "displayName": "provider"}],
+            "sortBy": [{"desc": True, "displayName": "Value"}],
         },
-        "transformations": [
-            {"id": "extractFields", "options": {"frameIndex": 0,
-                "fields": ["Time", "provider", "period", "Value"]}},
-            {"id": "organize", "options": {
-                "renameByName": {"Time": "Time", "provider": "Provider",
-                                 "period": "Period", "Value": "Cost (USD)"},
-                "excludeByName": {}}},
-            {"id": "groupBy", "options": {
-                "fields": {"provider": {"aggregator": "first", "reducer": ["first"]},
-                           "Cost (USD)": {"aggregator": "first", "reducer": ["first"]},
-                           "Time": {"aggregator": "first", "reducer": ["first"]}}}},
-            {"id": "pivot", "options": {
-                "valueField": {"name": "Cost (USD)"},
-                "rowFields": [{"name": "provider"}],
-                "columnFields": [{"name": "period"}]}},
-            {"id": "sortBy", "options": {"sort": [{"field": "provider", "desc": False}]}},
-        ],
-        "gridPos": {"h": 22, "w": 24, "x": 0, "y": 0},
-        "id": 1,
+        "pluginVersion": "11.1.0",
+        "targets": [{
+            "datasource": DS,
+            "disableTextWrap": False,
+            "editorMode": "code",
+            "expr": expr,
+            "format": "table",
+            "fullMetaSearch": False,
+            "includeNull": True,
+            "instant": True,
+            "legendFormat": "{{provider}}",
+            "range": False,
+            "refId": "A",
+        }],
+        "title": title,
+        "type": "table",
     }
+
+def build_dashboard():
+    panels = []
+    for i, (title, date_f, week_f, gpu_window) in enumerate(PERIODS):
+        expr = build_period_expr(date_f, week_f, gpu_window)
+        panels.append(make_panel(i + 1, title, expr, i * 12))
 
     dashboard = {
         "annotations": {"list": []},
@@ -123,7 +129,7 @@ def build_dashboard():
         "graphPaper": {},
         "links": [],
         "liveNow": False,
-        "panels": [panel],
+        "panels": panels,
         "refresh": "1m",
         "schemaVersion": 39,
         "tags": ["glasswing-power", "cost-comparison", "tokens"],
@@ -132,10 +138,6 @@ def build_dashboard():
              "query": "2026-11-08",
              "current": {"selected": True, "text": "2026-11-08", "value": "2026-11-08"},
              "options": [{"text": "2026-11-08", "value": "2026-11-08", "selected": True}]},
-            {"name": "week", "label": "Week", "type": "custom",
-             "query": "2026W45",
-             "current": {"selected": True, "text": "2026W45", "value": "2026W45"},
-             "options": [{"text": "2026W45", "value": "2026W45", "selected": True}]},
         ]},
         "time": {"from": "now-7d", "to": "now"},
         "timepicker": {},
@@ -153,7 +155,6 @@ if __name__ == "__main__":
     with open(out, "w") as f:
         json.dump(d, f, indent=2)
     print(f"Wrote {out}")
-    print(f"Expr length: {len(d['panels'][0]['targets'][0]['expr'])} chars")
-    print(f"Series count: {d['panels'][0]['targets'][0]['expr'].count('label_replace(') // 2 * 2}")
-    print("\n--- First 600 chars of expr ---")
-    print(d['panels'][0]['targets'][0]['expr'][:600])
+    print(f"Panels: {len(d['panels'])}")
+    for p in d['panels']:
+        print(f"  {p['id']}: {p['title']} (expr {len(p['targets'][0]['expr'])} chars)")
