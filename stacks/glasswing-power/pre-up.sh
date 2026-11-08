@@ -11,7 +11,7 @@ set -euo pipefail
 STACK_DIR="$(cd "$(dirname "$0")" && pwd)"
 SRC_DIR="${STACK_DIR}/src"
 POWER_REPO="https://github.com/pain459/glasswing-power.git"
-POWER_COMMIT="e6095b2"
+POWER_COMMIT="35dd795"
 
 if [ -d "${SRC_DIR}/.git" ]; then
   echo "[INFO] glasswing-power source already present at ${SRC_DIR}"

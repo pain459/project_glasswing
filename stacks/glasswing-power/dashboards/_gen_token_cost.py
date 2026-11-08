@@ -28,32 +28,29 @@ VENDORS = [
     ("GPT-5.5",             2.50, 15.00, 0.25),
 ]
 
-# Period -> (title, date filter, week filter, energy window)
+# Period -> (title, date filter, week filter, month filter, year filter, energy window)
 # Energy window is used for increase() on the host energy counter.
 PERIODS = [
-    ("Today",         'date="${today}"', None, "1d"),
-    ("This Week",      None, 'week="${week}"', "7d"),
-    ("This Month",     'date=~"${month}.*"', None, "30d"),
-    ("This Year",      'date=~"${year}.*"', None, "365d"),
-    ("All-Time",       None, None, "365d"),
+    ("Today",         'date="${today}"', None, None, None, "1d"),
+    ("This Week",      None, 'week="${week}"', None, None, "7d"),
+    ("This Month",     None, None, 'month="${month}"', None, "30d"),
+    ("This Year",      None, None, None, 'year="${year}"', "365d"),
+    ("All-Time",       None, None, None, None, "365d"),
 ]
 
-def sel(metric, date_f, week_f):
-    if date_f and week_f:
-        return f'{metric}{{{date_f},{week_f}}}'
-    if date_f:
-        return f'{metric}{{{date_f}}}'
-    if week_f:
-        return f'{metric}{{{week_f}}}'
+def sel(metric, date_f, week_f, month_f, year_f):
+    filters = [f for f in [date_f, week_f, month_f, year_f] if f]
+    if filters:
+        return f'{metric}{{{",".join(filters)}}}'
     return metric
 
-def sum_by(metric, date_f, week_f):
-    return f'sum({sel(metric, date_f, week_f)})'
+def sum_by(metric, date_f, week_f, month_f, year_f):
+    return f'sum({sel(metric, date_f, week_f, month_f, year_f)})'
 
-def cloud_cost_expr(date_f, week_f, in_r, out_r, cache_r):
-    p = sum_by('litellm_prompt_tokens', date_f, week_f)
-    c = sum_by('litellm_completion_tokens', date_f, week_f)
-    k = sum_by('litellm_cached_tokens', date_f, week_f)
+def cloud_cost_expr(date_f, week_f, month_f, year_f, in_r, out_r, cache_r):
+    p = sum_by('litellm_prompt_tokens', date_f, week_f, month_f, year_f)
+    c = sum_by('litellm_completion_tokens', date_f, week_f, month_f, year_f)
+    k = sum_by('litellm_cached_tokens', date_f, week_f, month_f, year_f)
     return (f'({p} * {in_r} + {c} * {out_r} + {k} * {cache_r}) / 1000000')
 
 def local_cost_expr(window):
@@ -66,11 +63,11 @@ def local_cost_expr(window):
     energy = f'sum(increase(scaph_host_energy_microjoules[{window}]))'
     return (f'{energy} / 3600000000000 * 9 / 94.66')
 
-def build_period_expr(date_f, week_f, window):
+def build_period_expr(date_f, week_f, month_f, year_f, window):
     """Build a single 'or'-joined expression for one period (all providers as rows)."""
     parts = [f'label_replace({local_cost_expr(window)}, "provider", "Local (LiteLLM)", "", "")']
     for name, in_r, out_r, cache_r in VENDORS:
-        parts.append(f'label_replace({cloud_cost_expr(date_f, week_f, in_r, out_r, cache_r)}, "provider", "{name}", "", "")')
+        parts.append(f'label_replace({cloud_cost_expr(date_f, week_f, month_f, year_f, in_r, out_r, cache_r)}, "provider", "{name}", "", "")')
     return ' or '.join(parts)
 
 def make_panel(panel_id, title, expr, grid_y):
@@ -119,8 +116,8 @@ def make_panel(panel_id, title, expr, grid_y):
 
 def build_dashboard():
     panels = []
-    for i, (title, date_f, week_f, window) in enumerate(PERIODS):
-        expr = build_period_expr(date_f, week_f, window)
+    for i, (title, date_f, week_f, month_f, year_f, window) in enumerate(PERIODS):
+        expr = build_period_expr(date_f, week_f, month_f, year_f, window)
         panels.append(make_panel(i + 1, title, expr, i * 12))
 
     dashboard = {
@@ -152,13 +149,13 @@ def build_dashboard():
              "current": {"selected": True, "text": "", "value": ""}},
             {"name": "month", "label": "Month", "type": "query",
              "datasource": DS,
-             "query": "label_values(scaph_host_energy_microjoules, date)",
+             "query": "label_values(scaph_host_energy_microjoules, month)",
              "refresh": 1,
              "sort": 2,
              "current": {"selected": True, "text": "", "value": ""}},
             {"name": "year", "label": "Year", "type": "query",
              "datasource": DS,
-             "query": "label_values(scaph_host_energy_microjoules, date)",
+             "query": "label_values(scaph_host_energy_microjoules, year)",
              "refresh": 1,
              "sort": 2,
              "current": {"selected": True, "text": "", "value": ""}},
