@@ -86,7 +86,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "label_replace((sum(increase(scaph_host_energy_microjoules[1d])) + sum(avg_over_time(nvidia_gpu_power_watts[1d]) * 86400 * 1) * 1000000) / 3600000000000 * 9 / 94.66, \"provider\", \"Local (LiteLLM)\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 0.14 + sum(litellm_completion_tokens{date=\"${today}\"}) * 0.28 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.014) / 1000000, \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 0.28 + sum(litellm_completion_tokens{date=\"${today}\"}) * 0.42 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.028) / 1000000, \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 0.075 + sum(litellm_completion_tokens{date=\"${today}\"}) * 0.3 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.0075) / 1000000, \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 0.19 + sum(litellm_completion_tokens{date=\"${today}\"}) * 0.75 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.019) / 1000000, \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 1.0 + sum(litellm_completion_tokens{date=\"${today}\"}) * 5.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.1) / 1000000, \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 3.0 + sum(litellm_completion_tokens{date=\"${today}\"}) * 15.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.3) / 1000000, \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 15.0 + sum(litellm_completion_tokens{date=\"${today}\"}) * 75.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 1.5) / 1000000, \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 1.25 + sum(litellm_completion_tokens{date=\"${today}\"}) * 10.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.125) / 1000000, \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 2.5 + sum(litellm_completion_tokens{date=\"${today}\"}) * 15.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.25) / 1000000, \"provider\", \"GPT-5.5\", \"\", \"\")",
+          "expr": "label_replace(sum(increase(scaph_host_energy_microjoules[1d])) / 3600000000000 * 9 / 94.66, \"provider\", \"Local (LiteLLM)\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 0.14 + sum(litellm_completion_tokens{date=\"${today}\"}) * 0.28 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.014) / 1000000, \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 0.28 + sum(litellm_completion_tokens{date=\"${today}\"}) * 0.42 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.028) / 1000000, \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 0.075 + sum(litellm_completion_tokens{date=\"${today}\"}) * 0.3 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.0075) / 1000000, \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 0.19 + sum(litellm_completion_tokens{date=\"${today}\"}) * 0.75 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.019) / 1000000, \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 1.0 + sum(litellm_completion_tokens{date=\"${today}\"}) * 5.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.1) / 1000000, \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 3.0 + sum(litellm_completion_tokens{date=\"${today}\"}) * 15.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.3) / 1000000, \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 15.0 + sum(litellm_completion_tokens{date=\"${today}\"}) * 75.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 1.5) / 1000000, \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 1.25 + sum(litellm_completion_tokens{date=\"${today}\"}) * 10.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.125) / 1000000, \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=\"${today}\"}) * 2.5 + sum(litellm_completion_tokens{date=\"${today}\"}) * 15.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.25) / 1000000, \"provider\", \"GPT-5.5\", \"\", \"\")",
           "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
@@ -96,7 +96,7 @@
           "refId": "A"
         }
       ],
-      "title": "Today (2026-11-08)",
+      "title": "Today",
       "type": "table"
     },
     {
@@ -177,7 +177,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "label_replace((sum(increase(scaph_host_energy_microjoules[7d])) + sum(avg_over_time(nvidia_gpu_power_watts[7d]) * 86400 * 7) * 1000000) / 3600000000000 * 9 / 94.66, \"provider\", \"Local (LiteLLM)\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"2026W45\"}) * 0.14 + sum(litellm_completion_tokens{week=\"2026W45\"}) * 0.28 + sum(litellm_cached_tokens{week=\"2026W45\"}) * 0.014) / 1000000, \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"2026W45\"}) * 0.28 + sum(litellm_completion_tokens{week=\"2026W45\"}) * 0.42 + sum(litellm_cached_tokens{week=\"2026W45\"}) * 0.028) / 1000000, \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"2026W45\"}) * 0.075 + sum(litellm_completion_tokens{week=\"2026W45\"}) * 0.3 + sum(litellm_cached_tokens{week=\"2026W45\"}) * 0.0075) / 1000000, \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"2026W45\"}) * 0.19 + sum(litellm_completion_tokens{week=\"2026W45\"}) * 0.75 + sum(litellm_cached_tokens{week=\"2026W45\"}) * 0.019) / 1000000, \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"2026W45\"}) * 1.0 + sum(litellm_completion_tokens{week=\"2026W45\"}) * 5.0 + sum(litellm_cached_tokens{week=\"2026W45\"}) * 0.1) / 1000000, \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"2026W45\"}) * 3.0 + sum(litellm_completion_tokens{week=\"2026W45\"}) * 15.0 + sum(litellm_cached_tokens{week=\"2026W45\"}) * 0.3) / 1000000, \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"2026W45\"}) * 15.0 + sum(litellm_completion_tokens{week=\"2026W45\"}) * 75.0 + sum(litellm_cached_tokens{week=\"2026W45\"}) * 1.5) / 1000000, \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"2026W45\"}) * 1.25 + sum(litellm_completion_tokens{week=\"2026W45\"}) * 10.0 + sum(litellm_cached_tokens{week=\"2026W45\"}) * 0.125) / 1000000, \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"2026W45\"}) * 2.5 + sum(litellm_completion_tokens{week=\"2026W45\"}) * 15.0 + sum(litellm_cached_tokens{week=\"2026W45\"}) * 0.25) / 1000000, \"provider\", \"GPT-5.5\", \"\", \"\")",
+          "expr": "label_replace(sum(increase(scaph_host_energy_microjoules[7d])) / 3600000000000 * 9 / 94.66, \"provider\", \"Local (LiteLLM)\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"${week}\"}) * 0.14 + sum(litellm_completion_tokens{week=\"${week}\"}) * 0.28 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.014) / 1000000, \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"${week}\"}) * 0.28 + sum(litellm_completion_tokens{week=\"${week}\"}) * 0.42 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.028) / 1000000, \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"${week}\"}) * 0.075 + sum(litellm_completion_tokens{week=\"${week}\"}) * 0.3 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.0075) / 1000000, \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"${week}\"}) * 0.19 + sum(litellm_completion_tokens{week=\"${week}\"}) * 0.75 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.019) / 1000000, \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"${week}\"}) * 1.0 + sum(litellm_completion_tokens{week=\"${week}\"}) * 5.0 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.1) / 1000000, \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"${week}\"}) * 3.0 + sum(litellm_completion_tokens{week=\"${week}\"}) * 15.0 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.3) / 1000000, \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"${week}\"}) * 15.0 + sum(litellm_completion_tokens{week=\"${week}\"}) * 75.0 + sum(litellm_cached_tokens{week=\"${week}\"}) * 1.5) / 1000000, \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"${week}\"}) * 1.25 + sum(litellm_completion_tokens{week=\"${week}\"}) * 10.0 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.125) / 1000000, \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{week=\"${week}\"}) * 2.5 + sum(litellm_completion_tokens{week=\"${week}\"}) * 15.0 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.25) / 1000000, \"provider\", \"GPT-5.5\", \"\", \"\")",
           "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
@@ -187,7 +187,7 @@
           "refId": "A"
         }
       ],
-      "title": "This Week (2026W45)",
+      "title": "This Week",
       "type": "table"
     },
     {
@@ -268,7 +268,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "label_replace((sum(increase(scaph_host_energy_microjoules[30d])) + sum(avg_over_time(nvidia_gpu_power_watts[30d]) * 86400 * 30) * 1000000) / 3600000000000 * 9 / 94.66, \"provider\", \"Local (LiteLLM)\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026-11.*\"}) * 0.14 + sum(litellm_completion_tokens{date=~\"2026-11.*\"}) * 0.28 + sum(litellm_cached_tokens{date=~\"2026-11.*\"}) * 0.014) / 1000000, \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026-11.*\"}) * 0.28 + sum(litellm_completion_tokens{date=~\"2026-11.*\"}) * 0.42 + sum(litellm_cached_tokens{date=~\"2026-11.*\"}) * 0.028) / 1000000, \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026-11.*\"}) * 0.075 + sum(litellm_completion_tokens{date=~\"2026-11.*\"}) * 0.3 + sum(litellm_cached_tokens{date=~\"2026-11.*\"}) * 0.0075) / 1000000, \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026-11.*\"}) * 0.19 + sum(litellm_completion_tokens{date=~\"2026-11.*\"}) * 0.75 + sum(litellm_cached_tokens{date=~\"2026-11.*\"}) * 0.019) / 1000000, \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026-11.*\"}) * 1.0 + sum(litellm_completion_tokens{date=~\"2026-11.*\"}) * 5.0 + sum(litellm_cached_tokens{date=~\"2026-11.*\"}) * 0.1) / 1000000, \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026-11.*\"}) * 3.0 + sum(litellm_completion_tokens{date=~\"2026-11.*\"}) * 15.0 + sum(litellm_cached_tokens{date=~\"2026-11.*\"}) * 0.3) / 1000000, \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026-11.*\"}) * 15.0 + sum(litellm_completion_tokens{date=~\"2026-11.*\"}) * 75.0 + sum(litellm_cached_tokens{date=~\"2026-11.*\"}) * 1.5) / 1000000, \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026-11.*\"}) * 1.25 + sum(litellm_completion_tokens{date=~\"2026-11.*\"}) * 10.0 + sum(litellm_cached_tokens{date=~\"2026-11.*\"}) * 0.125) / 1000000, \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026-11.*\"}) * 2.5 + sum(litellm_completion_tokens{date=~\"2026-11.*\"}) * 15.0 + sum(litellm_cached_tokens{date=~\"2026-11.*\"}) * 0.25) / 1000000, \"provider\", \"GPT-5.5\", \"\", \"\")",
+          "expr": "label_replace(sum(increase(scaph_host_energy_microjoules[30d])) / 3600000000000 * 9 / 94.66, \"provider\", \"Local (LiteLLM)\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${month}.*\"}) * 0.14 + sum(litellm_completion_tokens{date=~\"${month}.*\"}) * 0.28 + sum(litellm_cached_tokens{date=~\"${month}.*\"}) * 0.014) / 1000000, \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${month}.*\"}) * 0.28 + sum(litellm_completion_tokens{date=~\"${month}.*\"}) * 0.42 + sum(litellm_cached_tokens{date=~\"${month}.*\"}) * 0.028) / 1000000, \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${month}.*\"}) * 0.075 + sum(litellm_completion_tokens{date=~\"${month}.*\"}) * 0.3 + sum(litellm_cached_tokens{date=~\"${month}.*\"}) * 0.0075) / 1000000, \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${month}.*\"}) * 0.19 + sum(litellm_completion_tokens{date=~\"${month}.*\"}) * 0.75 + sum(litellm_cached_tokens{date=~\"${month}.*\"}) * 0.019) / 1000000, \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${month}.*\"}) * 1.0 + sum(litellm_completion_tokens{date=~\"${month}.*\"}) * 5.0 + sum(litellm_cached_tokens{date=~\"${month}.*\"}) * 0.1) / 1000000, \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${month}.*\"}) * 3.0 + sum(litellm_completion_tokens{date=~\"${month}.*\"}) * 15.0 + sum(litellm_cached_tokens{date=~\"${month}.*\"}) * 0.3) / 1000000, \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${month}.*\"}) * 15.0 + sum(litellm_completion_tokens{date=~\"${month}.*\"}) * 75.0 + sum(litellm_cached_tokens{date=~\"${month}.*\"}) * 1.5) / 1000000, \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${month}.*\"}) * 1.25 + sum(litellm_completion_tokens{date=~\"${month}.*\"}) * 10.0 + sum(litellm_cached_tokens{date=~\"${month}.*\"}) * 0.125) / 1000000, \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${month}.*\"}) * 2.5 + sum(litellm_completion_tokens{date=~\"${month}.*\"}) * 15.0 + sum(litellm_cached_tokens{date=~\"${month}.*\"}) * 0.25) / 1000000, \"provider\", \"GPT-5.5\", \"\", \"\")",
           "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
@@ -278,7 +278,7 @@
           "refId": "A"
         }
       ],
-      "title": "This Month (2026-11)",
+      "title": "This Month",
       "type": "table"
     },
     {
@@ -359,7 +359,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "label_replace((sum(increase(scaph_host_energy_microjoules[365d])) + sum(avg_over_time(nvidia_gpu_power_watts[365d]) * 86400 * 365) * 1000000) / 3600000000000 * 9 / 94.66, \"provider\", \"Local (LiteLLM)\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026.*\"}) * 0.14 + sum(litellm_completion_tokens{date=~\"2026.*\"}) * 0.28 + sum(litellm_cached_tokens{date=~\"2026.*\"}) * 0.014) / 1000000, \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026.*\"}) * 0.28 + sum(litellm_completion_tokens{date=~\"2026.*\"}) * 0.42 + sum(litellm_cached_tokens{date=~\"2026.*\"}) * 0.028) / 1000000, \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026.*\"}) * 0.075 + sum(litellm_completion_tokens{date=~\"2026.*\"}) * 0.3 + sum(litellm_cached_tokens{date=~\"2026.*\"}) * 0.0075) / 1000000, \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026.*\"}) * 0.19 + sum(litellm_completion_tokens{date=~\"2026.*\"}) * 0.75 + sum(litellm_cached_tokens{date=~\"2026.*\"}) * 0.019) / 1000000, \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026.*\"}) * 1.0 + sum(litellm_completion_tokens{date=~\"2026.*\"}) * 5.0 + sum(litellm_cached_tokens{date=~\"2026.*\"}) * 0.1) / 1000000, \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026.*\"}) * 3.0 + sum(litellm_completion_tokens{date=~\"2026.*\"}) * 15.0 + sum(litellm_cached_tokens{date=~\"2026.*\"}) * 0.3) / 1000000, \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026.*\"}) * 15.0 + sum(litellm_completion_tokens{date=~\"2026.*\"}) * 75.0 + sum(litellm_cached_tokens{date=~\"2026.*\"}) * 1.5) / 1000000, \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026.*\"}) * 1.25 + sum(litellm_completion_tokens{date=~\"2026.*\"}) * 10.0 + sum(litellm_cached_tokens{date=~\"2026.*\"}) * 0.125) / 1000000, \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"2026.*\"}) * 2.5 + sum(litellm_completion_tokens{date=~\"2026.*\"}) * 15.0 + sum(litellm_cached_tokens{date=~\"2026.*\"}) * 0.25) / 1000000, \"provider\", \"GPT-5.5\", \"\", \"\")",
+          "expr": "label_replace(sum(increase(scaph_host_energy_microjoules[365d])) / 3600000000000 * 9 / 94.66, \"provider\", \"Local (LiteLLM)\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${year}.*\"}) * 0.14 + sum(litellm_completion_tokens{date=~\"${year}.*\"}) * 0.28 + sum(litellm_cached_tokens{date=~\"${year}.*\"}) * 0.014) / 1000000, \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${year}.*\"}) * 0.28 + sum(litellm_completion_tokens{date=~\"${year}.*\"}) * 0.42 + sum(litellm_cached_tokens{date=~\"${year}.*\"}) * 0.028) / 1000000, \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${year}.*\"}) * 0.075 + sum(litellm_completion_tokens{date=~\"${year}.*\"}) * 0.3 + sum(litellm_cached_tokens{date=~\"${year}.*\"}) * 0.0075) / 1000000, \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${year}.*\"}) * 0.19 + sum(litellm_completion_tokens{date=~\"${year}.*\"}) * 0.75 + sum(litellm_cached_tokens{date=~\"${year}.*\"}) * 0.019) / 1000000, \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${year}.*\"}) * 1.0 + sum(litellm_completion_tokens{date=~\"${year}.*\"}) * 5.0 + sum(litellm_cached_tokens{date=~\"${year}.*\"}) * 0.1) / 1000000, \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${year}.*\"}) * 3.0 + sum(litellm_completion_tokens{date=~\"${year}.*\"}) * 15.0 + sum(litellm_cached_tokens{date=~\"${year}.*\"}) * 0.3) / 1000000, \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${year}.*\"}) * 15.0 + sum(litellm_completion_tokens{date=~\"${year}.*\"}) * 75.0 + sum(litellm_cached_tokens{date=~\"${year}.*\"}) * 1.5) / 1000000, \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${year}.*\"}) * 1.25 + sum(litellm_completion_tokens{date=~\"${year}.*\"}) * 10.0 + sum(litellm_cached_tokens{date=~\"${year}.*\"}) * 0.125) / 1000000, \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens{date=~\"${year}.*\"}) * 2.5 + sum(litellm_completion_tokens{date=~\"${year}.*\"}) * 15.0 + sum(litellm_cached_tokens{date=~\"${year}.*\"}) * 0.25) / 1000000, \"provider\", \"GPT-5.5\", \"\", \"\")",
           "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
@@ -369,7 +369,7 @@
           "refId": "A"
         }
       ],
-      "title": "This Year (2026)",
+      "title": "This Year",
       "type": "table"
     },
     {
@@ -450,7 +450,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "label_replace((sum(increase(scaph_host_energy_microjoules[365d])) + sum(avg_over_time(nvidia_gpu_power_watts[365d]) * 86400 * 365) * 1000000) / 3600000000000 * 9 / 94.66, \"provider\", \"Local (LiteLLM)\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 0.14 + sum(litellm_completion_tokens) * 0.28 + sum(litellm_cached_tokens) * 0.014) / 1000000, \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 0.28 + sum(litellm_completion_tokens) * 0.42 + sum(litellm_cached_tokens) * 0.028) / 1000000, \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 0.075 + sum(litellm_completion_tokens) * 0.3 + sum(litellm_cached_tokens) * 0.0075) / 1000000, \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 0.19 + sum(litellm_completion_tokens) * 0.75 + sum(litellm_cached_tokens) * 0.019) / 1000000, \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 1.0 + sum(litellm_completion_tokens) * 5.0 + sum(litellm_cached_tokens) * 0.1) / 1000000, \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 3.0 + sum(litellm_completion_tokens) * 15.0 + sum(litellm_cached_tokens) * 0.3) / 1000000, \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 15.0 + sum(litellm_completion_tokens) * 75.0 + sum(litellm_cached_tokens) * 1.5) / 1000000, \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 1.25 + sum(litellm_completion_tokens) * 10.0 + sum(litellm_cached_tokens) * 0.125) / 1000000, \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 2.5 + sum(litellm_completion_tokens) * 15.0 + sum(litellm_cached_tokens) * 0.25) / 1000000, \"provider\", \"GPT-5.5\", \"\", \"\")",
+          "expr": "label_replace(sum(increase(scaph_host_energy_microjoules[365d])) / 3600000000000 * 9 / 94.66, \"provider\", \"Local (LiteLLM)\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 0.14 + sum(litellm_completion_tokens) * 0.28 + sum(litellm_cached_tokens) * 0.014) / 1000000, \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 0.28 + sum(litellm_completion_tokens) * 0.42 + sum(litellm_cached_tokens) * 0.028) / 1000000, \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 0.075 + sum(litellm_completion_tokens) * 0.3 + sum(litellm_cached_tokens) * 0.0075) / 1000000, \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 0.19 + sum(litellm_completion_tokens) * 0.75 + sum(litellm_cached_tokens) * 0.019) / 1000000, \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 1.0 + sum(litellm_completion_tokens) * 5.0 + sum(litellm_cached_tokens) * 0.1) / 1000000, \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 3.0 + sum(litellm_completion_tokens) * 15.0 + sum(litellm_cached_tokens) * 0.3) / 1000000, \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 15.0 + sum(litellm_completion_tokens) * 75.0 + sum(litellm_cached_tokens) * 1.5) / 1000000, \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 1.25 + sum(litellm_completion_tokens) * 10.0 + sum(litellm_cached_tokens) * 0.125) / 1000000, \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace((sum(litellm_prompt_tokens) * 2.5 + sum(litellm_completion_tokens) * 15.0 + sum(litellm_cached_tokens) * 0.25) / 1000000, \"provider\", \"GPT-5.5\", \"\", \"\")",
           "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
@@ -460,7 +460,7 @@
           "refId": "A"
         }
       ],
-      "title": "All-Time (Total Recorded)",
+      "title": "All-Time",
       "type": "table"
     }
   ],
@@ -475,21 +475,71 @@
     "list": [
       {
         "name": "today",
-        "label": "Today",
-        "type": "custom",
-        "query": "2026-11-08",
+        "label": "Date",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PDC628E2375F40484"
+        },
+        "query": "label_values(scaph_host_energy_microjoules, date)",
+        "refresh": 1,
+        "sort": 2,
         "current": {
           "selected": true,
-          "text": "2026-11-08",
-          "value": "2026-11-08"
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "week",
+        "label": "Week",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PDC628E2375F40484"
         },
-        "options": [
-          {
-            "text": "2026-11-08",
-            "value": "2026-11-08",
-            "selected": true
-          }
-        ]
+        "query": "label_values(scaph_host_energy_microjoules, week)",
+        "refresh": 1,
+        "sort": 2,
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "month",
+        "label": "Month",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PDC628E2375F40484"
+        },
+        "query": "label_values(scaph_host_energy_microjoules, date)",
+        "refresh": 1,
+        "sort": 2,
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "year",
+        "label": "Year",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "PDC628E2375F40484"
+        },
+        "query": "label_values(scaph_host_energy_microjoules, date)",
+        "refresh": 1,
+        "sort": 2,
+        "current": {
+          "selected": true,
+          "text": "",
+          "value": ""
+        }
       }
     ]
   },

@@ -4,6 +4,12 @@
 5 separate tables (one per period: Today, This Week, This Month, This Year, All-Time).
 Each table shows all 10 providers as rows using a single 'or'-joined query.
 No transformations — the table panel auto-expands series into rows.
+
+Local cost: power-based (host energy counter, includes CPU + GPU).
+Cloud cost: token-based (tokens × provider rates from LiteLLM metrics).
+
+Dynamic dates: uses Grafana query-type template variables that return the
+latest date/week from the metrics, so the dashboard always shows current data.
 """
 import json
 
@@ -22,13 +28,14 @@ VENDORS = [
     ("GPT-5.5",             2.50, 15.00, 0.25),
 ]
 
-# Period -> (title, date filter, week filter, GPU window, GPU days)
+# Period -> (title, date filter, week filter, energy window)
+# Energy window is used for increase() on the host energy counter.
 PERIODS = [
-    ("Today (2026-11-08)",    'date="${today}"', None, "1d", 1),
-    ("This Week (2026W45)",   None, 'week="2026W45"', "7d", 7),
-    ("This Month (2026-11)",  'date=~"2026-11.*"', None, "30d", 30),
-    ("This Year (2026)",      'date=~"2026.*"', None, "365d", 365),
-    ("All-Time (Total Recorded)", None, None, "365d", 365),
+    ("Today",         'date="${today}"', None, "1d"),
+    ("This Week",      None, 'week="${week}"', "7d"),
+    ("This Month",     'date=~"${month}.*"', None, "30d"),
+    ("This Year",      'date=~"${year}.*"', None, "365d"),
+    ("All-Time",       None, None, "365d"),
 ]
 
 def sel(metric, date_f, week_f):
@@ -49,22 +56,19 @@ def cloud_cost_expr(date_f, week_f, in_r, out_r, cache_r):
     k = sum_by('litellm_cached_tokens', date_f, week_f)
     return (f'({p} * {in_r} + {c} * {out_r} + {k} * {cache_r}) / 1000000')
 
-def local_cost_expr(gpu_window, gpu_days):
-    """Period-aware local cost: CPU energy (counter increase) + GPU energy (avg power × time).
+def local_cost_expr(window):
+    """Local cost from the host energy counter (includes CPU + GPU).
 
-    CPU: sum(increase(scaph_host_energy_microjoules[window])) — counter, energy in microjoules.
-    GPU: sum(avg_over_time(nvidia_gpu_power_watts[window]) * 86400 * days) — avg W × seconds = J.
-    Both wrapped in sum() to strip labels before adding.
-    Units: CPU in uJ, GPU in J. Convert GPU to uJ (×1e6), sum, then /3.6e12 → kWh → INR → USD.
+    Uses increase() on the counter to get actual energy consumed in the window.
+    No projection — only reports energy actually measured.
+    Units: microjoules → /3.6e12 → kWh → × 9 INR/kWh → / 94.66 INR/USD → USD.
     """
-    cpu = f'sum(increase(scaph_host_energy_microjoules[{gpu_window}]))'
-    gpu = f'sum(avg_over_time(nvidia_gpu_power_watts[{gpu_window}]) * 86400 * {gpu_days})'
-    # (cpu_uJ + gpu_J * 1e6) / 3.6e12 * 9 / 94.66
-    return (f'({cpu} + {gpu} * 1000000) / 3600000000000 * 9 / 94.66')
+    energy = f'sum(increase(scaph_host_energy_microjoules[{window}]))'
+    return (f'{energy} / 3600000000000 * 9 / 94.66')
 
-def build_period_expr(date_f, week_f, gpu_window, gpu_days):
+def build_period_expr(date_f, week_f, window):
     """Build a single 'or'-joined expression for one period (all providers as rows)."""
-    parts = [f'label_replace({local_cost_expr(gpu_window, gpu_days)}, "provider", "Local (LiteLLM)", "", "")']
+    parts = [f'label_replace({local_cost_expr(window)}, "provider", "Local (LiteLLM)", "", "")']
     for name, in_r, out_r, cache_r in VENDORS:
         parts.append(f'label_replace({cloud_cost_expr(date_f, week_f, in_r, out_r, cache_r)}, "provider", "{name}", "", "")')
     return ' or '.join(parts)
@@ -115,8 +119,8 @@ def make_panel(panel_id, title, expr, grid_y):
 
 def build_dashboard():
     panels = []
-    for i, (title, date_f, week_f, gpu_window, gpu_days) in enumerate(PERIODS):
-        expr = build_period_expr(date_f, week_f, gpu_window, gpu_days)
+    for i, (title, date_f, week_f, window) in enumerate(PERIODS):
+        expr = build_period_expr(date_f, week_f, window)
         panels.append(make_panel(i + 1, title, expr, i * 12))
 
     dashboard = {
@@ -131,10 +135,33 @@ def build_dashboard():
         "schemaVersion": 39,
         "tags": ["glasswing-power", "cost-comparison", "tokens"],
         "templating": {"list": [
-            {"name": "today", "label": "Today", "type": "custom",
-             "query": "2026-11-08",
-             "current": {"selected": True, "text": "2026-11-08", "value": "2026-11-08"},
-             "options": [{"text": "2026-11-08", "value": "2026-11-08", "selected": True}]},
+            # Dynamic date variables — query the latest values from the metrics.
+            # These auto-update as new data arrives, so the dashboard always
+            # shows the current date/week/month/year.
+            {"name": "today", "label": "Date", "type": "query",
+             "datasource": DS,
+             "query": "label_values(scaph_host_energy_microjoules, date)",
+             "refresh": 1,
+             "sort": 2,
+             "current": {"selected": True, "text": "", "value": ""}},
+            {"name": "week", "label": "Week", "type": "query",
+             "datasource": DS,
+             "query": "label_values(scaph_host_energy_microjoules, week)",
+             "refresh": 1,
+             "sort": 2,
+             "current": {"selected": True, "text": "", "value": ""}},
+            {"name": "month", "label": "Month", "type": "query",
+             "datasource": DS,
+             "query": "label_values(scaph_host_energy_microjoules, date)",
+             "refresh": 1,
+             "sort": 2,
+             "current": {"selected": True, "text": "", "value": ""}},
+            {"name": "year", "label": "Year", "type": "query",
+             "datasource": DS,
+             "query": "label_values(scaph_host_energy_microjoules, date)",
+             "refresh": 1,
+             "sort": 2,
+             "current": {"selected": True, "text": "", "value": ""}},
         ]},
         "time": {"from": "now-7d", "to": "now"},
         "timepicker": {},
