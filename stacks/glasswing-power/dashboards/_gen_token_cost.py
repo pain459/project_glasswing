@@ -28,14 +28,14 @@ VENDORS = [
     ("GPT-5.5",             2.50, 15.00, 0.25),
 ]
 
-# Period -> (title, date filter, week filter, month filter, year filter, energy window, days)
-# Energy window is used for avg_over_time() on the GPU power gauge.
+# Period -> (title, date filter, week filter, month filter, year filter, energy window)
+# Energy window is used for increase() on the GPU power gauge.
 PERIODS = [
-    ("Today",         'date="${today}"', None, None, None, "1d", 1),
-    ("This Week",      None, 'week="${week}"', None, None, "7d", 7),
-    ("This Month",     None, None, 'month="${month}"', None, "30d", 30),
-    ("This Year",      None, None, None, 'year="${year}"', "365d", 365),
-    ("All-Time",       None, None, None, None, "365d", 365),
+    ("Today",         'date="${today}"', None, None, None, "1d"),
+    ("This Week",      None, 'week="${week}"', None, None, "7d"),
+    ("This Month",     None, None, 'month="${month}"', None, "30d"),
+    ("This Year",      None, None, None, 'year="${year}"', "365d"),
+    ("All-Time",       None, None, None, None, "365d"),
 ]
 
 def sel(metric, date_f, week_f, month_f, year_f):
@@ -53,26 +53,23 @@ def cloud_cost_expr(date_f, week_f, month_f, year_f, in_r, out_r, cache_r):
     k = sum_by('litellm_cached_tokens', date_f, week_f, month_f, year_f)
     return (f'({p} * {in_r} + {c} * {out_r} + {k} * {cache_r}) / 1000000')
 
-def local_cost_expr(window, days):
+def local_cost_expr(window):
     """Local cost from GPU energy (nvidia_gpu_power_watts gauge).
 
-    Uses avg_over_time() to get the average GPU power over the window,
-    then multiplies by the window duration to get total energy.
-    No projection — only reports energy actually measured.
+    Uses increase() on the GPU power gauge to get the total energy consumed
+    in the window. This only counts days where we actually have data, so
+    Year and All-Time won't be inflated by projecting forward.
     Units: watts × seconds → joules → /3.6e6 → kWh → × 9 INR/kWh → / 94.66 INR/USD → USD.
     """
-    # Average GPU power over the window (watts)
-    avg_power = f'avg_over_time(nvidia_gpu_power_watts[{window}])'
-    # Total energy = average power × window duration (seconds)
-    # Window duration in seconds: 1d=86400, 7d=604800, 30d=2592000, 365d=31536000
-    duration = days * 86400
-    energy_joules = f'{avg_power} * {duration}'
+    # Total energy consumed in the window (joules)
+    # increase() on a gauge sums the deltas, which gives the integral of power over time
+    energy_joules = f'sum(increase(nvidia_gpu_power_watts[{window}]))'
     # Convert joules to kWh, then to USD
     return (f'{energy_joules} / 3600000 * 9 / 94.66')
 
-def build_period_expr(date_f, week_f, month_f, year_f, window, days):
+def build_period_expr(date_f, week_f, month_f, year_f, window):
     """Build a single 'or'-joined expression for one period (all providers as rows)."""
-    parts = [f'label_replace({local_cost_expr(window, days)}, "provider", "Local (LiteLLM)", "", "")']
+    parts = [f'label_replace({local_cost_expr(window)}, "provider", "Local (LiteLLM)", "", "")']
     for name, in_r, out_r, cache_r in VENDORS:
         parts.append(f'label_replace({cloud_cost_expr(date_f, week_f, month_f, year_f, in_r, out_r, cache_r)}, "provider", "{name}", "", "")')
     return ' or '.join(parts)
@@ -123,8 +120,8 @@ def make_panel(panel_id, title, expr, grid_y):
 
 def build_dashboard():
     panels = []
-    for i, (title, date_f, week_f, month_f, year_f, window, days) in enumerate(PERIODS):
-        expr = build_period_expr(date_f, week_f, month_f, year_f, window, days)
+    for i, (title, date_f, week_f, month_f, year_f, window) in enumerate(PERIODS):
+        expr = build_period_expr(date_f, week_f, month_f, year_f, window)
         panels.append(make_panel(i + 1, title, expr, i * 12))
 
     dashboard = {
