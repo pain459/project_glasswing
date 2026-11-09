@@ -106,6 +106,16 @@ cpu_energy_daily_joules = Gauge(
     ['date', 'week', 'month', 'year']
 )
 
+# Estimated CPU+GPU energy for period-to-date, for the days before the
+# meters existed. Estimate = average measured power x time elapsed since the
+# period started (never counting future days). The measured daily sums stay
+# the source of truth; this only fills the un-metered head of each period.
+local_energy_estimate_joules = Gauge(
+    'local_energy_estimate_joules',
+    'Estimated CPU+GPU energy in joules since the start of each period (avg measured power x elapsed time)',
+    ['period']
+)
+
 POWER_SOURCES = [
     ('nvidia_gpu_power_watts', 1.0, gpu_energy_daily_joules),
     ('scaph_socket_power_microwatts', 1e-6, cpu_energy_daily_joules),
@@ -197,8 +207,51 @@ def update_power_energy():
             week, month, year = _period_labels(date_str)
             gauge.labels(date=date_str, week=week, month=month, year=year).set(joules)
 
+    _update_period_estimates(computed, now)
+
     _rollup_last_run = now_ts
     return sum(1 for j in computed.values() if j is not None)
+
+
+def _update_period_estimates(computed, now):
+    """Estimate only the UN-METERED head of each period.
+
+    The CPU meter went live 2026-11-07 and the GPU meter 2026-11-08; days
+    before that have no measured energy. For each period the gap between the
+    period start and a meter's first data day is estimated as:
+        avg measured power (W) x un-metered seconds
+    with avg = total measured joules / span actually covered by the meter
+    (blends idle baseline and inference bursts). Days the meter covered are
+    NOT estimated here — the measured daily gauges already have them — and
+    future days are never counted.
+    """
+    now_epoch = now.timestamp()
+    per_metric = {}  # metric -> [total_joules, first_data_day_start_epoch]
+    for (metric, date_str), joules in computed.items():
+        if joules is None:
+            continue
+        first_epoch = datetime.strptime(date_str, '%Y-%m-%d').replace(tzinfo=timezone.utc).timestamp()
+        if metric not in per_metric:
+            per_metric[metric] = [joules, first_epoch]
+        else:
+            per_metric[metric][0] += joules
+            per_metric[metric][1] = min(per_metric[metric][1], first_epoch)
+
+    week_start = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=now.weekday())
+    period_starts = {
+        'today': now.replace(hour=0, minute=0, second=0, microsecond=0),
+        'week': week_start,
+        'month': now.replace(day=1, hour=0, minute=0, second=0, microsecond=0),
+        'year': now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0),
+    }
+    for period, start in period_starts.items():
+        start_epoch = start.timestamp()
+        estimate_j = 0.0
+        for joules_sum, first_epoch in per_metric.values():
+            avg_watts = joules_sum / max(now_epoch - first_epoch, 1.0)
+            head = min(first_epoch, now_epoch) - start_epoch  # negative => meter predates period
+            estimate_j += avg_watts * max(head, 0.0)
+        local_energy_estimate_joules.labels(period=period).set(estimate_j)
 
 def update_metrics():
     """Query the database and update Prometheus metrics."""

@@ -5,7 +5,10 @@
 Each table shows all 10 providers as rows using a single 'or'-joined query.
 No transformations — the table panel auto-expands series into rows.
 
-Local cost: power-based (host energy counter, includes CPU + GPU).
+Local cost: power-based — CPU (RAPL socket gauge) + GPU (NVML) power
+integrated per calendar day, shown as two rows: "Local (measured)" for
+days the meters covered, and "Local (estimate)" for the un-metered head
+of the period (avg measured power × elapsed time; never future days).
 Cloud cost: token-based (tokens × provider rates from LiteLLM metrics).
 
 Dynamic dates: uses Grafana query-type template variables that return the
@@ -28,15 +31,17 @@ VENDORS = [
     ("GPT-5.5",             2.50, 15.00, 0.25),
 ]
 
-# Period -> (title, date filter, week filter, month filter, year filter, energy window)
-# Local cost filters the per-day GPU energy metric by calendar labels, so each
+# Period -> (title, date filter, week filter, month filter, year filter, period key)
+# Local cost filters the per-day energy metrics by calendar labels, so each
 # table sums exactly the days belonging to that period. No rolling windows,
-# no projection.
+# no projection. The period key selects the exporter's estimate gauge for the
+# un-metered head of the period; All-Time has none (the meters cover its
+# entire visible history).
 PERIODS = [
-    ("Today",         'date="${today}"', None, None, None, None),
-    ("This Week",      None, 'week="${week}"', None, None, None),
-    ("This Month",     None, None, 'month="${month}"', None, None),
-    ("This Year",      None, None, None, 'year="${year}"', None),
+    ("Today",         'date="${today}"', None, None, None, "today"),
+    ("This Week",      None, 'week="${week}"', None, None, "week"),
+    ("This Month",     None, None, 'month="${month}"', None, "month"),
+    ("This Year",      None, None, None, 'year="${year}"', "year"),
     ("All-Time",       None, None, None, None, None),
 ]
 
@@ -78,10 +83,24 @@ def local_cost_expr(energy_f):
     gpu = f'gpu_energy_daily_joules{{{energy_f}}}' if energy_f else 'gpu_energy_daily_joules'
     return f'(sum({cpu}) + sum({gpu})) / 3600000 * 9 / 94.66'
 
-def build_period_expr(date_f, week_f, month_f, year_f, _window):
+def local_estimate_expr(period):
+    """Local (estimate) cost for the un-metered head of each period.
+
+    The exporter publishes avg measured power x un-metered seconds since the
+    period start as local_energy_estimate_joules{period=...}. It covers only
+    the days before the meters existed (CPU since Nov 7, GPU since Nov 8);
+    measured days are never estimated and future days never counted.
+    """
+    return f'local_energy_estimate_joules{{period="{period}"}} / 3600000 * 9 / 94.66'
+
+def build_period_expr(date_f, week_f, month_f, year_f, period_key):
     """Build a single 'or'-joined expression for one period (all providers as rows)."""
     energy_f = date_f or week_f or month_f or year_f
-    parts = [f'label_replace({local_cost_expr(energy_f)}, "provider", "Local (CPU+GPU power)", "", "")']
+    parts = [
+        f'label_replace({local_cost_expr(energy_f)}, "provider", "Local (measured)", "", "")',
+    ]
+    if period_key:
+        parts.append(f'label_replace({local_estimate_expr(period_key)}, "provider", "Local (estimate)", "", "")')
     for name, in_r, out_r, cache_r in VENDORS:
         parts.append(f'label_replace({cloud_cost_expr(date_f, week_f, month_f, year_f, in_r, out_r, cache_r)}, "provider", "{name}", "", "")')
     return ' or '.join(parts)
@@ -141,7 +160,9 @@ def make_info_panel(panel_id):
         "",
         "**Local** = measured electricity: CPU package power (RAPL socket gauge, calibrated: ~30 W idle, ~200 W all-core on the Ryzen 9 7950X) + GPU power (NVML), integrated per calendar day, priced at **₹9 / kWh** (Indian unit rate), converted at **₹94.66 / USD**.",
         "",
-        "**Cloud** = LiteLLM tokens at vendor rates: `(prompt − cached) × input + cached × cache + completion × output` per MTok. RAM/disk/motherboard overhead is not metered. Values update live; periods without data yet show equal totals until real calendar boundaries accumulate.",
+        "**Cloud** = LiteLLM tokens at vendor rates: `(prompt − cached) × input + cached × cache + completion × output` per MTok. RAM/disk/motherboard overhead is not metered.",
+        "",
+        "**Measured vs Estimate** — the CPU meter went live Nov 7 and the GPU meter Nov 8, so Month/Year include an *estimate* row for the days before that: average measured power × time elapsed since the period start (never future days). Measured + Estimate ≈ the period's true total. Today/Week are fully metered, so their estimate is $0.",
     ])
     return {
         "datasource": {"type": "datasource", "uid": "grafana"},
@@ -169,8 +190,8 @@ def build_dashboard():
         (12, 16, 12, 12), # This Year   -> right, row 2
         (0, 28, 24, 12),  # All-Time  -> full width finale
     ]
-    for i, (title, date_f, week_f, month_f, year_f, _window) in enumerate(PERIODS):
-        expr = build_period_expr(date_f, week_f, month_f, year_f, _window)
+    for i, (title, date_f, week_f, month_f, year_f, period_key) in enumerate(PERIODS):
+        expr = build_period_expr(date_f, week_f, month_f, year_f, period_key)
         x, y, w, h = layout[i]
         if i == 0:
             display = f"Today — ${{today}}"
