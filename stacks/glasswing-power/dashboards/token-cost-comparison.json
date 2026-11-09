@@ -2,13 +2,42 @@
   "annotations": {
     "list": []
   },
-  "description": "Local cost = measured GPU energy (integrated from the power gauge, per calendar day) at 9 INR/kWh. CPU/host energy is excluded: the scaphandre host counters report ~32 kW on this machine and are not credible. Cloud cost = LiteLLM tokens x provider rates.",
+  "description": "Local cost = measured CPU package energy (RAPL socket power, calibrated) + GPU energy, integrated per calendar day, priced at 9 INR/kWh (Indian unit rate). Cloud cost = LiteLLM tokens at vendor rates: (prompt - cached) x input + cached x cache + completion x output. RAM/disk/motherboard overhead is not metered.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphPaper": {},
   "links": [],
   "liveNow": false,
   "panels": [
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "grafana"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 10,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "### Local vs Cloud \u2014 how costs are calculated\n\n**Local** = measured electricity: CPU package power (RAPL socket gauge, calibrated: ~30 W idle, ~200 W all-core on the Ryzen 9 7950X) + GPU power (NVML), integrated per calendar day, priced at **\u20b99 / kWh** (Indian unit rate), converted at **\u20b994.66 / USD**.\n\n**Cloud** = LiteLLM tokens at vendor rates: `(prompt \u2212 cached) \u00d7 input + cached \u00d7 cache + completion \u00d7 output` per MTok. RAM/disk/motherboard overhead is not metered. Values update live; periods without data yet show equal totals until real calendar boundaries accumulate.",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.1.0",
+      "title": "",
+      "type": "text"
+    },
     {
       "datasource": {
         "type": "prometheus",
@@ -69,7 +98,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 4
       },
       "id": 1,
       "options": {
@@ -99,7 +128,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "label_replace(sum(gpu_energy_daily_joules{date=\"${today}\"}) / 3600000 * 9 / 94.66, \"provider\", \"Local (GPU power)\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{date=\"${today}\"}) * 0.14 + sum(litellm_completion_tokens{date=\"${today}\"}) * 0.28 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.014) / 1000000) or vector(0), \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{date=\"${today}\"}) * 0.28 + sum(litellm_completion_tokens{date=\"${today}\"}) * 0.42 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.028) / 1000000) or vector(0), \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{date=\"${today}\"}) * 0.075 + sum(litellm_completion_tokens{date=\"${today}\"}) * 0.3 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.0075) / 1000000) or vector(0), \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{date=\"${today}\"}) * 0.19 + sum(litellm_completion_tokens{date=\"${today}\"}) * 0.75 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.019) / 1000000) or vector(0), \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{date=\"${today}\"}) * 1.0 + sum(litellm_completion_tokens{date=\"${today}\"}) * 5.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.1) / 1000000) or vector(0), \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{date=\"${today}\"}) * 3.0 + sum(litellm_completion_tokens{date=\"${today}\"}) * 15.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.3) / 1000000) or vector(0), \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{date=\"${today}\"}) * 15.0 + sum(litellm_completion_tokens{date=\"${today}\"}) * 75.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 1.5) / 1000000) or vector(0), \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{date=\"${today}\"}) * 1.25 + sum(litellm_completion_tokens{date=\"${today}\"}) * 10.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.125) / 1000000) or vector(0), \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{date=\"${today}\"}) * 2.5 + sum(litellm_completion_tokens{date=\"${today}\"}) * 15.0 + sum(litellm_cached_tokens{date=\"${today}\"}) * 0.25) / 1000000) or vector(0), \"provider\", \"GPT-5.5\", \"\", \"\")",
+          "expr": "label_replace((sum(cpu_energy_daily_joules{date=\"${today}\"}) + sum(gpu_energy_daily_joules{date=\"${today}\"})) / 3600000 * 9 / 94.66, \"provider\", \"Local (CPU+GPU power)\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{date=\"${today}\"}) or vector(0)) - (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)), 0)) * 0.14 + (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)) * 0.014 + (sum(litellm_completion_tokens{date=\"${today}\"}) or vector(0)) * 0.28) / 1000000 or vector(0), \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{date=\"${today}\"}) or vector(0)) - (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)), 0)) * 0.28 + (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)) * 0.028 + (sum(litellm_completion_tokens{date=\"${today}\"}) or vector(0)) * 0.42) / 1000000 or vector(0), \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{date=\"${today}\"}) or vector(0)) - (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)), 0)) * 0.075 + (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)) * 0.0075 + (sum(litellm_completion_tokens{date=\"${today}\"}) or vector(0)) * 0.3) / 1000000 or vector(0), \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{date=\"${today}\"}) or vector(0)) - (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)), 0)) * 0.19 + (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)) * 0.019 + (sum(litellm_completion_tokens{date=\"${today}\"}) or vector(0)) * 0.75) / 1000000 or vector(0), \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{date=\"${today}\"}) or vector(0)) - (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)), 0)) * 1.0 + (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)) * 0.1 + (sum(litellm_completion_tokens{date=\"${today}\"}) or vector(0)) * 5.0) / 1000000 or vector(0), \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{date=\"${today}\"}) or vector(0)) - (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)), 0)) * 3.0 + (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)) * 0.3 + (sum(litellm_completion_tokens{date=\"${today}\"}) or vector(0)) * 15.0) / 1000000 or vector(0), \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{date=\"${today}\"}) or vector(0)) - (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)), 0)) * 15.0 + (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)) * 1.5 + (sum(litellm_completion_tokens{date=\"${today}\"}) or vector(0)) * 75.0) / 1000000 or vector(0), \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{date=\"${today}\"}) or vector(0)) - (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)), 0)) * 1.25 + (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)) * 0.125 + (sum(litellm_completion_tokens{date=\"${today}\"}) or vector(0)) * 10.0) / 1000000 or vector(0), \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{date=\"${today}\"}) or vector(0)) - (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)), 0)) * 2.5 + (sum(litellm_cached_tokens{date=\"${today}\"}) or vector(0)) * 0.25 + (sum(litellm_completion_tokens{date=\"${today}\"}) or vector(0)) * 15.0) / 1000000 or vector(0), \"provider\", \"GPT-5.5\", \"\", \"\")",
           "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
@@ -109,7 +138,7 @@
           "refId": "A"
         }
       ],
-      "title": "Today",
+      "title": "Today \u2014 ${today}",
       "type": "table"
     },
     {
@@ -171,8 +200,8 @@
       "gridPos": {
         "h": 12,
         "w": 12,
-        "x": 0,
-        "y": 12
+        "x": 12,
+        "y": 4
       },
       "id": 2,
       "options": {
@@ -202,7 +231,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "label_replace(sum(gpu_energy_daily_joules{week=\"${week}\"}) / 3600000 * 9 / 94.66, \"provider\", \"Local (GPU power)\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{week=\"${week}\"}) * 0.14 + sum(litellm_completion_tokens{week=\"${week}\"}) * 0.28 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.014) / 1000000) or vector(0), \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{week=\"${week}\"}) * 0.28 + sum(litellm_completion_tokens{week=\"${week}\"}) * 0.42 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.028) / 1000000) or vector(0), \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{week=\"${week}\"}) * 0.075 + sum(litellm_completion_tokens{week=\"${week}\"}) * 0.3 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.0075) / 1000000) or vector(0), \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{week=\"${week}\"}) * 0.19 + sum(litellm_completion_tokens{week=\"${week}\"}) * 0.75 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.019) / 1000000) or vector(0), \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{week=\"${week}\"}) * 1.0 + sum(litellm_completion_tokens{week=\"${week}\"}) * 5.0 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.1) / 1000000) or vector(0), \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{week=\"${week}\"}) * 3.0 + sum(litellm_completion_tokens{week=\"${week}\"}) * 15.0 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.3) / 1000000) or vector(0), \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{week=\"${week}\"}) * 15.0 + sum(litellm_completion_tokens{week=\"${week}\"}) * 75.0 + sum(litellm_cached_tokens{week=\"${week}\"}) * 1.5) / 1000000) or vector(0), \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{week=\"${week}\"}) * 1.25 + sum(litellm_completion_tokens{week=\"${week}\"}) * 10.0 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.125) / 1000000) or vector(0), \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{week=\"${week}\"}) * 2.5 + sum(litellm_completion_tokens{week=\"${week}\"}) * 15.0 + sum(litellm_cached_tokens{week=\"${week}\"}) * 0.25) / 1000000) or vector(0), \"provider\", \"GPT-5.5\", \"\", \"\")",
+          "expr": "label_replace((sum(cpu_energy_daily_joules{week=\"${week}\"}) + sum(gpu_energy_daily_joules{week=\"${week}\"})) / 3600000 * 9 / 94.66, \"provider\", \"Local (CPU+GPU power)\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{week=\"${week}\"}) or vector(0)) - (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)), 0)) * 0.14 + (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)) * 0.014 + (sum(litellm_completion_tokens{week=\"${week}\"}) or vector(0)) * 0.28) / 1000000 or vector(0), \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{week=\"${week}\"}) or vector(0)) - (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)), 0)) * 0.28 + (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)) * 0.028 + (sum(litellm_completion_tokens{week=\"${week}\"}) or vector(0)) * 0.42) / 1000000 or vector(0), \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{week=\"${week}\"}) or vector(0)) - (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)), 0)) * 0.075 + (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)) * 0.0075 + (sum(litellm_completion_tokens{week=\"${week}\"}) or vector(0)) * 0.3) / 1000000 or vector(0), \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{week=\"${week}\"}) or vector(0)) - (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)), 0)) * 0.19 + (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)) * 0.019 + (sum(litellm_completion_tokens{week=\"${week}\"}) or vector(0)) * 0.75) / 1000000 or vector(0), \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{week=\"${week}\"}) or vector(0)) - (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)), 0)) * 1.0 + (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)) * 0.1 + (sum(litellm_completion_tokens{week=\"${week}\"}) or vector(0)) * 5.0) / 1000000 or vector(0), \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{week=\"${week}\"}) or vector(0)) - (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)), 0)) * 3.0 + (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)) * 0.3 + (sum(litellm_completion_tokens{week=\"${week}\"}) or vector(0)) * 15.0) / 1000000 or vector(0), \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{week=\"${week}\"}) or vector(0)) - (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)), 0)) * 15.0 + (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)) * 1.5 + (sum(litellm_completion_tokens{week=\"${week}\"}) or vector(0)) * 75.0) / 1000000 or vector(0), \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{week=\"${week}\"}) or vector(0)) - (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)), 0)) * 1.25 + (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)) * 0.125 + (sum(litellm_completion_tokens{week=\"${week}\"}) or vector(0)) * 10.0) / 1000000 or vector(0), \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{week=\"${week}\"}) or vector(0)) - (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)), 0)) * 2.5 + (sum(litellm_cached_tokens{week=\"${week}\"}) or vector(0)) * 0.25 + (sum(litellm_completion_tokens{week=\"${week}\"}) or vector(0)) * 15.0) / 1000000 or vector(0), \"provider\", \"GPT-5.5\", \"\", \"\")",
           "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
@@ -212,7 +241,7 @@
           "refId": "A"
         }
       ],
-      "title": "This Week",
+      "title": "This Week \u2014 ${week}",
       "type": "table"
     },
     {
@@ -275,7 +304,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 16
       },
       "id": 3,
       "options": {
@@ -305,7 +334,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "label_replace(sum(gpu_energy_daily_joules{month=\"${month}\"}) / 3600000 * 9 / 94.66, \"provider\", \"Local (GPU power)\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{month=\"${month}\"}) * 0.14 + sum(litellm_completion_tokens{month=\"${month}\"}) * 0.28 + sum(litellm_cached_tokens{month=\"${month}\"}) * 0.014) / 1000000) or vector(0), \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{month=\"${month}\"}) * 0.28 + sum(litellm_completion_tokens{month=\"${month}\"}) * 0.42 + sum(litellm_cached_tokens{month=\"${month}\"}) * 0.028) / 1000000) or vector(0), \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{month=\"${month}\"}) * 0.075 + sum(litellm_completion_tokens{month=\"${month}\"}) * 0.3 + sum(litellm_cached_tokens{month=\"${month}\"}) * 0.0075) / 1000000) or vector(0), \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{month=\"${month}\"}) * 0.19 + sum(litellm_completion_tokens{month=\"${month}\"}) * 0.75 + sum(litellm_cached_tokens{month=\"${month}\"}) * 0.019) / 1000000) or vector(0), \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{month=\"${month}\"}) * 1.0 + sum(litellm_completion_tokens{month=\"${month}\"}) * 5.0 + sum(litellm_cached_tokens{month=\"${month}\"}) * 0.1) / 1000000) or vector(0), \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{month=\"${month}\"}) * 3.0 + sum(litellm_completion_tokens{month=\"${month}\"}) * 15.0 + sum(litellm_cached_tokens{month=\"${month}\"}) * 0.3) / 1000000) or vector(0), \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{month=\"${month}\"}) * 15.0 + sum(litellm_completion_tokens{month=\"${month}\"}) * 75.0 + sum(litellm_cached_tokens{month=\"${month}\"}) * 1.5) / 1000000) or vector(0), \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{month=\"${month}\"}) * 1.25 + sum(litellm_completion_tokens{month=\"${month}\"}) * 10.0 + sum(litellm_cached_tokens{month=\"${month}\"}) * 0.125) / 1000000) or vector(0), \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{month=\"${month}\"}) * 2.5 + sum(litellm_completion_tokens{month=\"${month}\"}) * 15.0 + sum(litellm_cached_tokens{month=\"${month}\"}) * 0.25) / 1000000) or vector(0), \"provider\", \"GPT-5.5\", \"\", \"\")",
+          "expr": "label_replace((sum(cpu_energy_daily_joules{month=\"${month}\"}) + sum(gpu_energy_daily_joules{month=\"${month}\"})) / 3600000 * 9 / 94.66, \"provider\", \"Local (CPU+GPU power)\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{month=\"${month}\"}) or vector(0)) - (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)), 0)) * 0.14 + (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)) * 0.014 + (sum(litellm_completion_tokens{month=\"${month}\"}) or vector(0)) * 0.28) / 1000000 or vector(0), \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{month=\"${month}\"}) or vector(0)) - (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)), 0)) * 0.28 + (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)) * 0.028 + (sum(litellm_completion_tokens{month=\"${month}\"}) or vector(0)) * 0.42) / 1000000 or vector(0), \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{month=\"${month}\"}) or vector(0)) - (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)), 0)) * 0.075 + (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)) * 0.0075 + (sum(litellm_completion_tokens{month=\"${month}\"}) or vector(0)) * 0.3) / 1000000 or vector(0), \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{month=\"${month}\"}) or vector(0)) - (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)), 0)) * 0.19 + (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)) * 0.019 + (sum(litellm_completion_tokens{month=\"${month}\"}) or vector(0)) * 0.75) / 1000000 or vector(0), \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{month=\"${month}\"}) or vector(0)) - (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)), 0)) * 1.0 + (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)) * 0.1 + (sum(litellm_completion_tokens{month=\"${month}\"}) or vector(0)) * 5.0) / 1000000 or vector(0), \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{month=\"${month}\"}) or vector(0)) - (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)), 0)) * 3.0 + (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)) * 0.3 + (sum(litellm_completion_tokens{month=\"${month}\"}) or vector(0)) * 15.0) / 1000000 or vector(0), \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{month=\"${month}\"}) or vector(0)) - (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)), 0)) * 15.0 + (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)) * 1.5 + (sum(litellm_completion_tokens{month=\"${month}\"}) or vector(0)) * 75.0) / 1000000 or vector(0), \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{month=\"${month}\"}) or vector(0)) - (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)), 0)) * 1.25 + (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)) * 0.125 + (sum(litellm_completion_tokens{month=\"${month}\"}) or vector(0)) * 10.0) / 1000000 or vector(0), \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{month=\"${month}\"}) or vector(0)) - (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)), 0)) * 2.5 + (sum(litellm_cached_tokens{month=\"${month}\"}) or vector(0)) * 0.25 + (sum(litellm_completion_tokens{month=\"${month}\"}) or vector(0)) * 15.0) / 1000000 or vector(0), \"provider\", \"GPT-5.5\", \"\", \"\")",
           "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
@@ -315,7 +344,7 @@
           "refId": "A"
         }
       ],
-      "title": "This Month",
+      "title": "This Month \u2014 ${month}",
       "type": "table"
     },
     {
@@ -377,8 +406,8 @@
       "gridPos": {
         "h": 12,
         "w": 12,
-        "x": 0,
-        "y": 36
+        "x": 12,
+        "y": 16
       },
       "id": 4,
       "options": {
@@ -408,7 +437,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "label_replace(sum(gpu_energy_daily_joules{year=\"${year}\"}) / 3600000 * 9 / 94.66, \"provider\", \"Local (GPU power)\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{year=\"${year}\"}) * 0.14 + sum(litellm_completion_tokens{year=\"${year}\"}) * 0.28 + sum(litellm_cached_tokens{year=\"${year}\"}) * 0.014) / 1000000) or vector(0), \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{year=\"${year}\"}) * 0.28 + sum(litellm_completion_tokens{year=\"${year}\"}) * 0.42 + sum(litellm_cached_tokens{year=\"${year}\"}) * 0.028) / 1000000) or vector(0), \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{year=\"${year}\"}) * 0.075 + sum(litellm_completion_tokens{year=\"${year}\"}) * 0.3 + sum(litellm_cached_tokens{year=\"${year}\"}) * 0.0075) / 1000000) or vector(0), \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{year=\"${year}\"}) * 0.19 + sum(litellm_completion_tokens{year=\"${year}\"}) * 0.75 + sum(litellm_cached_tokens{year=\"${year}\"}) * 0.019) / 1000000) or vector(0), \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{year=\"${year}\"}) * 1.0 + sum(litellm_completion_tokens{year=\"${year}\"}) * 5.0 + sum(litellm_cached_tokens{year=\"${year}\"}) * 0.1) / 1000000) or vector(0), \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{year=\"${year}\"}) * 3.0 + sum(litellm_completion_tokens{year=\"${year}\"}) * 15.0 + sum(litellm_cached_tokens{year=\"${year}\"}) * 0.3) / 1000000) or vector(0), \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{year=\"${year}\"}) * 15.0 + sum(litellm_completion_tokens{year=\"${year}\"}) * 75.0 + sum(litellm_cached_tokens{year=\"${year}\"}) * 1.5) / 1000000) or vector(0), \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{year=\"${year}\"}) * 1.25 + sum(litellm_completion_tokens{year=\"${year}\"}) * 10.0 + sum(litellm_cached_tokens{year=\"${year}\"}) * 0.125) / 1000000) or vector(0), \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens{year=\"${year}\"}) * 2.5 + sum(litellm_completion_tokens{year=\"${year}\"}) * 15.0 + sum(litellm_cached_tokens{year=\"${year}\"}) * 0.25) / 1000000) or vector(0), \"provider\", \"GPT-5.5\", \"\", \"\")",
+          "expr": "label_replace((sum(cpu_energy_daily_joules{year=\"${year}\"}) + sum(gpu_energy_daily_joules{year=\"${year}\"})) / 3600000 * 9 / 94.66, \"provider\", \"Local (CPU+GPU power)\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{year=\"${year}\"}) or vector(0)) - (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)), 0)) * 0.14 + (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)) * 0.014 + (sum(litellm_completion_tokens{year=\"${year}\"}) or vector(0)) * 0.28) / 1000000 or vector(0), \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{year=\"${year}\"}) or vector(0)) - (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)), 0)) * 0.28 + (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)) * 0.028 + (sum(litellm_completion_tokens{year=\"${year}\"}) or vector(0)) * 0.42) / 1000000 or vector(0), \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{year=\"${year}\"}) or vector(0)) - (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)), 0)) * 0.075 + (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)) * 0.0075 + (sum(litellm_completion_tokens{year=\"${year}\"}) or vector(0)) * 0.3) / 1000000 or vector(0), \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{year=\"${year}\"}) or vector(0)) - (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)), 0)) * 0.19 + (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)) * 0.019 + (sum(litellm_completion_tokens{year=\"${year}\"}) or vector(0)) * 0.75) / 1000000 or vector(0), \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{year=\"${year}\"}) or vector(0)) - (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)), 0)) * 1.0 + (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)) * 0.1 + (sum(litellm_completion_tokens{year=\"${year}\"}) or vector(0)) * 5.0) / 1000000 or vector(0), \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{year=\"${year}\"}) or vector(0)) - (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)), 0)) * 3.0 + (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)) * 0.3 + (sum(litellm_completion_tokens{year=\"${year}\"}) or vector(0)) * 15.0) / 1000000 or vector(0), \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{year=\"${year}\"}) or vector(0)) - (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)), 0)) * 15.0 + (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)) * 1.5 + (sum(litellm_completion_tokens{year=\"${year}\"}) or vector(0)) * 75.0) / 1000000 or vector(0), \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{year=\"${year}\"}) or vector(0)) - (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)), 0)) * 1.25 + (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)) * 0.125 + (sum(litellm_completion_tokens{year=\"${year}\"}) or vector(0)) * 10.0) / 1000000 or vector(0), \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens{year=\"${year}\"}) or vector(0)) - (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)), 0)) * 2.5 + (sum(litellm_cached_tokens{year=\"${year}\"}) or vector(0)) * 0.25 + (sum(litellm_completion_tokens{year=\"${year}\"}) or vector(0)) * 15.0) / 1000000 or vector(0), \"provider\", \"GPT-5.5\", \"\", \"\")",
           "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
@@ -418,7 +447,7 @@
           "refId": "A"
         }
       ],
-      "title": "This Year",
+      "title": "This Year \u2014 ${year}",
       "type": "table"
     },
     {
@@ -479,9 +508,9 @@
       },
       "gridPos": {
         "h": 12,
-        "w": 12,
+        "w": 24,
         "x": 0,
-        "y": 48
+        "y": 28
       },
       "id": 5,
       "options": {
@@ -511,7 +540,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "label_replace(sum(gpu_energy_daily_joules) / 3600000 * 9 / 94.66, \"provider\", \"Local (GPU power)\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens) * 0.14 + sum(litellm_completion_tokens) * 0.28 + sum(litellm_cached_tokens) * 0.014) / 1000000) or vector(0), \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens) * 0.28 + sum(litellm_completion_tokens) * 0.42 + sum(litellm_cached_tokens) * 0.028) / 1000000) or vector(0), \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens) * 0.075 + sum(litellm_completion_tokens) * 0.3 + sum(litellm_cached_tokens) * 0.0075) / 1000000) or vector(0), \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens) * 0.19 + sum(litellm_completion_tokens) * 0.75 + sum(litellm_cached_tokens) * 0.019) / 1000000) or vector(0), \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens) * 1.0 + sum(litellm_completion_tokens) * 5.0 + sum(litellm_cached_tokens) * 0.1) / 1000000) or vector(0), \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens) * 3.0 + sum(litellm_completion_tokens) * 15.0 + sum(litellm_cached_tokens) * 0.3) / 1000000) or vector(0), \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens) * 15.0 + sum(litellm_completion_tokens) * 75.0 + sum(litellm_cached_tokens) * 1.5) / 1000000) or vector(0), \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens) * 1.25 + sum(litellm_completion_tokens) * 10.0 + sum(litellm_cached_tokens) * 0.125) / 1000000) or vector(0), \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace(((sum(litellm_prompt_tokens) * 2.5 + sum(litellm_completion_tokens) * 15.0 + sum(litellm_cached_tokens) * 0.25) / 1000000) or vector(0), \"provider\", \"GPT-5.5\", \"\", \"\")",
+          "expr": "label_replace((sum(cpu_energy_daily_joules) + sum(gpu_energy_daily_joules)) / 3600000 * 9 / 94.66, \"provider\", \"Local (CPU+GPU power)\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens) or vector(0)) - (sum(litellm_cached_tokens) or vector(0)), 0)) * 0.14 + (sum(litellm_cached_tokens) or vector(0)) * 0.014 + (sum(litellm_completion_tokens) or vector(0)) * 0.28) / 1000000 or vector(0), \"provider\", \"DeepSeek V4.1 Flash\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens) or vector(0)) - (sum(litellm_cached_tokens) or vector(0)), 0)) * 0.28 + (sum(litellm_cached_tokens) or vector(0)) * 0.028 + (sum(litellm_completion_tokens) or vector(0)) * 0.42) / 1000000 or vector(0), \"provider\", \"DeepSeek V4 Pro\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens) or vector(0)) - (sum(litellm_cached_tokens) or vector(0)), 0)) * 0.075 + (sum(litellm_cached_tokens) or vector(0)) * 0.0075 + (sum(litellm_completion_tokens) or vector(0)) * 0.3) / 1000000 or vector(0), \"provider\", \"Gemini 3.1 Flash-Lite\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens) or vector(0)) - (sum(litellm_cached_tokens) or vector(0)), 0)) * 0.19 + (sum(litellm_cached_tokens) or vector(0)) * 0.019 + (sum(litellm_completion_tokens) or vector(0)) * 0.75) / 1000000 or vector(0), \"provider\", \"Gemini 3.8 Flash\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens) or vector(0)) - (sum(litellm_cached_tokens) or vector(0)), 0)) * 1.0 + (sum(litellm_cached_tokens) or vector(0)) * 0.1 + (sum(litellm_completion_tokens) or vector(0)) * 5.0) / 1000000 or vector(0), \"provider\", \"Claude Haiku 4.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens) or vector(0)) - (sum(litellm_cached_tokens) or vector(0)), 0)) * 3.0 + (sum(litellm_cached_tokens) or vector(0)) * 0.3 + (sum(litellm_completion_tokens) or vector(0)) * 15.0) / 1000000 or vector(0), \"provider\", \"Claude Sonnet 5.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens) or vector(0)) - (sum(litellm_cached_tokens) or vector(0)), 0)) * 15.0 + (sum(litellm_cached_tokens) or vector(0)) * 1.5 + (sum(litellm_completion_tokens) or vector(0)) * 75.0) / 1000000 or vector(0), \"provider\", \"Claude Opus 5.5\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens) or vector(0)) - (sum(litellm_cached_tokens) or vector(0)), 0)) * 1.25 + (sum(litellm_cached_tokens) or vector(0)) * 0.125 + (sum(litellm_completion_tokens) or vector(0)) * 10.0) / 1000000 or vector(0), \"provider\", \"GPT-5.4\", \"\", \"\") or label_replace(((clamp_min((sum(litellm_prompt_tokens) or vector(0)) - (sum(litellm_cached_tokens) or vector(0)), 0)) * 2.5 + (sum(litellm_cached_tokens) or vector(0)) * 0.25 + (sum(litellm_completion_tokens) or vector(0)) * 15.0) / 1000000 or vector(0), \"provider\", \"GPT-5.5\", \"\", \"\")",
           "format": "table",
           "fullMetaSearch": false,
           "includeNull": true,
@@ -542,7 +571,7 @@
           "type": "prometheus",
           "uid": "PDC628E2375F40484"
         },
-        "query": "label_values(gpu_energy_daily_joules, date)",
+        "query": "label_values(cpu_energy_daily_joules, date)",
         "refresh": 1,
         "sort": 2,
         "current": {
@@ -559,7 +588,7 @@
           "type": "prometheus",
           "uid": "PDC628E2375F40484"
         },
-        "query": "label_values(gpu_energy_daily_joules, week)",
+        "query": "label_values(cpu_energy_daily_joules, week)",
         "refresh": 1,
         "sort": 2,
         "current": {
@@ -576,7 +605,7 @@
           "type": "prometheus",
           "uid": "PDC628E2375F40484"
         },
-        "query": "label_values(gpu_energy_daily_joules, month)",
+        "query": "label_values(cpu_energy_daily_joules, month)",
         "refresh": 1,
         "sort": 2,
         "current": {
@@ -593,7 +622,7 @@
           "type": "prometheus",
           "uid": "PDC628E2375F40484"
         },
-        "query": "label_values(gpu_energy_daily_joules, year)",
+        "query": "label_values(cpu_energy_daily_joules, year)",
         "refresh": 1,
         "sort": 2,
         "current": {

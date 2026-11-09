@@ -48,37 +48,45 @@ def sel(metric, date_f, week_f, month_f, year_f):
 
 def sum_by(metric, date_f, week_f, month_f, year_f):
     return f'sum({sel(metric, date_f, week_f, month_f, year_f)})'
+def sum0(metric, date_f, week_f, month_f, year_f):
+    """Sum a token metric for a period; 'or vector(0)' so empty periods yield 0."""
+    return f'(sum({sel(metric, date_f, week_f, month_f, year_f)}) or vector(0))'
 
 def cloud_cost_expr(date_f, week_f, month_f, year_f, in_r, out_r, cache_r):
-    p = sum_by('litellm_prompt_tokens', date_f, week_f, month_f, year_f)
-    c = sum_by('litellm_completion_tokens', date_f, week_f, month_f, year_f)
-    k = sum_by('litellm_cached_tokens', date_f, week_f, month_f, year_f)
-    # 'or vector(0)' makes an empty period (no tokens used yet) show $0.00
-    # instead of "No data".
-    return (f'(({p} * {in_r} + {c} * {out_r} + {k} * {cache_r}) / 1000000) or vector(0)')
+    p = sum0('litellm_prompt_tokens', date_f, week_f, month_f, year_f)
+    c = sum0('litellm_completion_tokens', date_f, week_f, month_f, year_f)
+    k = sum0('litellm_cached_tokens', date_f, week_f, month_f, year_f)
+    # LiteLLM's prompt_tokens INCLUDES cached_tokens (verified: cached is a
+    # strict subset of prompt in the DB). Charge the uncached remainder at the
+    # input rate and cached tokens at the cache rate — otherwise cache-heavy
+    # traffic is double-counted and costs inflate ~9x.
+    return (f'((clamp_min({p} - {k}, 0)) * {in_r} + {k} * {cache_r} + {c} * {out_r}) / 1000000 or vector(0)')
 
 def local_cost_expr(energy_f):
-    """Local cost from per-day GPU energy (gpu_energy_daily_joules).
+    """Local cost from measured CPU + GPU energy (per-day integrated gauges).
 
-    The exporter integrates the nvidia_gpu_power_watts gauge over each
-    calendar day and labels it with date/week/month/year. Summing the days
-    belonging to each period gives the actual measured energy — no
-    projection, no rolling windows.
+    cpu_energy_daily_joules : integrated from scaph_socket_power_microwatts
+                              (RAPL package power, calibrated idle ~30 W /
+                              16-core burn ~200 W on the Ryzen 9 7950X).
+    gpu_energy_daily_joules : integrated from nvidia_gpu_power_watts (NVML).
 
+    The scaph_*_energy_microjoules counters are NOT used: they carry an AMD
+    energy_uj unit bug (~1000x inflated, ~38,000 W rates).
     Units: joules → /3.6e6 → kWh → × 9 INR/kWh → / 94.66 INR/USD → USD.
     """
-    metric = f'gpu_energy_daily_joules{{{energy_f}}}' if energy_f else 'gpu_energy_daily_joules'
-    return f'sum({metric}) / 3600000 * 9 / 94.66'
+    cpu = f'cpu_energy_daily_joules{{{energy_f}}}' if energy_f else 'cpu_energy_daily_joules'
+    gpu = f'gpu_energy_daily_joules{{{energy_f}}}' if energy_f else 'gpu_energy_daily_joules'
+    return f'(sum({cpu}) + sum({gpu})) / 3600000 * 9 / 94.66'
 
 def build_period_expr(date_f, week_f, month_f, year_f, _window):
     """Build a single 'or'-joined expression for one period (all providers as rows)."""
     energy_f = date_f or week_f or month_f or year_f
-    parts = [f'label_replace({local_cost_expr(energy_f)}, "provider", "Local (GPU power)", "", "")']
+    parts = [f'label_replace({local_cost_expr(energy_f)}, "provider", "Local (CPU+GPU power)", "", "")']
     for name, in_r, out_r, cache_r in VENDORS:
         parts.append(f'label_replace({cloud_cost_expr(date_f, week_f, month_f, year_f, in_r, out_r, cache_r)}, "provider", "{name}", "", "")')
     return ' or '.join(parts)
 
-def make_panel(panel_id, title, expr, grid_y):
+def make_panel(panel_id, title, expr, grid_pos):
     return {
         "datasource": DS,
         "fieldConfig": {
@@ -100,7 +108,7 @@ def make_panel(panel_id, title, expr, grid_y):
                 }
             ],
         },
-        "gridPos": {"h": 12, "w": 12, "x": 0, "y": grid_y},
+        "gridPos": grid_pos,
         "id": panel_id,
         "options": {
             "cellHeight": "sm",
@@ -126,15 +134,59 @@ def make_panel(panel_id, title, expr, grid_y):
         "type": "table",
     }
 
+def make_info_panel(panel_id):
+    """Methodology header so the assumptions are visible without scrolling."""
+    content = "\n".join([
+        "### Local vs Cloud — how costs are calculated",
+        "",
+        "**Local** = measured electricity: CPU package power (RAPL socket gauge, calibrated: ~30 W idle, ~200 W all-core on the Ryzen 9 7950X) + GPU power (NVML), integrated per calendar day, priced at **₹9 / kWh** (Indian unit rate), converted at **₹94.66 / USD**.",
+        "",
+        "**Cloud** = LiteLLM tokens at vendor rates: `(prompt − cached) × input + cached × cache + completion × output` per MTok. RAM/disk/motherboard overhead is not metered. Values update live; periods without data yet show equal totals until real calendar boundaries accumulate.",
+    ])
+    return {
+        "datasource": {"type": "datasource", "uid": "grafana"},
+        "fieldConfig": {"defaults": {}, "overrides": []},
+        "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
+        "id": panel_id,
+        "options": {
+            "code": {"language": "plaintext", "showLineNumbers": False, "showMiniMap": False},
+            "content": content,
+            "mode": "markdown",
+        },
+        "pluginVersion": "11.1.0",
+        "title": "",
+        "type": "text",
+    }
+
 def build_dashboard():
-    panels = []
-    for i, (title, date_f, week_f, month_f, year_f, window) in enumerate(PERIODS):
-        expr = build_period_expr(date_f, week_f, month_f, year_f, window)
-        panels.append(make_panel(i + 1, title, expr, i * 12))
+    panels = [make_info_panel(10)]
+    # 2x2 grid of period tables + full-width All-Time.
+    # Titles embed the live template variables so each table is self-dating.
+    layout = [
+        (0, 4, 12, 12),   # Today     -> left, row 1
+        (12, 4, 12, 12),  # This Week -> right, row 1
+        (0, 16, 12, 12),  # This Month  -> left, row 2
+        (12, 16, 12, 12), # This Year   -> right, row 2
+        (0, 28, 24, 12),  # All-Time  -> full width finale
+    ]
+    for i, (title, date_f, week_f, month_f, year_f, _window) in enumerate(PERIODS):
+        expr = build_period_expr(date_f, week_f, month_f, year_f, _window)
+        x, y, w, h = layout[i]
+        if i == 0:
+            display = f"Today — ${{today}}"
+        elif i == 1:
+            display = f"This Week — ${{week}}"
+        elif i == 2:
+            display = f"This Month — ${{month}}"
+        elif i == 3:
+            display = f"This Year — ${{year}}"
+        else:
+            display = title
+        panels.append(make_panel(i + 1, display, expr, {"h": h, "w": w, "x": x, "y": y}))
 
     dashboard = {
         "annotations": {"list": []},
-        "description": "Local cost = measured GPU energy (integrated from the power gauge, per calendar day) at 9 INR/kWh. CPU/host energy is excluded: the scaphandre host counters report ~32 kW on this machine and are not credible. Cloud cost = LiteLLM tokens x provider rates.",
+        "description": "Local cost = measured CPU package energy (RAPL socket power, calibrated) + GPU energy, integrated per calendar day, priced at 9 INR/kWh (Indian unit rate). Cloud cost = LiteLLM tokens at vendor rates: (prompt - cached) x input + cached x cache + completion x output. RAM/disk/motherboard overhead is not metered.",
         "editable": True,
         "fiscalYearStartMonth": 0,
         "graphPaper": {},
@@ -146,29 +198,29 @@ def build_dashboard():
         "tags": ["glasswing-power", "cost-comparison", "tokens"],
         "templating": {"list": [
             # Dynamic date variables — query the latest values from the
-            # per-day GPU energy metric. These auto-update as new days
-            # arrive, so the dashboard always shows current date/week/month/year.
+            # per-day CPU energy metric (longest history). These auto-update
+            # as new days arrive, so the dashboard always shows current data.
             {"name": "today", "label": "Date", "type": "query",
              "datasource": DS,
-             "query": "label_values(gpu_energy_daily_joules, date)",
+             "query": "label_values(cpu_energy_daily_joules, date)",
              "refresh": 1,
              "sort": 2,
              "current": {"selected": True, "text": "", "value": ""}},
             {"name": "week", "label": "Week", "type": "query",
              "datasource": DS,
-             "query": "label_values(gpu_energy_daily_joules, week)",
+             "query": "label_values(cpu_energy_daily_joules, week)",
              "refresh": 1,
              "sort": 2,
              "current": {"selected": True, "text": "", "value": ""}},
             {"name": "month", "label": "Month", "type": "query",
              "datasource": DS,
-             "query": "label_values(gpu_energy_daily_joules, month)",
+             "query": "label_values(cpu_energy_daily_joules, month)",
              "refresh": 1,
              "sort": 2,
              "current": {"selected": True, "text": "", "value": ""}},
             {"name": "year", "label": "Year", "type": "query",
              "datasource": DS,
-             "query": "label_values(gpu_energy_daily_joules, year)",
+             "query": "label_values(cpu_energy_daily_joules, year)",
              "refresh": 1,
              "sort": 2,
              "current": {"selected": True, "text": "", "value": ""}},
@@ -191,4 +243,7 @@ if __name__ == "__main__":
     print(f"Wrote {out}")
     print(f"Panels: {len(d['panels'])}")
     for p in d['panels']:
-        print(f"  {p['id']}: {p['title']} (expr {len(p['targets'][0]['expr'])} chars)")
+        if 'targets' in p:
+            print(f"  {p['id']}: {p['title']} @ {p['gridPos']} (expr {len(p['targets'][0]['expr'])} chars)")
+        else:
+            print(f"  {p['id']}: [info panel] @ {p['gridPos']}")

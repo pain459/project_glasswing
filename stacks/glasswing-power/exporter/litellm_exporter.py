@@ -82,21 +82,41 @@ litellm_scrape_errors = Counter(
     'Total number of scrape errors'
 )
 
-# GPU energy per calendar day, integrated from the nvidia_gpu_power_watts
-# gauge in Prometheus TSDB. Labelled with date/week/month/year so dashboards
-# can sum the days belonging to each period without any projection.
+# Per-day energy integrated from power gauges in Prometheus TSDB. Labelled
+# with date/week/month/year so dashboards can sum the days belonging to
+# each period without any projection.
+#
+# Sources (metric, scale-to-watts, target gauge):
+#   - nvidia_gpu_power_watts        : GPU package power (NVML), watts
+#   - scaph_socket_power_microwatts : CPU package power (RAPL), microwatts.
+#     Calibrated on the host: idle ~30 W, 16-core burn ~200 W, matching the
+#     Ryzen 9 7950X (TDP 170 W). Do NOT use the scaph_*_energy_microjoules
+#     counters: they carry an AMD energy_uj unit bug (~1000x inflated).
+POWER_SOURCES = None  # initialised below, after the gauges are defined
+
 gpu_energy_daily_joules = Gauge(
     'gpu_energy_daily_joules',
     'GPU energy in joules consumed per calendar day (integrated from power gauge)',
     ['date', 'week', 'month', 'year']
 )
 
-# Cache of completed days: energy never changes once the day is over.
+cpu_energy_daily_joules = Gauge(
+    'cpu_energy_daily_joules',
+    'CPU package energy in joules consumed per calendar day (integrated from socket power gauge)',
+    ['date', 'week', 'month', 'year']
+)
+
+POWER_SOURCES = [
+    ('nvidia_gpu_power_watts', 1.0, gpu_energy_daily_joules),
+    ('scaph_socket_power_microwatts', 1e-6, cpu_energy_daily_joules),
+]
+
+# Cache of integrated days: energy never changes once the day is over.
 # Days with genuinely no data are cached as None (a completed day can
 # never gain samples later). Today is always recomputed.
-_gpu_energy_cache = {}
-_gpu_rollup_last_run = 0.0
-GPU_ROLLUP_INTERVAL = 60  # seconds; day-level data needs no fresh integration per scrape
+_energy_cache = {}  # (metric, date) -> joules or None
+_rollup_last_run = 0.0
+ROLLUP_INTERVAL = 60  # seconds; day-level data needs no fresh integration per scrape
 
 
 def _prom_query(expr, at=None):
@@ -120,63 +140,64 @@ def _period_labels(date_str):
     return f"{iso_year}W{iso_week:02d}", d.strftime('%Y-%m'), d.strftime('%Y')
 
 
-def _gpu_energy_for_range(start_epoch, end_epoch):
-    """Integrate GPU power (W) over [start, end): energy in joules.
+def _integrate_power_gauge(metric, scale, start_epoch, end_epoch):
+    """Integrate a power gauge (scaled to watts) over [start, end): joules.
 
     Energy = avg(power) x duration. The average is taken over the samples
     that actually exist in TSDB; missing samples are not treated as zero.
     """
     window = f"{int(end_epoch - start_epoch)}s"
-    total = _prom_query(f'sum(sum_over_time(nvidia_gpu_power_watts[{window}]))', at=end_epoch)
-    count = _prom_query(f'sum(count_over_time(nvidia_gpu_power_watts[{window}]))', at=end_epoch)
+    total = _prom_query(f'sum(sum_over_time({metric}[{window}]))', at=end_epoch)
+    count = _prom_query(f'sum(count_over_time({metric}[{window}]))', at=end_epoch)
     if total is None or not count:
         return None
-    avg_watts = total / count
+    avg_watts = (total / count) * scale
     return avg_watts * (end_epoch - start_epoch)
 
 
-def update_gpu_energy():
-    """Expose per-day GPU energy for the last GPU_HISTORY_DAYS days.
+def update_power_energy():
+    """Expose per-day CPU and GPU energy for the last GPU_HISTORY_DAYS days.
 
-    Throttled to once per GPU_ROLLUP_INTERVAL: between runs the previously
+    Throttled to once per ROLLUP_INTERVAL: between runs the previously
     published metric values simply remain in place.
     """
-    global _gpu_rollup_last_run
+    global _rollup_last_run
     now_ts = time_mod.time()
-    if now_ts - _gpu_rollup_last_run < GPU_ROLLUP_INTERVAL and _gpu_rollup_last_run:
-        return len(_gpu_energy_cache)
+    if now_ts - _rollup_last_run < ROLLUP_INTERVAL and _rollup_last_run:
+        return len(_energy_cache)
 
     now = datetime.now(timezone.utc)
     midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    computed = {}
+    computed = {}  # (metric, date_str) -> joules or None
     for offset in range(GPU_HISTORY_DAYS, -1, -1):
         day_start = midnight - timedelta(days=offset)
         day_end = day_start + timedelta(days=1)
         date_str = day_start.strftime('%Y-%m-%d')
 
-        if date_str in _gpu_energy_cache:
-            cached = _gpu_energy_cache[date_str]
-            if cached is not None:
-                computed[date_str] = cached
-            continue
+        for metric, scale, _gauge in POWER_SOURCES:
+            key = (metric, date_str)
+            if key in _energy_cache:
+                computed[key] = _energy_cache[key]
+                continue
 
-        # Today's window ends at 'now' (partial day); completed days end at midnight.
-        end_epoch = now.timestamp() if offset == 0 else day_end.timestamp()
-        joules = _gpu_energy_for_range(day_start.timestamp(), end_epoch)
-        computed[date_str] = joules
-        if offset != 0:
-            # Completed days are final (with data or without).
-            _gpu_energy_cache[date_str] = joules
+            # Today's window ends at 'now' (partial day); completed days end at midnight.
+            end_epoch = now.timestamp() if offset == 0 else day_end.timestamp()
+            joules = _integrate_power_gauge(metric, scale, day_start.timestamp(), end_epoch)
+            computed[key] = joules
+            if offset != 0:
+                # Completed days are final (with data or without).
+                _energy_cache[key] = joules
 
-    gpu_energy_daily_joules.clear()
-    for date_str, joules in computed.items():
-        if joules is None:
-            continue
-        week, month, year = _period_labels(date_str)
-        gpu_energy_daily_joules.labels(date=date_str, week=week, month=month, year=year).set(joules)
+    for metric, scale, gauge in POWER_SOURCES:
+        gauge.clear()
+        for (m, date_str), joules in computed.items():
+            if m != metric or joules is None:
+                continue
+            week, month, year = _period_labels(date_str)
+            gauge.labels(date=date_str, week=week, month=month, year=year).set(joules)
 
-    _gpu_rollup_last_run = now_ts
+    _rollup_last_run = now_ts
     return sum(1 for j in computed.values() if j is not None)
 
 def update_metrics():
@@ -282,11 +303,11 @@ class MetricsHandler(BaseHTTPRequestHandler):
         if self.path == '/metrics':
             update_metrics()
             try:
-                gpu_days = update_gpu_energy()
+                power_days = update_power_energy()
             except Exception as e:
-                gpu_days = 0
+                power_days = 0
                 litellm_scrape_errors.inc()
-                print(f"[{datetime.now().isoformat()}] GPU energy update error: {e}")
+                print(f"[{datetime.now().isoformat()}] Power energy update error: {e}")
             from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
             output = generate_latest()
             self.send_response(200)
