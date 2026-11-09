@@ -61,8 +61,10 @@ GPU-marginal energy per token (kWh/MTok = W ÷ (3.6 × tok/s)):
 ## Uptime / Idle Overlay (whole server)
 
 The machine runs 24/7 for ~30 services. Attribution basis (no wall meter —
-estimates kept from the 2026-10-30 component study; RAPL is not readable on
-this host without a new sudo rule):
+estimates kept from the 2026-10-30 component study; CPU package power IS now
+measured via RAPL since 2026-11-09: readable to group `adm` through
+`scripts/05-rapl-access.sh`, ~28-30 W at idle; RAM/NVMe/fans/PSU remain the
+estimate):
 
 | Component | Power | Energy/day |
 |---|---|---|
@@ -155,9 +157,11 @@ billed = (prompt_tokens - cached_tokens) × input_rate   # cached: free
    host estimate is shared by ~30 other services; if you later want
    GPU-attributable-only prices, use the marginal row (₹0.40/₹11.6) with no
    overlay.
-2. **Host idle is estimated, not measured.** No wall meter; RAPL denied to this
-   user. GPU numbers are measured. A plug meter reading should replace the
-   204 W estimate when one is available.
+2. **Host idle is estimated, not measured (partially fixed 2026-11-09).** No wall
+   meter. CPU package power IS measured now: RAPL is readable to group `adm`
+   (udev rule from `scripts/05-rapl-access.sh`), idle ~28-30 W. RAM/NVMe/fans/PSU
+   conversion remain estimated — a plug-meter reading should replace the 204 W
+   estimate when one is available. GPU numbers are measured.
 3. **Reference volume 3M tokens/day** is a policy constant, not a law. Recheck
    against the ledger monthly-ish; the ladder shows prices at other volumes.
 4. **Generation throughput band 75-113 tok/s.** Booked price uses 89 tok/s

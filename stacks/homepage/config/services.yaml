@@ -37,13 +37,6 @@
         container: glasswing-glances
         siteMonitor: http://192.168.68.62:61208/api/4/status
 
-    - Glasswing Power:
-        icon: mdi-lightning-bolt
-        href: http://192.168.68.62:3038
-        description: Power & Energy Consumption Dashboard — Grafana
-        container: glasswing-glasswing-power-grafana
-        siteMonitor: http://192.168.68.62:3038/api/health
-
     - Portainer:
         icon: portainer.png
         href: https://192.168.68.62:9443

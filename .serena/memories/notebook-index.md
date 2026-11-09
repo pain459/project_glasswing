@@ -1,47 +1,20 @@
-Open Notebook index for project_glasswing (commit 2c22a7f, 2026-11-06):
-
-## Release Pipeline
-- Code Map - project_glasswing - Release Pipeline (note:4q0t878d4ge0i9skctet)
-- Decision - project_glasswing - Self-Contained Release System (note:k1pmh8fksfapyps8cp4d)
-
-## Infrastructure
-- Ref - project_glasswing - Survey Snapshot (note:fjl1tyebv75f8n4jl030)
-- Ref - project_glasswing - Deep Architecture and Engineering Manual (note:gi7u7a6r1gch7e6rzp4a)
-- Code Map - project_glasswing - Secret Injection Pipeline (note:ljqjqf5qi1wc0a4c54tr)
-- Code Map - project_glasswing - Observability Stack (note:yqijkmlopa793ry2rfnz)
-- Code Map - project_glasswing - AI & MCP Infrastructure (note:kt8xikmgdvzaa6vmjb5q)
-- Code Map - project_glasswing - OpenCode LiteLLM Token Tracking (note:7ucgrzhromzfac7mxffp)
-- Code Map - project_glasswing - Backup System (note:d7piqw0hdmtir3ubh93q)
-
-## Configuration & Operations
-- Ref - project_glasswing - Local Inference Baseline (note:pde0wf50ft38giffvoa9)
-- Ref - project_glasswing - Data Model and Persistence (note:w01zn93o8nmrsvw2g7se)
-- Ref - project_glasswing - Integrations and Interfaces (note:xh8m87n8mmwbr2atn10l)
-- Ref - project_glasswing - Comprehensive Configuration Properties (note:pc4keuhsp8eopzfi4y2z)
-- Runbook - project_glasswing - Build, Test, Run (note:qirb4yrbmrjkkgol2e1h)
-- Ref - project_glasswing - Conventions (note:kmvk0n1me0ml2788yhds)
-- Ref - project_glasswing - CI/CD and Operations (note:wkwaixth7tzwn16txbr2)
-- Gotcha - project_glasswing - Critical Invariants (note:8mku18pr5646tapzcgr2)
-
-## Decisions
-- Decision - project_glasswing - GPU Residency and KV Cache Defaults (note:bljxn2yl68f4kieweecx)
-- Decision - project_glasswing - Qwen 3.8 as Default Model (note:eg4jgo9gxxi1lnwv0j81)
-- Decision - project_glasswing - Langfuse Stack Removal (note:0prkukcx59sq6777ju34)
-
-## Fixes
-- Fix - project_glasswing - Electricity Pricing Idle Amortization Inconsistent (note:um2fbafn789e4b3j18yr)
-- Fix - project_glasswing - Infisical Redis RDB Format Version 12 Incompatibility (note:e0kzddj977hsgvbczcno)
-- Fix - project_glasswing - Serena No Active Project on Startup (note:d0nz2qh8czn2hf0fbv5i)
-- Fix - project_glasswing - Open Notebook SurrealDB Tag Not Found (note:x640bmomovtmgpet5ugq)
-
-## Gotchas
-- Gotcha - project_glasswing - Partial GPU Offload Halves Inference Throughput (note:b6v46dgy99utph3ugaah)
-- Gotcha - project_glasswing - Docker DNS Service Name Collision (note:xg3keujci6tqw45dl9bw)
-- Gotcha - project_glasswing - Serena REPL Mode Shows Only 3 Exposed Tools (note:tl38vh4mbti9gxogru41)
-
-## Sessions
-- Session - 2026-11-06 - OpenCode LiteLLM Token Tracking (note:lwjgptp5rg2aphui6ofs)
-- Session - 2026-11-05 - Qwen 3.8 Model, Langfuse Removal, and Diagnostics (note:b8phlwa2c5zp2qy1r0ew)
-- Session - 2026-11-05 - Release Deploy Fixes and Infisical Redis Debug (note:69lvrukahn4yqzqy36wi)
-- Session - 2026-11-04 - Serena Deployment Fix (note:hcgrpxiirs6r8zodxj96)
-- Session - 2026-11-04 - Repository Survey (note:xqqt5ndrhm6riisnx29s)
+# Open Notebook hot-set index (project_glasswing)
+# NOTE: glasswing-power stack was REMOVED on 2026-11-09 (user has a new approach).
+# The 6 glasswing-power notes below are historical — the stack no longer exists.
+# Keep them searchable for the RAPL gotcha (still valid kernel knowledge) and the
+# pricing math (still valid), but do NOT treat the stack as running.
+# Power & pricing (historical — stack removed):
+# - Ref - project_glasswing - Local Inference Baseline (note:pde0wf50ft38giffvoa9)
+# - Fix - project_glasswing - Electricity Pricing Idle Amortization Inconsistent (note:um2fbafn789e4b3j18yr)
+# - Runbook - project_glasswing - RAPL Read Access via udev (note:00ohwue8wyd0rb4tmvse)
+# - Gotcha - glasswing-power - AMD RAPL Energy Counters 1000x Inflated, Use Power Gauges (note:62jhrtb69igpq1j8tv08)
+# - Fix - glasswing-power - Local Cost Power-Based Calculation (note:1g4kmw8dk233rv644wvm)
+# - Code Map - glasswing-power - Metric Contract and Attribution Math (note:ltp3rxluarquu998klcc)
+# - Code Map - glasswing-power - GPU Power Exporter (Rust Sidecar) (note:uv8hjy3w5nlkt107orvi)
+# - Ref - glasswing-power - Grafana Dashboard Design and Cost Formulas (note:tcrax7vtjjjewnc2utkp)
+# - Decision - glasswing-power - GPU Sidecar Architecture (note:vv5oxa9p0ulajq15ypi0)
+# Infra:
+# - Code Map - project_glasswing - AI & MCP Infrastructure (note:kt8xikmgdvzaa6vmjb5q)
+# - Runbook - project_glasswing - Switch Serena Active Project (note:vy6enywq6eprzafiea5u)
+# - Fix - project_glasswing - Serena 'No Active Project' on Startup (note:d0nz2qh8czn2hf0fbv5i)
+# - Ref - project_glasswing - CI/CD and Operations (note:6ib4vaglp2mk511z0vhb)
