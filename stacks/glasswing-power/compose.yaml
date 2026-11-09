@@ -122,6 +122,9 @@ services:
       DB_NAME: litellm
       DB_USER: litellm
       DB_PASSWORD: litellm
+      # Prometheus (for integrating GPU power into per-day energy)
+      PROM_URL: http://prometheus:9090
+      GPU_HISTORY_DAYS: "30"
       PORT: "9188"
 
     ports:

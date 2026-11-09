@@ -29,13 +29,15 @@ VENDORS = [
 ]
 
 # Period -> (title, date filter, week filter, month filter, year filter, energy window)
-# Energy window is used for increase() on the GPU power gauge.
+# Local cost filters the per-day GPU energy metric by calendar labels, so each
+# table sums exactly the days belonging to that period. No rolling windows,
+# no projection.
 PERIODS = [
-    ("Today",         'date="${today}"', None, None, None, "1d"),
-    ("This Week",      None, 'week="${week}"', None, None, "7d"),
-    ("This Month",     None, None, 'month="${month}"', None, "30d"),
-    ("This Year",      None, None, None, 'year="${year}"', "365d"),
-    ("All-Time",       None, None, None, None, "365d"),
+    ("Today",         'date="${today}"', None, None, None, None),
+    ("This Week",      None, 'week="${week}"', None, None, None),
+    ("This Month",     None, None, 'month="${month}"', None, None),
+    ("This Year",      None, None, None, 'year="${year}"', None),
+    ("All-Time",       None, None, None, None, None),
 ]
 
 def sel(metric, date_f, week_f, month_f, year_f):
@@ -51,25 +53,27 @@ def cloud_cost_expr(date_f, week_f, month_f, year_f, in_r, out_r, cache_r):
     p = sum_by('litellm_prompt_tokens', date_f, week_f, month_f, year_f)
     c = sum_by('litellm_completion_tokens', date_f, week_f, month_f, year_f)
     k = sum_by('litellm_cached_tokens', date_f, week_f, month_f, year_f)
-    return (f'({p} * {in_r} + {c} * {out_r} + {k} * {cache_r}) / 1000000')
+    # 'or vector(0)' makes an empty period (no tokens used yet) show $0.00
+    # instead of "No data".
+    return (f'(({p} * {in_r} + {c} * {out_r} + {k} * {cache_r}) / 1000000) or vector(0)')
 
-def local_cost_expr(window):
-    """Local cost from GPU energy (nvidia_gpu_power_watts gauge).
+def local_cost_expr(energy_f):
+    """Local cost from per-day GPU energy (gpu_energy_daily_joules).
 
-    Uses increase() on the GPU power gauge to get the total energy consumed
-    in the window. This only counts days where we actually have data, so
-    Year and All-Time won't be inflated by projecting forward.
-    Units: watts × seconds → joules → /3.6e6 → kWh → × 9 INR/kWh → / 94.66 INR/USD → USD.
+    The exporter integrates the nvidia_gpu_power_watts gauge over each
+    calendar day and labels it with date/week/month/year. Summing the days
+    belonging to each period gives the actual measured energy — no
+    projection, no rolling windows.
+
+    Units: joules → /3.6e6 → kWh → × 9 INR/kWh → / 94.66 INR/USD → USD.
     """
-    # Total energy consumed in the window (joules)
-    # increase() on a gauge sums the deltas, which gives the integral of power over time
-    energy_joules = f'sum(increase(nvidia_gpu_power_watts[{window}]))'
-    # Convert joules to kWh, then to USD
-    return (f'{energy_joules} / 3600000 * 9 / 94.66')
+    metric = f'gpu_energy_daily_joules{{{energy_f}}}' if energy_f else 'gpu_energy_daily_joules'
+    return f'sum({metric}) / 3600000 * 9 / 94.66'
 
-def build_period_expr(date_f, week_f, month_f, year_f, window):
+def build_period_expr(date_f, week_f, month_f, year_f, _window):
     """Build a single 'or'-joined expression for one period (all providers as rows)."""
-    parts = [f'label_replace({local_cost_expr(window)}, "provider", "Local (LiteLLM)", "", "")']
+    energy_f = date_f or week_f or month_f or year_f
+    parts = [f'label_replace({local_cost_expr(energy_f)}, "provider", "Local (GPU power)", "", "")']
     for name, in_r, out_r, cache_r in VENDORS:
         parts.append(f'label_replace({cloud_cost_expr(date_f, week_f, month_f, year_f, in_r, out_r, cache_r)}, "provider", "{name}", "", "")')
     return ' or '.join(parts)
@@ -89,6 +93,10 @@ def make_panel(panel_id, title, expr, grid_y):
                 {
                     "matcher": {"id": "byName", "options": "provider"},
                     "properties": [{"id": "custom.width", "value": 220}],
+                },
+                {
+                    "matcher": {"id": "byName", "options": "Time"},
+                    "properties": [{"id": "custom.hidden", "value": True}],
                 }
             ],
         },
@@ -126,6 +134,7 @@ def build_dashboard():
 
     dashboard = {
         "annotations": {"list": []},
+        "description": "Local cost = measured GPU energy (integrated from the power gauge, per calendar day) at 9 INR/kWh. CPU/host energy is excluded: the scaphandre host counters report ~32 kW on this machine and are not credible. Cloud cost = LiteLLM tokens x provider rates.",
         "editable": True,
         "fiscalYearStartMonth": 0,
         "graphPaper": {},
@@ -136,30 +145,30 @@ def build_dashboard():
         "schemaVersion": 39,
         "tags": ["glasswing-power", "cost-comparison", "tokens"],
         "templating": {"list": [
-            # Dynamic date variables — query the latest values from the metrics.
-            # These auto-update as new data arrives, so the dashboard always
-            # shows the current date/week/month/year.
+            # Dynamic date variables — query the latest values from the
+            # per-day GPU energy metric. These auto-update as new days
+            # arrive, so the dashboard always shows current date/week/month/year.
             {"name": "today", "label": "Date", "type": "query",
              "datasource": DS,
-             "query": "label_values(scaph_host_energy_microjoules, date)",
+             "query": "label_values(gpu_energy_daily_joules, date)",
              "refresh": 1,
              "sort": 2,
              "current": {"selected": True, "text": "", "value": ""}},
             {"name": "week", "label": "Week", "type": "query",
              "datasource": DS,
-             "query": "label_values(scaph_host_energy_microjoules, week)",
+             "query": "label_values(gpu_energy_daily_joules, week)",
              "refresh": 1,
              "sort": 2,
              "current": {"selected": True, "text": "", "value": ""}},
             {"name": "month", "label": "Month", "type": "query",
              "datasource": DS,
-             "query": "label_values(scaph_host_energy_microjoules, month)",
+             "query": "label_values(gpu_energy_daily_joules, month)",
              "refresh": 1,
              "sort": 2,
              "current": {"selected": True, "text": "", "value": ""}},
             {"name": "year", "label": "Year", "type": "query",
              "datasource": DS,
-             "query": "label_values(scaph_host_energy_microjoules, year)",
+             "query": "label_values(gpu_energy_daily_joules, year)",
              "refresh": 1,
              "sort": 2,
              "current": {"selected": True, "text": "", "value": ""}},
