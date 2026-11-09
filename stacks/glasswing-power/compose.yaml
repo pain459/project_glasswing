@@ -182,7 +182,7 @@ services:
       # Grafana admin password (from Infisical)
       GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:?Required from Infisical}
       # Set the default home dashboard
-      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/sample/sample-dashboard.json
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/token-cost-comparison/token-cost-comparison.json
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3038:3000"
@@ -191,9 +191,7 @@ services:
       - grafana_data:/var/lib/grafana
       # Mount dashboards
       - ./dashboards/sample-dashboard.json:/var/lib/grafana/dashboards/sample/sample-dashboard.json:ro
-      - ./dashboards/power-cost-dashboard.json:/var/lib/grafana/dashboards/power-cost/power-cost-dashboard.json:ro
       - ./dashboards/litellm-cost-dashboard.json:/var/lib/grafana/dashboards/litellm-cost/litellm-cost-dashboard.json:ro
-      - ./dashboards/local-vs-cloud-cost.json:/var/lib/grafana/dashboards/local-vs-cloud-cost/local-vs-cloud-cost.json:ro
       - ./dashboards/token-cost-comparison.json:/var/lib/grafana/dashboards/token-cost-comparison/token-cost-comparison.json:ro
       # Mount provisioning files
       - ./grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
