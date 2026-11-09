@@ -37,7 +37,7 @@ scrape_configs:
     fallback_scrape_protocol: PrometheusText0.0.4
 
   - job_name: 'gpu-power'
-    scrape_interval: 5s
+    scrape_interval: 15s
     static_configs:
       - targets: ['gpu-power-exporter:8082']
         labels:

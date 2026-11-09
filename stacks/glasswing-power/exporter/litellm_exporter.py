@@ -92,7 +92,11 @@ gpu_energy_daily_joules = Gauge(
 )
 
 # Cache of completed days: energy never changes once the day is over.
+# Days with genuinely no data are cached as None (a completed day can
+# never gain samples later). Today is always recomputed.
 _gpu_energy_cache = {}
+_gpu_rollup_last_run = 0.0
+GPU_ROLLUP_INTERVAL = 60  # seconds; day-level data needs no fresh integration per scrape
 
 
 def _prom_query(expr, at=None):
@@ -132,7 +136,16 @@ def _gpu_energy_for_range(start_epoch, end_epoch):
 
 
 def update_gpu_energy():
-    """Expose per-day GPU energy for the last GPU_HISTORY_DAYS days."""
+    """Expose per-day GPU energy for the last GPU_HISTORY_DAYS days.
+
+    Throttled to once per GPU_ROLLUP_INTERVAL: between runs the previously
+    published metric values simply remain in place.
+    """
+    global _gpu_rollup_last_run
+    now_ts = time_mod.time()
+    if now_ts - _gpu_rollup_last_run < GPU_ROLLUP_INTERVAL and _gpu_rollup_last_run:
+        return len(_gpu_energy_cache)
+
     now = datetime.now(timezone.utc)
     midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -143,22 +156,28 @@ def update_gpu_energy():
         date_str = day_start.strftime('%Y-%m-%d')
 
         if date_str in _gpu_energy_cache:
-            computed[date_str] = _gpu_energy_cache[date_str]
+            cached = _gpu_energy_cache[date_str]
+            if cached is not None:
+                computed[date_str] = cached
             continue
 
         # Today's window ends at 'now' (partial day); completed days end at midnight.
         end_epoch = now.timestamp() if offset == 0 else day_end.timestamp()
         joules = _gpu_energy_for_range(day_start.timestamp(), end_epoch)
-        if joules is not None:
-            computed[date_str] = joules
-            if offset != 0:
-                _gpu_energy_cache[date_str] = joules
+        computed[date_str] = joules
+        if offset != 0:
+            # Completed days are final (with data or without).
+            _gpu_energy_cache[date_str] = joules
 
     gpu_energy_daily_joules.clear()
     for date_str, joules in computed.items():
+        if joules is None:
+            continue
         week, month, year = _period_labels(date_str)
         gpu_energy_daily_joules.labels(date=date_str, week=week, month=month, year=year).set(joules)
-    return len(computed)
+
+    _gpu_rollup_last_run = now_ts
+    return sum(1 for j in computed.values() if j is not None)
 
 def update_metrics():
     """Query the database and update Prometheus metrics."""
