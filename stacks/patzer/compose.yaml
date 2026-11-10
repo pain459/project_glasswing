@@ -1,0 +1,36 @@
+
+name: glasswing-patzer
+
+services:
+  patzer:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: ghcr.io/sikamikanikobg/patzer:7.19.0
+    container_name: glasswing-patzer
+
+    ports:
+      - "${GLASSWING_HOST_IP:?required}:3036:8800"
+
+    environment:
+      OTEL_SERVICE_NAME: glasswing-patzer
+      PUBLIC_BASE_URL: http://192.168.68.62:3036
+      SESSION_SECRET: ${SESSION_SECRET:?Required from Infisical}
+
+    volumes:
+      - patzer_data:/app/data
+
+    labels:
+      com.glasswing.service: patzer
+
+    networks:
+      - glasswing
+
+volumes:
+  patzer_data:
+    name: glasswing-patzer_data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

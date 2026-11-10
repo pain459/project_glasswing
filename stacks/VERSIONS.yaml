@@ -136,6 +136,13 @@ stacks:
     build-type: external
 
   # ── Application Services ────────────────────────────────────
+  patzer:
+    image: ghcr.io/sikamikanikobg/patzer
+    tag: "7.19.0"
+    mutable: false
+    updated: "2026-11-10"
+    build-type: external
+    notes: "Self-hosted Chess.com alternative — Stockfish engine + optional Ollama AI coach. SQLite data in /app/data."
   litellm:
     image: ghcr.io/berriai/litellm
     tag: "v1.108.1"
