@@ -16,3 +16,5 @@ stacks/versions.rollback.log
 
 # Release artifacts (built bundles, image tarballs, manifests)
 releases/
+banyan-tree/*
+/banyan-tree/*
