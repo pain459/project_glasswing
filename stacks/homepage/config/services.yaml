@@ -312,6 +312,12 @@
         siteMonitor: http://192.168.68.62:3027/f.php
 
 - Entertainment:
+    - sudokUI:
+        icon: mdi-grid
+        href: http://192.168.68.62:3038
+        description: Sudoku — Play, Rate & Learn 77 Solving Techniques
+        container: glasswing-sudokui
+        siteMonitor: http://192.168.68.62:3038/
     - enigma:
         icon: mdi-puzzle
         href: http://192.168.68.62:3037
