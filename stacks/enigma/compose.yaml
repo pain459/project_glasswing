@@ -1,0 +1,47 @@
+
+name: glasswing-enigma
+
+services:
+  enigma:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: boopboopboop/enigma:1.6.0
+    container_name: glasswing-enigma
+
+    ports:
+      - "${GLASSWING_HOST_IP:?required}:3037:3000"
+
+    environment:
+      OTEL_SERVICE_NAME: glasswing-enigma
+      FRONTEND_URL: http://192.168.68.62:3037
+      NODE_ENV: production
+      SESSION_SECRET: ${SESSION_SECRET:?Required from Infisical}
+
+    volumes:
+      - enigma_data:/app/data
+
+    # Note: Enigma container is distroless (no curl/wget/shell).
+    # Health monitoring is handled by Uptime Kuma via /api/health endpoint.
+    healthcheck:
+      test:
+        - NONE
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    labels:
+      com.glasswing.service: enigma
+
+    networks:
+      - glasswing
+
+volumes:
+  enigma_data:
+    name: glasswing-enigma_data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

@@ -312,6 +312,12 @@
         siteMonitor: http://192.168.68.62:3027/f.php
 
 - Entertainment:
+    - enigma:
+        icon: mdi-puzzle
+        href: http://192.168.68.62:3037
+        description: Puzzle Games — 150+ Word, Number & Logic Puzzles
+        container: glasswing-enigma
+        siteMonitor: http://192.168.68.62:3037/api/health
     - patzer:
         icon: mdi-chess-queen
         href: http://192.168.68.62:3036

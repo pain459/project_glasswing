@@ -136,6 +136,13 @@ stacks:
     build-type: external
 
   # ── Application Services ────────────────────────────────────
+  enigma:
+    image: boopboopboop/enigma
+    tag: "1.6.0"
+    mutable: false
+    updated: "2026-11-10"
+    build-type: external
+    notes: "Self-hosted puzzle collection — 150+ games. SQLite data in /app/data."
   patzer:
     image: ghcr.io/sikamikanikobg/patzer
     tag: "7.19.0"
