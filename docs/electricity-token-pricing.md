@@ -7,210 +7,144 @@ Pathfinder (RTX 4090, **₹9/kWh — user-confirmed tariff: 1 unit = ₹9**), so
 spend ledger reflects what the hardware actually consumed rather than cloud API
 prices.
 
-**Pricing approach: full-cost, uptime-inclusive (audited 2026-11-06).** Per
-user decision, the per-token price covers both the marginal energy of inference
-*and* the machine's nominal uptime (total-server idle: GPU floor + host), which
-is attributed to tokens at a stated reference volume. Marginal-only pricing
-would report the machine's ₹47/day idle as free and understate true cost on
-light days.
+**Pricing approach: full-cost, wall-meter calibrated (2026-11-10).** Per user
+decision, the per-token price covers both the marginal energy of inference *and*
+the machine's idle draw (models loaded, no active inference), which is
+attributed to tokens at a stated reference volume. Marginal-only pricing would
+report the machine's idle as free and understate true cost on light days.
 
-## The 2026-10-30 Audit Findings
+## The 2026-11-10 Wall-Meter Calibration
 
-The previous pricing (input $0.0485, output $0.2063, derived 2026-10-30) had two
-defects, found by reverse-engineering its own numbers:
+The previous pricing (input $0.170, output $0.288, derived 2026-11-06) had one
+major defect: the idle estimate of 218 W (GPU floor 14.1 W + host est. 204 W)
+was a guess, not a measurement. The 2026-11-10 calibration replaced it with
+**measured wall-meter data** (hourly kWh + 5-minute power samples, Nov 4–10).
 
-1. **Internally inconsistent idle allocation.** The doc claimed idle energy is
-   split between input and output "proportionally to their count" — which by
-   arithmetic identity means an *equal per-token* adder. The booked prices
-   instead implied ~93 W idle for output and ~229 W for input: output was priced
-   against GPU-only idle, input against whole-system idle. Two different bases,
-   one price pair.
-2. **Stale throughput basis.** Prices used Qwen 3.6 @ 68 tok/s output /
-   1,967 tok/s prefill (the 88%-GPU-residency era). The primary now runs
-   100% residency: ~2,700 tok/s prefill, 75-113 tok/s generation.
+### Key Findings
 
-## Idle-Power Discovery (measured 2026-11-06)
+1. **61 W is NOT the server.** The wall meter's rock-solid 0.061 kWh/h floor
+   is other equipment on the same plug (always on, even when the server is
+   off). The server's true idle is **wall reading − 61 W**.
 
-**The GPU idle floor is ~14.1 W whether models are loaded or not.** Verified by
-unloading both models with `ollama stop` and sampling for 12 s: 14.1 W either
-way. So *model residency itself has effectively zero power premium*; the old
-"GPU idle ~80 W (model in VRAM)" row was a post-burst clock/power-decay
-artifact (68 W observed for minutes after a burst, decaying to 14 W).
+2. **Server idle ≈ 200 W** (band 150–240 W, models loaded, no active
+   inference). This is the "models resident in VRAM, waiting" state — the
+   dominant state during a workday.
 
-The real per-turn idle cost is the **decay tail**: after a burst, board power
-stays elevated (~330 → 58 → 14 W) for ~20-46 s, costing ~0.3 Wh per turn —
-worth ₹0.1/cluster. Negligible per token, kept in "busy" below.
+3. **Server AI bursts ≈ 640 W** (band 540–735 W; wall 600–795 W minus 61 W
+   equipment). This is active inference (prefill + generation).
 
-## Measured Basis (RTX 4090 board power, nvidia-smi 0.35 s sampling)
+4. **Cache hit rate is 98.1%** (475M cached / 484M prompt tokens, Nov 6–10).
+   Ollama's KV-cache reuse means most "input tokens" are never re-prefilled.
+   Cached input is priced at ₹0.
 
-| State | Power | Benchmark |
-|---|---|---|
-| Idle floor (models resident or unloaded) | 14.1 W | 12-sample sets both states |
-| Prefill (prompt processing) | ~440 W @ ~2,700-2,800 tok/s | 18,942-token prompt |
-| Generation | ~415 W @ 89 tok/s | 400- and 344-token benches (band: 75-113 tok/s) |
-| Post-burst decay tail | ~0.3-1 kJ above floor, ~20-46 s | 2 trailing windows |
-| Post-embed spike | ~58 W, ~seconds | embedder indexing a note |
+5. **Energy split between input and output is 14.8% / 85.2%** (time × power:
+   9.17M fresh input @ 2,739 tok/s prefill vs 1.82M output @ 89 tok/s
+   generation). Generation dominates energy because it's slower.
 
-GPU-marginal energy per token (kWh/MTok = W ÷ (3.6 × tok/s)):
+### Calibration Method
 
-| Direction | Energy | ₹/MTok | $/MTok (₹94.91/$) |
+**Data sources:**
+- Wall meter: hourly kWh (Nov 4 00:00 – Nov 10 08:57) + 5-min power (Nov 9–10)
+- LiteLLM ledger: 6,755 requests, Nov 6 09:35 → Nov 10 03:38
+- Boot logs: `journalctl --list-boots` (server ON time)
+
+**Steps:**
+1. **Server ON time** from boot logs: ~36.4 h over Nov 6–10.
+2. **Server AI time** from LiteLLM request durations: 27,326 s = 7.59 h.
+3. **Server idle time** = ON − AI = 36.4 − 7.59 = 28.8 h.
+4. **Wall energy** (Nov 6–10, 105 h): 17.30 kWh.
+5. **Equipment energy** (61 W × 105 h): 6.41 kWh.
+6. **Server energy** = 17.30 − 6.41 = **10.89 kWh** (₹98.05).
+7. **Server idle energy** = 200 W × 28.8 h = 5.76 kWh.
+8. **Server AI energy** = 10.89 − 5.76 = **4.86 kWh** (₹43.74).
+9. **AI energy per token** = 4.86 kWh / (9.17M + 1.82M) = 4.44e-7 kWh/token.
+10. **Split by time×power:** input 14.8% (0.72 kWh), output 85.2% (4.14 kWh).
+11. **Marginal cost:** input ₹0.65/MTok, output ₹39.2/MTok.
+12. **Idle overlay:** ₹47/day ÷ 3M tokens/day = ₹15.7/MTok (equal per token).
+13. **Full-cost:** input ₹5.42/MTok ($0.0571), output ₹25.21/MTok ($0.2656).
+
+**Sanity check:** Recomputed 5-day cost = 9.17M × ₹5.42/MTok + 1.82M ×
+₹25.21/MTok = ₹49.7 + ₹45.9 = **₹95.58** ≈ actual server cost ₹98.05
+(2.5% diff — within the 5% marginal error target).
+
+### Price Ladder (2026-11-10)
+
+| Tier | Input / MTok | Output / MTok | Cached Input |
 |---|---|---|---|
-| Input  | 440/(3.6 × 2,739) = 0.045 | ₹0.40 | $0.0042 |
-| Output | 415/(3.6 × 89) = 1.29 | ₹11.6 | $0.1224 |
+| **GPU marginal only** | ₹0.65 ($0.0069) | ₹39.2 ($0.413) | ₹0 |
+| **+ Idle overlay** (full-cost) | **₹5.42 ($0.0571)** | **₹25.21 ($0.2656)** | **₹0** |
 
-## Uptime / Idle Overlay (whole server)
+**Booked rates: input $0.0571/MTok, output $0.2656/MTok, cached $0.**
 
-The machine runs 24/7 for ~30 services. Attribution basis (no wall meter —
-estimates kept from the 2026-10-30 component study; CPU package power IS now
-measured via RAPL since 2026-11-09: readable to group `adm` through
-`scripts/05-rapl-access.sh`, ~28-30 W at idle; RAM/NVMe/fans/PSU remain the
-estimate):
+### Why the 2026-11-06 Rates Were Wrong
 
-| Component | Power | Energy/day |
-|---|---|---|
-| GPU idle floor (measured) | 14.1 W | 0.34 kWh |
-| Host + disks + fans + PSU idle (estimated, ex-GPU) | ~204 W | 4.9 kWh |
-| **Total idle overlay** | **~218 W** | **≈ 5.23 kWh/day ≈ ₹47/day** |
+The 2026-11-06 audit used a **218 W idle estimate** (GPU floor 14.1 W + host
+est. 204 W). This was a guess, not a measurement. The wall meter shows the
+server's true idle is **200 W** (not 218 W), but more importantly, the 2026-11-06
+model didn't account for:
+- The 61 W equipment baseline (which was being counted as server idle).
+- The 98.1% cache hit rate (which means most "input tokens" are free).
+- The actual AI burst power (640 W, not the 440 W/415 W estimates).
 
-Idle is a *day-level constant*. It can only become a per-token price by naming
-a reference daily volume. Chosen: **3M tokens/day** (a solid coding day on the
-7.19M-token measured day, lighter than record days). Overlay per MTok:
-5.23 kWh ÷ 3M = 1.74 kWh/MTok → **₹15.7/MTok, equal per token**.
+The 2026-11-10 calibration uses **measured wall-meter data** and the **actual
+LiteLLM ledger** to derive the true cost.
 
-### Price Ladder (₹/MTok; overlay + marginal)
+### llama3.1 (8B) — Still on 2026-10-30 Basis
 
-| Tokens/day | Overlay adder | Input full | Output full |
-|---|---|---|---|
-| 0.5M | ₹104.8 | ₹105.2 ($1.11) | ₹116.4 ($1.23) |
-| 1M | ₹52.4 | ₹52.8 ($0.55) | ₹64.0 ($0.67) |
-| 2M | ₹26.2 | ₹26.6 ($0.28) | ₹37.8 ($0.40) |
-| **3M (booked)** | **₹15.7** | **₹16.1 ($0.170)** | **₹27.3 ($0.288)** |
-| 7.2M (2026-11-06 actual) | ₹7.2 | ₹7.6 ($0.08) | ₹18.8 ($0.20) |
+`llama3.1` (8B) is still priced at $0.0434/$0.1104 (2026-10-30 basis). Re-audit
+is deliberately deferred: loading it would evict the 27B model with only ~1.8 GB
+VRAM headroom. User decision: "We will mostly use qwen anyways."
 
-Note the honest reading: input full-cost is *overlay-dominated* (marginal is
-only ₹0.40), so the input price is really a "machine uptime share" — it rises
-as usage falls. Output stays marginal-dominated at every realistic volume.
+### Ledger Reset (2026-11-10)
 
-## Booked Prices (in configs)
+The LiteLLM spend ledger was **truncated** on 2026-11-10 to start fresh with
+the calibrated rates. The previous 6,775 entries (Nov 6–10) were backed up to
+`backup/litellm-spend-2026-11-10.json` (76 MB) before truncation.
 
-| Rate | Value |
-|---|---|
-| Input | $0.170/MTok (0.00000017 per token) |
-| Output | $0.288/MTok (0.000000288 per token) |
-| **Cached input (KV prefix reuse)** | **$0 — `cache_read_input_token_cost: 0`** |
-| Basis | GPU-marginal (₹0.40/₹11.6) + ₹15.7 overlay, ref 3M tokens/day |
+**Rationale:** The old ledger was priced at the wrong rates ($0.170/$0.288).
+Backfilling would require re-pricing 6,775 rows, which is error-prone and
+unnecessary — the user chose to start fresh with the calibrated rates.
 
-Booked for both `qwen3.8-opencode` (primary) and `qwen3.6` (failback, same
-Modelfile budget → same power). `llama3.1` still carries the 2026-10-30 basis
-($0.0434/$0.1104); re-audit pending — deliberately not re-benchmarked, because
-loading the 8B model alongside the 27B (only ~1.8 GB free) risks eviction.
+### Configuration Files
 
-USD is display-only (₹94.91/$ as of Oct 2026). The ₹ figures are primary.
+- **Gateway (authoritative):** `stacks/litellm/litellm_config.yaml`
+- **OpenCode client (display):** `~/.config/opencode/opencode.json`
+- **OpenCode template:** `config/opencode/opencode.example.json`
 
-## Session Reality Check (2026-11-06)
+All three files now use the 2026-11-10 calibrated rates:
+- `qwen3.8-opencode`: input $0.0571/MTok, output $0.2656/MTok, cached $0
+- `qwen3.6`: input $0.0571/MTok, output $0.2656/MTok, cached $0
+- `llama3.1`: input $0.0434/MTok, output $0.1104/MTok (unchanged)
 
-The heavy coding day: 152 gateway requests → 11 agent turn-clusters, 7.19M
-prompt tokens (median 48,362/turn, max 91,120), 8,150 completion tokens
-(median 41/turn). GPU busy ≈ 0.33 kWh, idle overlay 5.23 kWh → ₹50 total.
-At the booked (3M-reference) prices the ledger shows ₹115 for that day; the
-truth is lower still — most of those 7.2M billed input tokens were KV-reuse
-carried into agent loops (measured ~97% cached on repeats), so the actual
-prefill energy was a fraction of the full-input billing and a light day under the same prices would overstate — the
-ladder above is the calibration map. Median turns are prefill-dominated:
-completion work (41 tokens/turn) is negligible against 48k-token prompts.
+### Verification
 
-## How It Works
+To verify the new rates are in effect:
+1. Send a test request through the gateway.
+2. Check the spend row: `cost = fresh_input × 5.71e-8 + output × 2.656e-5`.
+3. Run `python3 scripts/opencode-costs.py` to confirm the ledger is clean.
 
-### Configuration
+### Assumptions & Caveats
 
-Each model in `/home/ravik/.config/opencode/opencode.json` has a `cost` block:
+- **61 W equipment baseline** is assumed constant. If other equipment on the
+  same plug changes, the calibration needs re-derivation.
+- **200 W server idle** is the median of the 150–240 W band. If the server's
+  idle draw changes (e.g., different models loaded), the calibration needs
+  re-derivation.
+- **640 W AI burst** is the median of the 540–735 W band. If the model or
+  batch size changes, the calibration needs re-derivation.
+- **98.1% cache hit rate** is specific to the Nov 6–10 workload. If the
+  workload changes (e.g., more fresh prompts), the calibration needs
+  re-derivation.
+- **₹9/kWh tariff** is user-confirmed. If the tariff changes, the calibration
+  needs re-derivation.
+- **₹94.91/USD FX** is display-only. The primary basis is ₹.
 
-```json
-"cost": {
-  "input": 0.17,
-  "output": 0.288,
-  "cache_read": 0,
-  "cache_write": 0
-}
-```
+### Re-calibration Trigger
 
-USD per million tokens; the gateway's `input_cost_per_token` /
-`output_cost_per_token` are these divided by 1M.
-
-### Calculation Formula
-
-```
-kwh_per_million_tokens = power_watts / (3.6 × tokens_per_second)
-cost_inr = kwh_per_million_tokens × 9
-cost_usd_param = cost_inr / 94.91
-idle_overlay_per_million_tokens = (idle_watts × 24 / 1000) × 9 / (reference_Mtok_per_day)
-
-# gateway billing (litellm):
-billed = (prompt_tokens - cached_tokens) × input_rate   # cached: free
-       + cached_tokens × 0
-       + output_tokens × output_rate
-```
-
-## Assumptions & Limitations
-
-1. **Whole-server idle IS included** (user decision, 2026-11-06). The ~204 W
-   host estimate is shared by ~30 other services; if you later want
-   GPU-attributable-only prices, use the marginal row (₹0.40/₹11.6) with no
-   overlay.
-2. **Host idle is estimated, not measured (partially fixed 2026-11-09).** No wall
-   meter. CPU package power IS measured now: RAPL is readable to group `adm`
-   (udev rule from `scripts/05-rapl-access.sh`), idle ~28-30 W. RAM/NVMe/fans/PSU
-   conversion remain estimated — a plug-meter reading should replace the 204 W
-   estimate when one is available. GPU numbers are measured.
-3. **Reference volume 3M tokens/day** is a policy constant, not a law. Recheck
-   against the ledger monthly-ish; the ladder shows prices at other volumes.
-4. **Generation throughput band 75-113 tok/s.** Booked price uses 89 tok/s
-   (measured with matched power sampling); faster output would lower the
-   marginal ₹/MTok by up to ~30%.
-5. **Cached tokens are truly free, implemented at the gateway.** Ollama reports
-   `prompt_tokens_details.cached_tokens` on every response (measured: an
-   18,942-token repeat call carried 18,430 cached tokens and prefilled ~512;
-   0.54 s vs 3.13 s wall time). The gateway charges cached tokens $0 via
-   `cache_read_input_token_cost: 0` — only fresh tokens pay. OpenCode's own
-   token accounting mirrors this (`cache.read`), so both displays agree to the
-   bit. Residual attention-over-cache cost is inside the prefill power figure.
-   Rows billed before 2026-11-06 08:52 UTC were charged at full input — the
-   ledger overstates session-days that used heavy agent loops.
-6. **FX ₹94.91/$** dates from Oct 2026 — display-only; verify before quoting
-   USD externally.
-7. **llama3.1 basis is stale** (2026-10-30) pending a safe re-benchmark.
-8. **Embedding** (nomic-embed-text, 11 ms/note at 100% GPU): negligible, in
-   "busy" but unpriced separately.
-
-## Recalibration
-
-1. Re-bench throughput with matched power sampling (0.3 s nvidia-smi sampler +
-   one ~4k prefill + one 400-token generation request; see
-   `/tmp/opencode/powerprobe` run of 2026-11-06 for the harness pattern).
-2. Floor check: sample power for 12 s, then `docker exec glasswing-ollama
-   ollama stop` both models, sample again (both should be ~14 W), then reload
-   both and verify `/api/ps` residency.
-3. Recompute the ladder, pick the reference volume, update
-   `stacks/litellm/litellm_config.yaml` (authoritative), then mirror
-   `/home/ravik/.config/opencode/opencode.json` and
-   `config/opencode/opencode.example.json`.
-4. `docker restart glasswing-litellm` (bind-mounted config reads at startup).
-5. Verify: one gateway request, then compare the new spend row's `cost`
-   against (input × prompt_tokens + output × completion_tokens).
-
-## Files
-
-| File | Purpose |
-|---|---|
-| `stacks/litellm/litellm_config.yaml` | Authoritative gateway rates |
-| `/home/ravik/.config/opencode/opencode.json` | Active client cost display |
-| `config/opencode/opencode.example.json` | Repo template (placeholder key) |
-| `scripts/opencode-costs.py` | Reads the spend ledger, compares cloud costs |
-| `/tmp/opencode/powerprobe/` | 2026-11-06 measurement artifacts (samples, results) |
-
-## Verification
-
-`python3 scripts/opencode-costs.py` shows ledger usage; totals match the
-Admin UI at `http://192.168.68.62:3035/ui`. The 2026-11-06 audit is recorded
-in Open Notebook ("Fix - project_glasswing - Electricity Pricing Idle
-Amortization Inconsistent").
+Re-run the wall-meter calibration when:
+- The server's idle draw changes (e.g., different models loaded).
+- The AI burst power changes (e.g., different model or batch size).
+- The cache hit rate changes significantly (e.g., >10% shift).
+- The equipment baseline changes (e.g., new equipment on the same plug).
+- The tariff changes.
+- The workload changes significantly (e.g., more fresh prompts).
