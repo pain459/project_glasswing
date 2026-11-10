@@ -312,6 +312,12 @@
         siteMonitor: http://192.168.68.62:3027/f.php
 
 - Entertainment:
+    - virtualtabletop:
+        icon: mdi-dice-5
+        href: http://192.168.68.62:3039
+        description: Virtual Tabletop — Play Board, Dice & Card Games in the Browser
+        container: glasswing-virtualtabletop
+        siteMonitor: http://192.168.68.62:3039/
     - sudokUI:
         icon: mdi-grid
         href: http://192.168.68.62:3038

@@ -1,0 +1,36 @@
+
+name: glasswing-virtualtabletop
+
+services:
+  virtualtabletop:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: arnoldsmith86/virtualtabletop:latest
+    container_name: glasswing-virtualtabletop
+
+    ports:
+      - "${GLASSWING_HOST_IP:?required}:3039:8272"
+
+    environment:
+      OTEL_SERVICE_NAME: glasswing-virtualtabletop
+      EXTERNALURL: http://192.168.68.62:3039
+      ALLOWPUBLICLIBRARYEDITS: 0
+
+    volumes:
+      - virtualtabletop_save:/app/save
+
+    labels:
+      com.glasswing.service: virtualtabletop
+
+    networks:
+      - glasswing
+
+volumes:
+  virtualtabletop_save:
+    name: glasswing-virtualtabletop_save
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

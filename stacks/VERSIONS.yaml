@@ -136,6 +136,13 @@ stacks:
     build-type: external
 
   # ── Application Services ────────────────────────────────────
+  virtualtabletop:
+    image: arnoldsmith86/virtualtabletop
+    tag: "latest"
+    mutable: false
+    updated: "2026-11-10"
+    build-type: external
+    notes: "Browser-based virtual tabletop for board/card/dice games. Real-time sync via WebSocket. No accounts, no ads. Public game library included. Rooms saved in /app/save."
 
   sudokui:
     image: glasswing/sudokui
