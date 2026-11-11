@@ -1,0 +1,39 @@
+
+name: glasswing-parlour
+
+services:
+  parlour:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: glasswing/parlour:1.0.0
+    container_name: glasswing-parlour
+
+    ports:
+      - "${GLASSWING_HOST_IP:?required}:3040:3000"
+
+    environment:
+      OTEL_SERVICE_NAME: glasswing-parlour
+      HOST: "0.0.0.0"
+
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+    labels:
+      com.glasswing.service: parlour
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

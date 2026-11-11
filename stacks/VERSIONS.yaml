@@ -136,6 +136,13 @@ stacks:
     build-type: external
 
   # ── Application Services ────────────────────────────────────
+  parlour:
+    image: glasswing/parlour
+    tag: "1.0.0"
+    mutable: false
+    updated: "2026-11-11"
+    build-type: source
+    notes: "Custom-built — static Next.js export (19 card games) + P2P multiplayer via WebRTC. Built from braedonsaunders/parlour. No game server, no accounts, no database."
   virtualtabletop:
     image: arnoldsmith86/virtualtabletop
     tag: "latest"

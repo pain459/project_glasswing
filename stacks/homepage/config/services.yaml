@@ -312,6 +312,12 @@
         siteMonitor: http://192.168.68.62:3027/f.php
 
 - Entertainment:
+    - parlour:
+        icon: mdi-cards-diamond
+        href: http://192.168.68.62:3040
+        description: Card Games — 19 Games, P2P Multiplayer, No Accounts
+        container: glasswing-parlour
+        siteMonitor: http://192.168.68.62:3040/
     - virtualtabletop:
         icon: mdi-dice-5
         href: http://192.168.68.62:3039
