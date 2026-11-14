@@ -129,6 +129,26 @@ fails loudly instead of silently binding the wrong interface. `/global` in
 Infisical holds the same value for runtime use. `make access` writes
 [ACCESS.md](ACCESS.md) with the resulting IP:port URL for every service.
 
+That address must be **reserved at the network level** (a router DHCP reservation,
+or a static address on the interface) so the host always receives it. Docker freezes
+the address into each container's `HostConfig` at create time, and a container whose
+port cannot be bound ends up running with a sandbox but no network — reachable in
+`docker ps`, unable to resolve anything. Every target that creates a container
+(`make up`, `make restart`, `make rebuild`, `make update`, `make restart-all`)
+therefore runs `scripts/netcheck.sh` first and refuses to start when the host does
+not own the configured address:
+
+```
+[FAIL] IP mismatch: the host does not own the reserved address.
+        expected: 192.168.68.62   (stacks/infisical/.env)
+        actual:   192.168.29.97
+        no stacks were started.
+```
+
+To move the platform to a different address: edit `stacks/infisical/.env`, reserve
+the new address at the network level, then `make restart-all` (containers must be
+recreated — a restart reuses the stored binding) and `make access`.
+
 The certificates cover that address too: after changing it, run
 `./scripts/04-certificates.sh --force` and redeploy Infisical and Portainer.
 

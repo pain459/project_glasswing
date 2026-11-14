@@ -19,6 +19,27 @@ MODE="${1:-}"
 generate() {
   python3 - <<'PY'
 import os, pathlib, re
+import subprocess
+import sys
+
+
+def live_addresses():
+    """Global IPv4 addresses on real host interfaces (Docker bridges excluded)."""
+    try:
+        out = subprocess.run(
+            ["ip", "-4", "-o", "addr", "show", "scope", "global"],
+            capture_output=True, text=True, check=False,
+        ).stdout
+    except OSError:
+        return []
+    addresses = []
+    for line in out.splitlines():
+        fields = line.split()
+        if len(fields) >= 4 and fields[2] == "inet" and not fields[1].startswith(
+            ("docker", "br-", "veth", "virbr")
+        ):
+            addresses.append(fields[3].split("/")[0])
+    return addresses
 
 # Host IP: same resolution order as the Makefile.
 ip = os.environ.get("GLASSWING_HOST_IP", "").strip()
@@ -32,6 +53,17 @@ if not ip:
                 ip = m.group(1).strip().strip('"').strip("'")
                 break
 ip = ip or "<host-ip>"
+
+# The table documents what the platform serves, which is the configured address
+# (stacks/infisical/.env). Warn when this host does not own it: after the netcheck
+# gate, that means `make up`/`restart` will refuse to start anything.
+live = live_addresses()
+if ip != "<host-ip>" and live and ip not in live:
+    print(
+        f"[WARN] {ip} is not assigned to this host (live: {', '.join(live)}); "
+        "regenerate after fixing stacks/infisical/.env",
+        file=sys.stderr,
+    )
 
 HOST_NETWORK_PORTS = {
     "dagu": [(3014, 3014)],

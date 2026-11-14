@@ -163,15 +163,14 @@ else
 fi
 
 # --- 5. Host IP ---------------------------------------------------------------
-HOST_IP="$(printf '%s' "${GLASSWING_HOST_IP:-}")"
-if [ -z "$HOST_IP" ] && [ -f stacks/infisical/.env ]; then
-  HOST_IP="$(sed -n 's/^GLASSWING_HOST_IP=//p;s/^HOST_IP=//p' stacks/infisical/.env | head -n1 | tr -d '"'"'")"
-fi
-if [ -z "$HOST_IP" ]; then
-  warn "GLASSWING_HOST_IP is not configured; Compose port bindings will refuse to start"
-  warn "  fix: add GLASSWING_HOST_IP=<lan ip> to stacks/infisical/.env (or export it)"
+# The reservation is mandatory: every published port binds this address, and Docker
+# freezes it into each container's HostConfig. Check the live address, not just
+# that a value is configured.
+if NETCHECK_OUT="$(./scripts/netcheck.sh 2>&1)"; then
+  pass "${NETCHECK_OUT#\[PASS\] }"
 else
-  pass "Port bindings use GLASSWING_HOST_IP=${HOST_IP}"
+  fail "Host does not own the reserved IP; 'up', 'restart', 'rebuild', 'update' and 'restart-all' will refuse to run:"
+  printf '%s\n' "$NETCHECK_OUT" | sed -e 's/^\[FAIL\] //' -e 's/^/       /'
 fi
 
 # --- 6. Published host ports -------------------------------------------------

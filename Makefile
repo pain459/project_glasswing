@@ -37,7 +37,7 @@ export GLASSWING_HOST_IP
 export DOCKER_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null)
 
 .PHONY: help up down restart rebuild update logs ps check infisical homepage core status \
-        secrets-check secrets-injection-check secrets-plan network docker-pool doctor access access-check \
+        secrets-check secrets-injection-check secrets-plan network netcheck docker-pool doctor access access-check \
         certificates certificates-check mcp-preflight \
         release-status release-bump release-apply release-rollback release-diff release-history release-sync \
         release-build release-bundle release-deploy release-list release-cleanup \
@@ -114,7 +114,7 @@ endef
 # Optional stack-local hooks keep setup and validation with the stack that owns
 # it. `pre-up.sh` runs before Compose; `post-up.sh` runs after the stack is
 # healthy. Both are skipped when absent.
-up:
+up: netcheck
 	@if [ -x "$(PRE_UP_HOOK)" ]; then \
 	  echo "[INFO] Running $(PRE_UP_HOOK)"; \
 	  "$(PRE_UP_HOOK)"; \
@@ -130,7 +130,7 @@ up:
 down:
 	@$(call run_compose,down --rmi local)
 
-rebuild:
+rebuild: netcheck
 	@if [ -x "$(PRE_UP_HOOK)" ]; then \
 	  echo "[INFO] Running $(PRE_UP_HOOK)"; \
 	  "$(PRE_UP_HOOK)"; \
@@ -144,7 +144,7 @@ rebuild:
 	fi
 	@echo "[PASS] Stack $(STACK) rebuilt"
 
-restart:
+restart: netcheck
 	@$(call run_compose,restart)
 	@$(call run_compose,up -d --wait --wait-timeout 180)
 	@if [ -x "$(POST_UP_HOOK)" ]; then \
@@ -154,7 +154,7 @@ restart:
 	@echo "[PASS] Stack $(STACK) restarted"
 
 # Pull new images (using pinned versions from compose files) and redeploy.
-update:
+update: netcheck
 	@if [ -x "$(PRE_UP_HOOK)" ]; then \
 	  echo "[INFO] Running $(PRE_UP_HOOK)"; \
 	  "$(PRE_UP_HOOK)"; \
@@ -200,6 +200,13 @@ network:
 	    || docker network inspect $(GLASSWING_NETWORK) >/dev/null; \
 	  echo "[PASS] Network $(GLASSWING_NETWORK) is ready with subnet $(GLASSWING_NETWORK_SUBNET)"; \
 	fi
+
+# Every published port binds ${GLASSWING_HOST_IP}, and Docker freezes that address
+# into each container's HostConfig at create time. If the host does not own the
+# address, endpoint creation fails and the container ends up running with no
+# network at all. Refuse to start until the reservation is honoured.
+netcheck:
+	@./scripts/netcheck.sh
 
 docker-pool:
 	@./scripts/docker-daemon-config.sh --apply
@@ -265,7 +272,7 @@ list-stacks:
 # Reconcile every stack with its current Compose configuration.
 # This recreates containers only when their configuration has changed.
 # Run Infisical first to ensure secret injection remains available.
-restart-all:
+restart-all: netcheck
 	@set -u; \
 	echo "========================================"; \
 	echo " Glasswing - Platform Redeployment"; \

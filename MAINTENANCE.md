@@ -500,6 +500,41 @@ The same value is registered in `/global`, so stacks started through
 `0.0.0.0` except the Dagu and Plex host-network services, which expose their own
 ports.
 
+### The address reservation is mandatory
+
+Because every binding is pinned, the host must always own that address. Configure it
+as a router DHCP reservation (preferred) or a static address on the interface; the
+platform treats anything else as a fault.
+
+`stacks/infisical/.env` is the single place the address is written. Before starting
+anything, `scripts/netcheck.sh` compares it against the live host addresses and stops
+on a mismatch — strict, exact-address comparison, no subnet loosening:
+
+```bash
+./scripts/netcheck.sh                 # check the configured address
+./scripts/netcheck.sh 192.168.68.62   # check an explicit address
+```
+
+`make up`, `make restart`, `make rebuild`, `make update`, and `make restart-all` run
+this gate as a prerequisite; `make doctor` reports the same check. The guard exists
+because the failure it prevents is silent: Docker stores the address in
+`HostConfig.PortBindings`, so when the address is missing the endpoint is never
+created, yet the container still reports as running with no network at all (the
+2026-11-13 incident: the host booted on `192.168.29.97/24` and eleven stacks came up
+networkless).
+
+Changing the address is a three-step operation, in this order:
+
+```bash
+# 1. reserve the new address at the network level, then update the single file
+vi stacks/infisical/.env              # GLASSWING_HOST_IP=<new address>
+# 2. recreate every container (a restart reuses the stored binding)
+make restart-all
+# 3. regenerate the table and the certificates
+make access
+./scripts/04-certificates.sh --force
+```
+
 ### ACCESS.md
 
 `make access` regenerates [ACCESS.md](ACCESS.md) from the `ports:` entries, sorted
