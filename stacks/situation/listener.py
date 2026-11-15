@@ -60,6 +60,31 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 POLL_TIMEOUT = 30  # seconds per getUpdates long-poll
 POLL_INTERVAL = 1  # brief pause between polls (avoids tight loop on error)
 
+# Formatting helpers
+SEPARATOR = "─────────────────"
+
+
+def format_percentage(value: float | str) -> str:
+    """Format a percentage value."""
+    if isinstance(value, str):
+        return value
+    return f"{value:.1f}%"
+
+
+def format_currency(value: float) -> str:
+    """Format a currency value."""
+    return f"${value:.2f}"
+
+
+def format_number(value: int) -> str:
+    """Format a number with commas."""
+    return f"{value:,}"
+
+
+def section_header(emoji: str, title: str) -> str:
+    """Create a section header."""
+    return f"{emoji} *{title.upper()}*"
+
 
 def tg_api(method: str, payload: dict | None = None) -> dict | None:
     """Call the Telegram Bot API. Returns the parsed JSON or None."""
@@ -133,40 +158,52 @@ def handle_brief(chat_id: str) -> None:
         kuma_data = snapshot.get("uptime_kuma", {})
         litellm_data = snapshot.get("litellm_spend", {})
         
-        lines = ["📋 Quick Summary", ""]
+        lines = [section_header("📋", "Quick Summary"), SEPARATOR, ""]
         
         # Containers
         if docker_data.get("available"):
             total = docker_data.get("total", 0)
             running = docker_data.get("running", 0)
-            lines.append(f"📦 Containers: {running}/{total} running")
+            status = "✅" if running == total else "⚠️"
+            lines.append(f"{status} *Containers*")
+            lines.append(f"   {format_number(running)}/{format_number(total)} running")
+            lines.append("")
         
         # Host metrics
         if host_metrics.get("available"):
             cpu = host_metrics.get("cpu_percent", "N/A")
             ram = host_metrics.get("ram_percent", "N/A")
             disk = host_metrics.get("disk_percent", "N/A")
-            lines.append(f"📊 Resources: CPU {cpu}%, RAM {ram}%, Disk {disk}%")
+            lines.append("*📊 Resources*")
+            lines.append(f"   CPU   {format_percentage(cpu)}")
+            lines.append(f"   RAM   {format_percentage(ram)}")
+            lines.append(f"   Disk  {format_percentage(disk)}")
+            lines.append("")
         
         # Service status
         if kuma_data.get("available"):
             up = kuma_data.get("up", 0)
             down = kuma_data.get("down", 0)
             if down > 0:
-                lines.append(f"🚨 Services: {up} up, {down} down")
+                lines.append("🚨 *Services*")
+                lines.append(f"   {format_number(up)} up, {format_number(down)} down")
             else:
-                lines.append(f"✅ Services: All {up} up")
+                lines.append("✅ *Services*")
+                lines.append(f"   All {format_number(up)} up")
+            lines.append("")
         
         # LLM spend
         if litellm_data.get("available"):
             spend = litellm_data.get("total_spend_usd", 0)
             requests = litellm_data.get("total_requests", 0)
-            lines.append(f"💰 LLM: ${spend:.2f} ({requests} requests)")
+            lines.append("*💰 LLM Spend*")
+            lines.append(f"   {format_currency(spend)} ({format_number(requests)} requests)")
+            lines.append("")
         
         # Add a note if any sources are unavailable
         unavailable = [k for k, v in snapshot.items() if isinstance(v, dict) and not v.get("available")]
         if unavailable:
-            lines.append("")
+            lines.append(SEPARATOR)
             lines.append(f"⚠️ Unavailable: {', '.join(unavailable)}")
         
         send_message(chat_id, "\n".join(lines))
@@ -195,29 +232,30 @@ def handle_containers(chat_id: str) -> None:
         # Get host metrics for resource usage
         host_metrics = gather_host_metrics()
         
-        lines = [
-            f"📦 Containers ({total} total)",
-            "",
-            f"✅ {running} running",
-        ]
+        lines = [section_header("📦", "Containers"), SEPARATOR, ""]
         
+        # Status
+        lines.append("*Status*")
+        lines.append(f"   ✅ {format_number(running)} running")
         if exited > 0:
-            lines.append(f"❌ {exited} exited")
+            lines.append(f"   ❌ {format_number(exited)} exited")
+        lines.append("")
         
+        # Container list
         if container_names:
-            lines.append("")
-            lines.append("Running containers:")
-            for name in container_names[:10]:  # Show up to 10 containers
+            lines.append("*Running (top 10)*")
+            for name in container_names[:10]:
                 lines.append(f"   • {name}")
             if len(container_names) > 10:
-                lines.append(f"   …and {len(container_names) - 10} more")
-        
-        if host_metrics.get("available"):
+                lines.append(f"   …and {format_number(len(container_names) - 10)} more")
             lines.append("")
-            lines.append("📊 Host Resources")
-            lines.append(f"   CPU: {host_metrics.get('cpu_percent', 'N/A')}%")
-            lines.append(f"   RAM: {host_metrics.get('ram_percent', 'N/A')}% used")
-            lines.append(f"   Disk: {host_metrics.get('disk_percent', 'N/A')}% used")
+        
+        # Host metrics
+        if host_metrics.get("available"):
+            lines.append("*📊 Host Resources*")
+            lines.append(f"   CPU   {format_percentage(host_metrics.get('cpu_percent', 'N/A'))}")
+            lines.append(f"   RAM   {format_percentage(host_metrics.get('ram_percent', 'N/A'))}")
+            lines.append(f"   Disk  {format_percentage(host_metrics.get('disk_percent', 'N/A'))}")
         
         send_message(chat_id, "\n".join(lines))
         print("[PASS] /containers: delivered", flush=True)
@@ -240,22 +278,20 @@ def handle_errors(chat_id: str) -> None:
         error_count = oo_data.get("error_count_last_hour", 0)
         sample_errors = oo_data.get("sample", [])
         
-        lines = [
-            f"🚨 Recent Errors (last 1h)",
-            "",
-            f"Total: {error_count} error-level logs",
-        ]
+        lines = [section_header("🚨", "Recent Errors"), SEPARATOR, ""]
         
+        # Summary
+        lines.append(f"*Last 1 hour:* {format_number(error_count)} error-level logs")
+        lines.append("")
+        
+        # Sample errors
         if sample_errors:
-            lines.append("")
-            lines.append("Sample errors:")
-            for err in sample_errors[:5]:  # Show up to 5 sample errors
+            lines.append("*Sample*")
+            for err in sample_errors[:5]:
                 service = err.get("service", "unknown")
-                message = err.get("message", "")[:80]  # Truncate long messages
+                message = err.get("message", "")[:80]
                 lines.append(f"   • {service}: {message}")
-        
-        if not sample_errors:
-            lines.append("")
+        else:
             lines.append("✅ No recent errors found")
         
         send_message(chat_id, "\n".join(lines))
@@ -280,15 +316,17 @@ def handle_spend(chat_id: str) -> None:
         total_requests = litellm_data.get("total_requests", 0)
         cache_hit_rate = litellm_data.get("cache_hit_pct", 0)
         
-        lines = [
-            "💰 LLM Spend",
-            "",
-            f"Total: ${total_spend:.2f} ({total_requests} requests)",
-        ]
+        lines = [section_header("💰", "LLM Spend"), SEPARATOR, ""]
         
+        # Total
+        lines.append("*Total*")
+        lines.append(f"   {format_currency(total_spend)} ({format_number(total_requests)} requests)")
+        lines.append("")
+        
+        # Cache
         if cache_hit_rate:
-            lines.append("")
-            lines.append(f"Cache hit rate: {cache_hit_rate:.1f}%")
+            lines.append("*Cache*")
+            lines.append(f"   Hit rate: {format_percentage(cache_hit_rate)}")
         
         send_message(chat_id, "\n".join(lines))
         print("[PASS] /spend: delivered", flush=True)
@@ -313,22 +351,22 @@ def handle_uptime(chat_id: str) -> None:
         down = kuma_data.get("down", 0)
         down_services = kuma_data.get("down_services", [])
         
-        lines = [
-            f"📊 Service Status ({total} monitors)",
-            "",
-            f"✅ {up} up",
-        ]
+        lines = [section_header("📊", "Service Status"), SEPARATOR, ""]
         
+        # Status
+        lines.append(f"✅ {format_number(up)} up")
         if down > 0:
-            lines.append(f"❌ {down} down")
+            lines.append(f"❌ {format_number(down)} down")
             if down_services:
-                for service in down_services[:5]:  # Show up to 5 down services
+                lines.append("")
+                lines.append("*Down services*")
+                for service in down_services[:5]:
                     lines.append(f"   • {service}")
                 if len(down_services) > 5:
-                    lines.append(f"   …and {len(down_services) - 5} more")
+                    lines.append(f"   …and {format_number(len(down_services) - 5)} more")
         else:
             lines.append("")
-            lines.append("✅ All services are up!")
+            lines.append("✅ All services are operational!")
         
         send_message(chat_id, "\n".join(lines))
         print("[PASS] /uptime: delivered", flush=True)
@@ -340,20 +378,30 @@ def handle_uptime(chat_id: str) -> None:
 
 def handle_help(chat_id: str) -> None:
     """Show available commands."""
-    help_text = """📖 Available Commands
-
-/status — Full detailed report (LLM-generated, ~10-20s)
-/brief — Quick summary (3-5 lines, instant)
-/containers — Container status and resource usage
-/errors — Recent error-level logs
-/spend — LLM spend summary
-/uptime — Service uptime status
-/help — Show this help message
-
-Quick commands (/brief, /containers, /errors, /spend, /uptime) are instant.
-The full report (/status) uses the local LLM for a comprehensive analysis."""
+    lines = [
+        section_header("📖", "Available Commands"),
+        SEPARATOR,
+        "",
+        "*Reports*",
+        "   /status — Full detailed report (LLM, ~10-20s)",
+        "   /brief — Quick summary (instant)",
+        "",
+        "*Diagnostics*",
+        "   /containers — Container status",
+        "   /errors — Recent errors",
+        "   /uptime — Service status",
+        "",
+        "*Metrics*",
+        "   /spend — LLM spend",
+        "",
+        "*Help*",
+        "   /help — Show this message",
+        "",
+        SEPARATOR,
+        "💡 Quick commands are instant. /status uses LLM.",
+    ]
     
-    send_message(chat_id, help_text)
+    send_message(chat_id, "\n".join(lines))
     print("[PASS] /help: delivered", flush=True)
 
 
