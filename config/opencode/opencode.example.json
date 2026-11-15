@@ -17,9 +17,9 @@
           "limit": { "context": 131072, "output": 32768 },
           "body": { "reasoning_effort": "none", "temperature": 0.3 },
           "cost": {
-            "input": 0.0571,
-            "output": 0.2656,
-            "cache_read": 0,
+            "input": 0.0459,
+            "output": 1.3925,
+            "cache_read": 0.0062,
             "cache_write": 0
           }
         },
@@ -28,9 +28,9 @@
           "limit": { "context": 131072, "output": 32768 },
           "body": { "reasoning_effort": "none", "temperature": 0.3 },
           "cost": {
-            "input": 0.0571,
-            "output": 0.2656,
-            "cache_read": 0,
+            "input": 0.0459,
+            "output": 1.3925,
+            "cache_read": 0.0062,
             "cache_write": 0
           }
         },

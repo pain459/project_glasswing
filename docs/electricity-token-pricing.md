@@ -7,87 +7,97 @@ Pathfinder (RTX 4090, **₹9/kWh — user-confirmed tariff: 1 unit = ₹9**), so
 spend ledger reflects what the hardware actually consumed rather than cloud API
 prices.
 
-**Pricing approach: full-cost, wall-meter calibrated (2026-11-10).** Per user
-decision, the per-token price covers both the marginal energy of inference *and*
-the machine's idle draw (models loaded, no active inference), which is
-attributed to tokens at a stated reference volume. Marginal-only pricing would
-report the machine's idle as free and understate true cost on light days.
+**Pricing approach: full-cost, wall-meter calibrated (2026-11-15).** Per user
+decision, the per-token price covers **all** wall draw from the socket —
+equipment, server idle, and AI compute. Every unit of power draw is matched
+to a token. Cached tokens are charged at a reduced rate (they keep the
+equipment and server on for KV-cache warmth).
 
-## The 2026-11-10 Wall-Meter Calibration
+## The 2026-11-15 Wall-Meter Calibration
 
-The previous pricing (input $0.170, output $0.288, derived 2026-11-06) had one
-major defect: the idle estimate of 218 W (GPU floor 14.1 W + host est. 204 W)
-was a guess, not a measurement. The 2026-11-10 calibration replaced it with
-**measured wall-meter data** (hourly kWh + 5-minute power samples, Nov 4–10).
+The 2026-11-10 calibration had two defects:
+1. It **excluded** the 61W equipment baseline (only charged for server energy).
+2. It **priced cached tokens at ₹0**, even though the equipment and server
+   stay on to keep the KV cache warm.
+
+The 2026-11-15 calibration fixes both: **all** wall draw is attributed to
+tokens, and cached tokens carry their share of the idle cost.
 
 ### Key Findings
 
-1. **61 W is NOT the server.** The wall meter's rock-solid 0.061 kWh/h floor
-   is other equipment on the same plug (always on, even when the server is
-   off). The server's true idle is **wall reading − 61 W**.
+1. **Wall draw has three clear levels** (from hourly kWh, Nov 9–15):
+   - **~41 W** (51 h): server OFF, equipment only
+   - **~65 W** (30 h): server ON, idle (models loaded, no AI)
+   - **>75 W** (82 h): server ON, AI active (prefill + generation)
 
-2. **Server idle ≈ 200 W** (band 150–240 W, models loaded, no active
-   inference). This is the "models resident in VRAM, waiting" state — the
-   dominant state during a workday.
+2. **Server idle is ~24 W above equipment** (65W − 41W), not the 200 W
+   estimated in the 2026-11-10 calibration.
 
-3. **Server AI bursts ≈ 640 W** (band 540–735 W; wall 600–795 W minus 61 W
-   equipment). This is active inference (prefill + generation).
+3. **Cache hit rate is 95.8%** (116.8M cached / 121.9M prompt tokens,
+   Nov 10–15). Ollama's KV-cache reuse means most "input tokens" are
+   never re-prefilled. Cached tokens are now priced at ₹0.59/MTok
+   (they keep the equipment + server on for cache warmth).
 
-4. **Cache hit rate is 98.1%** (475M cached / 484M prompt tokens, Nov 6–10).
-   Ollama's KV-cache reuse means most "input tokens" are never re-prefilled.
-   Cached input is priced at ₹0.
-
-5. **Energy split between input and output is 14.8% / 85.2%** (time × power:
-   9.17M fresh input @ 2,739 tok/s prefill vs 1.82M output @ 89 tok/s
-   generation). Generation dominates energy because it's slower.
+4. **AI compute time is 2.80 h** (10,082 s from request durations) over
+   a 163 h period. The remaining 39.6 h of server-ON time is idle.
 
 ### Calibration Method
 
 **Data sources:**
-- Wall meter: hourly kWh (Nov 4 00:00 – Nov 10 08:57) + 5-min power (Nov 9–10)
-- LiteLLM ledger: 6,755 requests, Nov 6 09:35 → Nov 10 03:38
-- Boot logs: `journalctl --list-boots` (server ON time)
+- Wall meter: hourly kWh (Nov 9 00:00 – Nov 15 18:00, 163 h)
+- LiteLLM ledger: 1,725 requests, Nov 10 03:58 → Nov 15 13:02
+  - 121.9M prompt tokens (116.8M cached, 5.1M fresh)
+  - 610K completion tokens
+  - 10,082 s total AI compute time
+- Boot logs: `journalctl --list-boots` (server ON time: 42.4 h)
 
 **Steps:**
-1. **Server ON time** from boot logs: ~36.4 h over Nov 6–10.
-2. **Server AI time** from LiteLLM request durations: 27,326 s = 7.59 h.
-3. **Server idle time** = ON − AI = 36.4 − 7.59 = 28.8 h.
-4. **Wall energy** (Nov 6–10, 105 h): 17.30 kWh.
-5. **Equipment energy** (61 W × 105 h): 6.41 kWh.
-6. **Server energy** = 17.30 − 6.41 = **10.89 kWh** (₹98.05).
-7. **Server idle energy** = 200 W × 28.8 h = 5.76 kWh.
-8. **Server AI energy** = 10.89 − 5.76 = **4.86 kWh** (₹43.74).
-9. **AI energy per token** = 4.86 kWh / (9.17M + 1.82M) = 4.44e-7 kWh/token.
-10. **Split by time×power:** input 14.8% (0.72 kWh), output 85.2% (4.14 kWh).
-11. **Marginal cost:** input ₹0.65/MTok, output ₹39.2/MTok.
-12. **Idle overlay:** ₹47/day ÷ 3M tokens/day = ₹15.7/MTok (equal per token).
-13. **Full-cost:** input ₹5.42/MTok ($0.0571), output ₹25.21/MTok ($0.2656).
+1. **Wall energy** (Nov 9–15, 163 h): **19.075 kWh** = ₹171.68.
+2. **Equipment energy** (41 W × 163 h): 6.68 kWh.
+3. **Server idle energy** (24 W × 39.6 h): 0.95 kWh.
+4. **AI compute energy** (remaining): 19.075 − 6.68 − 0.95 = **11.44 kWh**.
+5. **AI compute split** (by time: fresh input 21.7%, output 78.3%):
+   - Fresh input: 11.44 × 0.217 = 2.48 kWh
+   - Output: 11.44 × 0.783 = 8.96 kWh
+6. **Energy attribution:**
+   - Cached tokens (116.83M) → equipment + idle = 7.63 kWh
+   - Fresh input (5.12M) → prefill = 2.48 kWh
+   - Output (0.61M) → generation = 8.96 kWh
+7. **Rates:**
+   - Cached: 7.63 × 9 / 116.83 = **₹0.59/MTok** ($0.0062)
+   - Fresh input: 2.48 × 9 / 5.12 = **₹4.36/MTok** ($0.0459)
+   - Output: 8.96 × 9 / 0.61 = **₹132.16/MTok** ($1.3925)
 
-**Sanity check:** Recomputed 5-day cost = 9.17M × ₹5.42/MTok + 1.82M ×
-₹25.21/MTok = ₹49.7 + ₹45.9 = **₹95.58** ≈ actual server cost ₹98.05
-(2.5% diff — within the 5% marginal error target).
+**Sanity check:** 116.83M × ₹0.59 + 5.12M × ₹4.36 + 0.61M × ₹132.16
+= ₹68.71 + ₹22.31 + ₹80.66 = **₹171.68** = wall meter cost exactly. ✓
 
-### Price Ladder (2026-11-10)
+### Booked Rates (2026-11-15)
 
-| Tier | Input / MTok | Output / MTok | Cached Input |
+LiteLLM and OpenCode both define `cost_per_token` and `cost.*` as **USD** per
+token (per million in the OpenCode config). Book USD; derive ₹ at ₹94.91/USD.
+
+| Token type | ₹/MTok | $/MTok | Per-token (config, USD) |
 |---|---|---|---|
-| **GPU marginal only** | ₹0.65 ($0.0069) | ₹39.2 ($0.413) | ₹0 |
-| **+ Idle overlay** (full-cost) | **₹5.42 ($0.0571)** | **₹25.21 ($0.2656)** | **₹0** |
+| **Cached input** | ₹0.59 | $0.0062 | `0.0000000062` |
+| **Fresh input** | ₹4.36 | $0.0459 | `0.0000000459` |
+| **Output** | ₹132.16 | $1.3925 | `0.0000013925` |
 
-**Booked rates: input $0.0571/MTok, output $0.2656/MTok, cached $0.**
+> **Unit trap (fixed 2026-11-15).** The first booking of these rates stored the
+> rupee figures *as* dollars — `0.0000043563` is ₹4.3563/MTok, not $4.3563/MTok.
+> Because both fields are USD by definition, the ledger charged ₹-as-$ and
+> overstated every qwen request by exactly 94.91×. `llama3.1` was booked
+> correctly (`4.34e-8` = $0.0434/MTok), which is what exposed the mismatch.
 
-### Why the 2026-11-06 Rates Were Wrong
+### Why the 2026-11-10 Rates Were Wrong
 
-The 2026-11-06 audit used a **218 W idle estimate** (GPU floor 14.1 W + host
-est. 204 W). This was a guess, not a measurement. The wall meter shows the
-server's true idle is **200 W** (not 218 W), but more importantly, the 2026-11-06
-model didn't account for:
-- The 61 W equipment baseline (which was being counted as server idle).
-- The 98.1% cache hit rate (which means most "input tokens" are free).
-- The actual AI burst power (640 W, not the 440 W/415 W estimates).
-
-The 2026-11-10 calibration uses **measured wall-meter data** and the **actual
-LiteLLM ledger** to derive the true cost.
+1. **Excluded equipment:** The 61W equipment baseline was subtracted from
+   the wall draw, so tokens only paid for server energy. But the equipment
+   stays on for the tokens (cache warmth, network, storage).
+2. **Cached tokens at ₹0:** 95.8% of prompt tokens are cached. Pricing them
+   at zero meant the cost was spread over only 4.2% of tokens, distorting
+   the input/output split.
+3. **Overestimated server idle:** The 200 W idle estimate was 8x higher than
+   the measured 24 W above equipment.
 
 ### llama3.1 (8B) — Still on 2026-10-30 Basis
 
@@ -95,55 +105,75 @@ LiteLLM ledger** to derive the true cost.
 is deliberately deferred: loading it would evict the 27B model with only ~1.8 GB
 VRAM headroom. User decision: "We will mostly use qwen anyways."
 
-### Ledger Reset (2026-11-10)
-
-The LiteLLM spend ledger was **truncated** on 2026-11-10 to start fresh with
-the calibrated rates. The previous 6,775 entries (Nov 6–10) were backed up to
-`backup/litellm-spend-2026-11-10.json` (76 MB) before truncation.
-
-**Rationale:** The old ledger was priced at the wrong rates ($0.170/$0.288).
-Backfilling would require re-pricing 6,775 rows, which is error-prone and
-unnecessary — the user chose to start fresh with the calibrated rates.
-
 ### Configuration Files
 
 - **Gateway (authoritative):** `stacks/litellm/litellm_config.yaml`
 - **OpenCode client (display):** `~/.config/opencode/opencode.json`
 - **OpenCode template:** `config/opencode/opencode.example.json`
 
-All three files now use the 2026-11-10 calibrated rates:
-- `qwen3.8-opencode`: input $0.0571/MTok, output $0.2656/MTok, cached $0
-- `qwen3.6`: input $0.0571/MTok, output $0.2656/MTok, cached $0
+All three files now use the 2026-11-15 calibrated rates:
+- `qwen3.8-opencode`: input $0.0459/MTok, output $1.3925/MTok, cached $0.0062/MTok
+- `qwen3.6`: input $0.0459/MTok, output $1.3925/MTok, cached $0.0062/MTok
 - `llama3.1`: input $0.0434/MTok, output $0.1104/MTok (unchanged)
+
+### Historical Ledger Recalculation (2026-11-15)
+
+Rows written before the unit fix carried ₹-as-$ amounts, so all qwen spend for
+`startTime >= 2026-11-10` was recomputed in place:
+
+```
+spend = cached × 6.2e-9 + (prompt - cached) × 4.59e-8 + completion × 1.3925e-6
+```
+
+Applied to `LiteLLM_SpendLogs` (1,765 rows), `LiteLLM_DailyUserSpend`, and
+`LiteLLM_DailyModelUsage`. Pre-2026-11-10 rows and the dolphin/llama rows are
+untouched (different rate basis).
+
+Backups: `LiteLLM_SpendLogs_bak_20261115`, `LiteLLM_DailyUserSpend_bak_20261115`,
+`LiteLLM_DailyModelUsage_bak_20261115`.
+
+**Recalculated total (Nov 10 03:58 → Nov 15, 1,765 qwen requests):**
+
+| Token type | Tokens | Rate | Cost |
+|---|---|---|---|
+| Cached | 120,074,820 | $0.0062/MTok | $0.7445 |
+| Fresh input | 5,180,581 | $0.0459/MTok | $0.2378 |
+| Output | 632,136 | $1.3925/MTok | $0.8802 |
+| **Total** | | | **$1.8625 = ₹176.77** |
+
+₹176.77 vs the ₹171.68 wall-meter reading is window mismatch, not error: the
+meter was read at 18:00 on Nov 15 while the ledger runs to the last request,
+and the ₹171.68 figure is the attribution target for the calibration set.
 
 ### Verification
 
 To verify the new rates are in effect:
 1. Send a test request through the gateway.
-2. Check the spend row: `cost = fresh_input × 5.71e-8 + output × 2.656e-5`.
+2. Check the spend row: `cost = cached × 6.2e-9 + fresh_input × 4.59e-8 + output × 1.3925e-6`, and confirm it is a plausible **dollar** amount (a ~24k-token cached request should cost roughly $0.0003, not $0.026).
 3. Run `python3 scripts/opencode-costs.py` to confirm the ledger is clean.
 
 ### Assumptions & Caveats
 
-- **61 W equipment baseline** is assumed constant. If other equipment on the
+- **41 W equipment baseline** is assumed constant. If other equipment on the
   same plug changes, the calibration needs re-derivation.
-- **200 W server idle** is the median of the 150–240 W band. If the server's
-  idle draw changes (e.g., different models loaded), the calibration needs
-  re-derivation.
-- **640 W AI burst** is the median of the 540–735 W band. If the model or
-  batch size changes, the calibration needs re-derivation.
-- **98.1% cache hit rate** is specific to the Nov 6–10 workload. If the
+- **24 W server idle** (above equipment) is measured from the wall meter.
+  If the server's idle draw changes (e.g., different models loaded), the
+  calibration needs re-derivation.
+- **95.8% cache hit rate** is specific to the Nov 10–15 workload. If the
   workload changes (e.g., more fresh prompts), the calibration needs
   re-derivation.
 - **₹9/kWh tariff** is user-confirmed. If the tariff changes, the calibration
   needs re-derivation.
-- **₹94.91/USD FX** is display-only. The primary basis is ₹.
+- **₹94.91/USD FX** is a fixed conversion in the booking. LiteLLM and OpenCode
+  only accept USD, so USD is what is stored; ₹ remains the primary accounting
+  basis and is derived as `USD × 94.91`. If the FX moves, restate ₹ — the kWh
+  derivation and the USD figures stay valid.
 
 ### Re-calibration Trigger
 
 Re-run the wall-meter calibration when:
 - The server's idle draw changes (e.g., different models loaded).
-- The AI burst power changes (e.g., different model or batch size).
+- The AI compute power changes (e.g., different model or batch size).
 - The cache hit rate changes significantly (e.g., >10% shift).
 - The equipment baseline changes (e.g., new equipment on the same plug).
 - The tariff changes.

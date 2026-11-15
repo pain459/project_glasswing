@@ -7,15 +7,16 @@
 # Models are registered with electricity-based pricing (measured on
 # Pathfinder: RTX 4090, ₹9/kWh confirmed by tariff) so the Admin UI shows
 # real cost. Full derivation and the price ladder:
-# docs/electricity-token-pricing.md (2026-11-10 wall-meter calibration).
+# docs/electricity-token-pricing.md (2026-11-15 wall-meter calibration).
 #
-# Pricing model (calibrated 2026-11-10 from wall meter + LiteLLM ledger):
-#   Equipment baseline: 61 W (other equipment on same plug, constant, excluded)
-#   Server idle:        200 W (models loaded, no active inference)
-#   Server AI bursts:   640 W (wall 600-795 W - 61 W equipment)
-#   Energy split:       prefill 14.8% / generation 85.2% (time × power)
-#   Cache hit rate:     98.1% (475M cached / 484M prompt tokens, Nov 6-10)
-#   Full-cost:          input ₹5.42/MTok ($0.0571), output ₹25.21/MTok ($0.2656)
+# Pricing model (calibrated 2026-11-15 from wall meter + LiteLLM ledger + boot logs):
+#   Wall draw (Nov 9-15): 19.075 kWh = ₹171.68 (163 h, 6.8 days)
+#   Equipment baseline:   41 W (other equipment on same plug, always on)
+#   Server idle:          24 W above equipment (models loaded, no AI)
+#   AI compute:           remaining energy (prefill + generation)
+#   Cache hit rate:       95.8% (116.8M cached / 121.9M prompt tokens)
+#   Energy attribution:   cached → equipment + idle; fresh → prefill; output → generation
+#   Rates:                cached ₹0.59/MTok, input ₹4.36/MTok, output ₹132.16/MTok
 #                       at ₹94.91/USD. USD is display-only; ₹ is the primary basis.
 #   llama3.1 still uses the 2026-10-30 basis (re-audit pending; loading it
 #   would evict the 27B model with only ~1.8 GB headroom).
@@ -34,15 +35,14 @@ model_list:
       model: openai/qwen3.8-opencode
       api_base: http://glasswing-ollama:11434/v1
       api_key: ollama
-      # Electricity-based pricing, 2026-11-10 wall-meter calibration (₹9/kWh).
-      # Server idle 200W, AI bursts 640W, 98.1% cache hit rate.
-      # Input: $0.0571/MTok, Output: $0.2656/MTok
-      # Cached input (KV prefix reuse) is charged 0: Ollama reports
-      # prompt_tokens_details.cached_tokens and those tokens are never
-      # re-prefilled. Verified 2026-11-10: 475M/484M tokens cached (98.1%).
-      input_cost_per_token: 0.0000000571
-      output_cost_per_token: 0.0000002656
-      cache_read_input_token_cost: 0
+      # Electricity-based pricing, 2026-11-15 wall-meter calibration (₹9/kWh).
+      # Wall draw 19.075 kWh = ₹171.68 over 163 h (Nov 9-15).
+      # Equipment 41W + server idle 24W → cached tokens.
+      # AI compute (prefill + generation) → fresh input + output tokens.
+      # Cached: ₹0.59/MTok ($0.0062), Input: ₹4.36/MTok ($0.0459), Output: ₹132.16/MTok ($1.3925)
+      input_cost_per_token: 0.0000000459
+      output_cost_per_token: 0.0000013925
+      cache_read_input_token_cost: 0.0000000062
 
   # ── Failback coding model ────────────────────────────────────
   # Must be the *tuned* qwen3.6-opencode alias, not the qwen3.6:27b base
@@ -54,10 +54,10 @@ model_list:
       model: openai/qwen3.6-opencode:latest
       api_base: http://glasswing-ollama:11434/v1
       api_key: ollama
-      # Same rates as primary; cached input priced 0 (see primary entry).
-      input_cost_per_token: 0.0000000571
-      output_cost_per_token: 0.0000002656
-      cache_read_input_token_cost: 0
+      # Same rates as primary (see qwen3.8-opencode entry).
+      input_cost_per_token: 0.0000000459
+      output_cost_per_token: 0.0000013925
+      cache_read_input_token_cost: 0.0000000062
 
   # ── Llama 3.1 8B (lightweight) ───────────────────────────────
   - model_name: llama3.1
