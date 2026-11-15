@@ -8,6 +8,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 COPY brief.py /app/brief.py
+COPY listener.py /app/listener.py
 
 # Run as root to access the Docker socket (mounted read-only).
 # The brief is a short-lived worker, not a long-running service, so the

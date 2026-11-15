@@ -38,12 +38,9 @@ services:
     volumes:
       # Persistent run history, logs, settings, and DAG definitions
       - dagu_data:/var/lib/dagu
-      # Version-controlled DAG definitions mounted under the dags directory.
-      # Dagu also writes wiki/ and runtime files here, so the named volume
-      # provides the base and this bind mount overlays our DAG files.
-      - ./dags/health-check.yaml:/var/lib/dagu/dags/health-check.yaml:ro
-      - ./dags/staged-image-update.yaml:/var/lib/dagu/dags/staged-image-update.yaml:ro
-      - ./dags/situation-brief.yaml:/var/lib/dagu/dags/situation-brief.yaml:ro
+      # Version-controlled DAG definitions — mount the entire directory so
+      # new DAG files are immediately visible without recreating the container.
+      - ./dags:/var/lib/dagu/dags:ro
       # Docker socket for DAGs that manage containers (e.g. staged-image-update)
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Project directory so DAGs can read compose files and run docker compose
