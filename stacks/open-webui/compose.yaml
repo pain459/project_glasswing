@@ -1,0 +1,44 @@
+
+name: glasswing-open-webui
+
+services:
+  open-webui:
+    extends:
+      file: ../base.yaml
+      service: hardened
+    image: ghcr.io/open-webui/open-webui:v0.6.5
+    container_name: glasswing-open-webui
+
+    ports:
+      - "${GLASSWING_HOST_IP:?required}:3041:8080"
+
+    environment:
+      OTEL_SERVICE_NAME: glasswing-open-webui
+      OLLAMA_BASE_URL: http://glasswing-ollama:11434
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:?Required from Infisical}
+      ENABLE_OLLAMA_API: "true"
+
+    volumes:
+      - open-webui_data:/app/backend/data
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    labels:
+      com.glasswing.service: open-webui
+
+    networks:
+      - glasswing
+
+volumes:
+  open-webui_data:
+    name: glasswing-open-webui-data
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

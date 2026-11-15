@@ -222,6 +222,14 @@ stacks:
     updated: "2026-10-08"
     build-type: external
 
+  open-webui:
+    image: ghcr.io/open-webui/open-webui
+    tag: "v0.6.5"
+    mutable: false
+    updated: "2026-11-14"
+    build-type: external
+    notes: "Web chat UI for Ollama models — native Ollama integration, SQLite chat history"
+
   cyberchef:
     image: ghcr.io/gchq/cyberchef
     tag: "11.5.0"
