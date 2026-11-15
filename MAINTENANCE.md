@@ -328,12 +328,7 @@ A password placed in a connection URL (`postgresql://user:pass@host/db`) must be
 percent-encoded: an `@`, `/`, `:`, `#` or `?` otherwise changes the URL. For every
 key ending in `_PASSWORD`, `_SECRET` or `_TOKEN`, `scripts/with-infisical.sh`
 also exports `<KEY>_URLENCODED` and leaves the original untouched. Use the
-encoded form in the URL and the original everywhere else — see
-`DATABASE_URL` in `stacks/langfuse/compose.yaml`:
-
-```yaml
-DATABASE_URL: postgresql://langfuse:${LANGFUSE_POSTGRES_PASSWORD_URLENCODED:?Required}@postgres:5432/langfuse
-```
+encoded form in the URL and the original everywhere else.
 
 Bootstrap values that are not fetched by that wrapper (`stacks/infisical/.env`)
 must themselves be URL-safe; use `openssl rand -hex 24` for
@@ -415,7 +410,6 @@ private per-stack networks:
 | --- | --- |
 | `glasswing` | every front-end service |
 | `glasswing-infisical_internal` | Infisical, PostgreSQL, Redis, gateway |
-| `glasswing-langfuse_internal` | Langfuse's PostgreSQL, ClickHouse, Redis, MinIO |
 | `glasswing-open-notebook_internal` | Open Notebook and SurrealDB |
 
 ```bash

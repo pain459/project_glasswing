@@ -68,40 +68,6 @@ User → Flowise → Ollama (llm)
 
 ---
 
-## Langfuse
-
-> **LLM observability — tracing, prompts, datasets, analytics**
-
-- **URL:** [http://192.168.68.62:3010](http://192.168.68.62:3010)
-- **Port:** `:3010`
-- **Containers:** `glasswing-langfuse-web`, `glasswing-langfuse-worker`, `glasswing-langfuse-postgres`, `glasswing-langfuse-clickhouse`, `glasswing-langfuse-redis`, `glasswing-langfuse-minio`
-- **Stack:** `stacks/langfuse/`
-
-### How it works
-
-Observability platform for LLM applications. Tracks:
-- Every LLM call (prompt, response, latency, tokens)
-- Cost estimation per model
-- Dataset management for evaluation
-- Prompt versioning
-
-### Architecture
-
-```
-Flowise / AnythingLLM
-    │
-    │  OTLP traces
-    ▼
-Langfuse Web :3010
-    │
-    ├── ClickHouse (event storage)
-    ├── PostgreSQL (metadata)
-    ├── Redis (caching)
-    └── MinIO :9090 (file storage)
-```
-
----
-
 ## AnythingLLM
 
 > **Local RAG — chat with documents, knowledge bases**

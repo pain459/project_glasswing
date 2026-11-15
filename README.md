@@ -225,7 +225,6 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 | `homepage` | 3006 | Dashboard and service map |
 | `adguard` | 53, 3007, 3008 | DNS filtering |
 | `excalidraw` | 3009 | Diagrams |
-| `langfuse` | 3010, 9090 | LLM tracing and evaluation |
 | `forgejo` | 3011, 2222 | Self-hosted Git and SSH |
 | `anythingllm` | 3012 | Document chat over local models |
 | `cyberchef` | 3013 | Data transformations |
@@ -545,7 +544,7 @@ A green container is not proof a service works. Check the destination too: telem
 - Infisical serves a self-signed certificate, so clients need the CA explicitly (`make certificates` writes it to `.local/ca/`).
 - The hand-entered secret values listed by `make secrets-plan` exist only in Infisical and your offline record. A rebuild without that record means new passwords.
 - `steel-browser` has no versioned image tags; it remains on `:latest`. The Dagu update DAG handles rollback for mutable-tag stacks automatically.
-- Some mutable-tag stacks (langfuse, steel) have slow startup times that exceed the 120s healthcheck timeout, causing unnecessary rollbacks. The timeout may need adjustment per-stack.
+- Some mutable-tag stacks (steel) have slow startup times that exceed the 120s healthcheck timeout, causing unnecessary rollbacks. The timeout may need adjustment per-stack.
 
 ## Related documents
 

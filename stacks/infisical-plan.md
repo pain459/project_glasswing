@@ -175,37 +175,6 @@ by the service they access.
 
 ---
 
-### `langfuse` — LLM Observability
-
-**Status:** ✅ Secrets managed. ⚙️ Config hardcoded.
-
-| Variable | Type | Current | Action |
-|----------|------|---------|--------|
-| `LANGFUSE_POSTGRES_PASSWORD` | 🔒 | ✅ Infisical `/langfuse` | ✅ Done |
-| `LANGFUSE_CLICKHOUSE_PASSWORD` | 🔒 | ✅ Infisical `/langfuse` | ✅ Done |
-| `LANGFUSE_REDIS_PASSWORD` | 🔒 | ✅ Infisical `/langfuse` | ✅ Done |
-| `LANGFUSE_MINIO_PASSWORD` | 🔒 | ✅ Infisical `/langfuse` | ✅ Done |
-| `LANGFUSE_NEXTAUTH_SECRET` | 🔒 | ✅ Infisical `/langfuse` | ✅ Done |
-| `LANGFUSE_SALT` | 🔒 | ✅ Infisical `/langfuse` | ✅ Done |
-| `LANGFUSE_ENCRYPTION_KEY` | 🔒 | ✅ Infisical `/langfuse` | ✅ Done |
-| `HOSTNAME` | ⚙️ | hardcoded `0.0.0.0` | ✅ Done |
-| `NEXTAUTH_URL` | ⚙️ | hardcoded `http://192.168.68.62:3010` | ✅ Done |
-| `CLICKHOUSE_URL` | ⚙️ | hardcoded `http://clickhouse:8123` | ✅ Done |
-| `CLICKHOUSE_MIGRATION_URL` | ⚙️ | hardcoded `clickhouse://clickhouse:9000` | ✅ Done |
-| `CLICKHOUSE_USER` | ⚙️ | hardcoded `langfuse` | ✅ Done |
-| `CLICKHOUSE_CLUSTER_ENABLED` | ⚙️ | hardcoded `"false"` | ✅ Done |
-| `REDIS_HOST` | ⚙️ | hardcoded `redis` | ✅ Done |
-| `REDIS_PORT` | ⚙️ | hardcoded `6379` | ✅ Done |
-| `LANGFUSE_S3_*` (event upload) | ⚙️ | hardcoded bucket/region/endpoint | ✅ Done |
-| `LANGFUSE_S3_*` (media upload) | ⚙️ | hardcoded bucket/region/endpoint | ✅ Done |
-| `TELEMETRY_ENABLED` | ⚙️ | hardcoded `"false"` | ✅ Done |
-| `POSTGRES_USER` | ⚙️ | hardcoded `langfuse` | ✅ Done |
-| `POSTGRES_DB` | ⚙️ | hardcoded `langfuse` | ✅ Done |
-| `CLICKHOUSE_DB` | ⚙️ | hardcoded `default` | ✅ Done |
-| `MINIO_ROOT_USER` | ⚙️ | hardcoded `langfuse` | ✅ Done |
-
----
-
 ## 3. Monitoring & Observability
 
 ### `openobserve` — Log & Metrics Platform
@@ -491,7 +460,6 @@ authoritative value and no duplicated secret to synchronize.
 | **open-notebook** | `SURREAL_EXPERIMENTAL_GRAPHQL`, `SURREAL_URL`, `SURREAL_USER`, `SURREAL_NAMESPACE`, `SURREAL_DATABASE`, `OPEN_NOTEBOOK_WORKER_MAX_TASKS` |
 | **anythingllm** | `STORAGE_DIR`, `LLM_PROVIDER`, `OLLAMA_BASE_PATH`, `EMBEDDING_ENGINE`, `EMBEDDING_BASE_PATH` |
 | **flowise** | `PORT`, `APP_URL`, `DATABASE_TYPE`, `DATABASE_PATH`, `SECRETKEY_PATH`, `LOG_PATH`, `BLOB_STORAGE_PATH`, `DISABLE_FLOWISE_TELEMETRY` |
-| **langfuse** | `HOSTNAME`, `NEXTAUTH_URL`, `CLICKHOUSE_URL`, `CLICKHOUSE_MIGRATION_URL`, `CLICKHOUSE_USER`, `CLICKHOUSE_CLUSTER_ENABLED`, `REDIS_HOST`, `REDIS_PORT`, all `LANGFUSE_S3_*` vars, `TELEMETRY_ENABLED`, `POSTGRES_USER`, `POSTGRES_DB`, `CLICKHOUSE_DB`, `MINIO_ROOT_USER` |
 | **openobserve** | `ZO_LOCAL_MODE`, `ZO_DATA_DIR`, `ZO_COMPACT_ENABLED`, `ZO_COMPACT_DATA_RETENTION_DAYS` |
 | **vector** | `DOCKER_HOST`, `VECTOR_DANGEROUSLY_ALLOW_ENV_VAR_INTERPOLATION` |
 | **dbgate** | (none — only TZ, which is global) |

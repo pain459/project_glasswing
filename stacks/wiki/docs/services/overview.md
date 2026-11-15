@@ -27,7 +27,6 @@ Complete list of all Glasswing services organized by category. Click any service
 |---------|------|-----------|-------------|
 | [Ollama](/services/ai-platform.md#ollama) | `:11434` | `glasswing-ollama` | Local LLM inference (RTX 4090) |
 | [Flowise](/services/ai-platform.md#flowise) | `:3002` | `glasswing-flowise` | AI agent & workflow builder |
-| [Langfuse](/services/ai-platform.md#langfuse) | `:3010` | `glasswing-langfuse` | LLM observability |
 | [AnythingLLM](/services/ai-platform.md#anythingllm) | `:3012` | `glasswing-anythingllm` | Local RAG workspaces |
 | [SearXNG](/services/ai-platform.md#searxng) | `:3028` | `glasswing-searxng` | Private metasearch |
 
