@@ -43,6 +43,7 @@ services:
       # provides the base and this bind mount overlays our DAG files.
       - ./dags/health-check.yaml:/var/lib/dagu/dags/health-check.yaml:ro
       - ./dags/staged-image-update.yaml:/var/lib/dagu/dags/staged-image-update.yaml:ro
+      - ./dags/situation-brief.yaml:/var/lib/dagu/dags/situation-brief.yaml:ro
       # Docker socket for DAGs that manage containers (e.g. staged-image-update)
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Project directory so DAGs can read compose files and run docker compose

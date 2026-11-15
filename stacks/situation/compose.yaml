@@ -1,0 +1,65 @@
+
+name: glasswing-situation
+
+services:
+  situation:
+    extends:
+      file: ../base.yaml
+      service: base
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: glasswing/situation:latest
+    container_name: glasswing-situation
+    init: true
+
+    # One-shot worker: runs the brief, delivers to Telegram, exits.
+    # Dagu (or `make situation`) invokes it on schedule.
+    restart: "no"
+
+    environment:
+      TZ: ${GLASSWING_TZ:?Required from Infisical}
+
+      # Telegram (required)
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?Required from Infisical}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:?Required from Infisical}
+
+      # Local inference (required)
+      OLLAMA_URL: ${OLLAMA_URL:-http://glasswing-ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3.8-opencode}
+
+      # Data sources (optional — brief degrades gracefully if unreachable)
+      KUMA_URL: ${KUMA_URL:-http://glasswing-uptime-kuma:3001}
+      KUMA_API_TOKEN: ${KUMA_API_TOKEN:-}
+      BESZEL_URL: ${BESZEL_URL:-http://glasswing-beszel:8090}
+      BESZEL_API_KEY: ${BESZEL_API_KEY:-}
+      OPENOBSERVE_URL: ${OPENOBSERVE_URL:-http://glasswing-openobserve:5080}
+      OPENOBSERVE_EMAIL: ${OPENOBSERVE_EMAIL:-}
+      OPENOBSERVE_PASSWORD: ${OPENOBSERVE_PASSWORD:-}
+      LITELLM_URL: ${LITELLM_URL:-http://glasswing-litellm:4000}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-}
+
+      # OTEL integration
+      OTEL_SERVICE_NAME: glasswing-situation
+
+    # No published ports — this is a worker, not a service.
+    # It reaches other stacks by container name on the shared bridge.
+
+    volumes:
+      # Docker socket for container status (read-only)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+    pids_limit: 64
+    mem_limit: 256m
+
+    labels:
+      com.glasswing.service: situation
+      com.glasswing.category: automation
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

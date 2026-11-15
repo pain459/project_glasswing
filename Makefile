@@ -38,7 +38,7 @@ export DOCKER_GID := $(shell stat -c '%g' /var/run/docker.sock 2>/dev/null)
 
 .PHONY: help up down restart rebuild update logs ps check infisical homepage core status \
         secrets-check secrets-injection-check secrets-plan network netcheck docker-pool doctor access access-check \
-        certificates certificates-check mcp-preflight \
+        certificates certificates-check mcp-preflight situation \
         release-status release-bump release-apply release-rollback release-diff release-history release-sync \
         release-build release-bundle release-deploy release-list release-cleanup \
 
@@ -66,6 +66,7 @@ help:
 	@echo "make secrets-plan                 List keys still to supply / emit templates"
 	@echo "make secrets-injection-check      Verify test-secret injection"
 	@echo "make doctor                       Preflight Docker pool, ports, orphans, restart loops"
+	@echo "make situation                    Run the situation brief now (Telegram)"
 	@echo "make network                      Create the shared 'glasswing' bridge network"
 	@echo "make docker-pool                  Widen the Docker address pool (sudo, restarts Docker)"
 	@echo "make access                       Regenerate ACCESS.md from compose port bindings"
@@ -350,6 +351,46 @@ mcp-preflight:
 	 python3 scripts/mcp-preflight.py --name serena http://127.0.0.1:9121/mcp || status=1; \
 	 python3 scripts/mcp-preflight.py --name searxng http://127.0.0.1:8005/mcp || status=1; \
 	 exit $$status
+
+
+# --------------------------------------------------
+# Situation brief (on-demand)
+# --------------------------------------------------
+
+# Run the situation brief now: build the image (if needed), inject secrets,
+# run the container, and deliver a plain-English brief to Telegram.
+situation:
+	@echo "========================================"; \
+	echo " Glasswing - Situation Brief"; \
+	echo "========================================"; \
+	echo ""; \
+	docker network inspect $(GLASSWING_NETWORK) >/dev/null 2>&1 || \
+	  docker network create --driver bridge --subnet $(GLASSWING_NETWORK_SUBNET) $(GLASSWING_NETWORK) >/dev/null 2>&1; \
+	docker image inspect glasswing/situation:latest >/dev/null 2>&1 || \
+	  docker build -q -t glasswing/situation:latest stacks/situation/; \
+	./scripts/with-infisical.sh /situation stacks/situation/secrets.list -- \
+	  sh -c 'docker run --rm \
+	    --network '$(GLASSWING_NETWORK)' \
+	    --memory 256m \
+	    --pids-limit 64 \
+	    -v /var/run/docker.sock:/var/run/docker.sock:ro \
+	    -e TELEGRAM_BOT_TOKEN \
+	    -e TELEGRAM_CHAT_ID \
+	    -e LITELLM_MASTER_KEY \
+	    -e KUMA_API_TOKEN \
+	    -e BESZEL_API_KEY \
+	    -e OPENOBSERVE_EMAIL="$$ZO_ROOT_USER_EMAIL" \
+	    -e OPENOBSERVE_PASSWORD="$$ZO_ROOT_USER_PASSWORD" \
+	    -e TZ="$$GLASSWING_TZ" \
+	    -e OLLAMA_URL="http://glasswing-ollama:11434" \
+	    -e OLLAMA_MODEL="qwen3.8-opencode" \
+	    -e KUMA_URL="http://glasswing-uptime-kuma:3001" \
+	    -e BESZEL_URL="http://glasswing-beszel:8090" \
+	    -e OPENOBSERVE_URL="http://glasswing-openobserve:5080" \
+	    -e LITELLM_URL="http://glasswing-litellm:4000" \
+	    glasswing/situation:latest'; \
+	echo ""; \
+	echo "[PASS] Situation brief delivered"
 
 
 # --------------------------------------------------

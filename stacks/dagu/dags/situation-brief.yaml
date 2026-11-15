@@ -1,0 +1,51 @@
+# Situation Brief
+#
+# Runs the Glasswing situation brief every 6 hours: gathers a snapshot of
+# the platform, reasons over it with the local Ollama model, and pushes a
+# plain-English brief to Telegram.
+#
+# How it works:
+#   1. Builds the situation image (if not already built).
+#   2. Runs the brief container with secrets injected from Infisical.
+#   3. The brief gathers signals, generates a summary, and delivers to Telegram.
+#
+# On-demand: `make situation` (see Makefile).
+#
+# The actual work is done by the situation container (stacks/situation/).
+# Dagu provides the schedule and the Docker socket for building.
+
+name: situation-brief
+description: "Generate and deliver a plain-English situation brief to Telegram"
+
+schedule:
+  - "0 */6 * * *"        # Every 6 hours
+overlap_policy: skip     # Skip if previous run is still active
+
+steps:
+  # Build the situation image (idempotent — skips if already built)
+  - id: build
+    run: |
+      cd /home/ravik/src_git/project_glasswing
+      docker build -q -t glasswing/situation:latest stacks/situation/ 2>/dev/null || true
+    timeout_sec: 120
+
+  # Run the brief with secrets injected from Infisical
+  - id: run_brief
+    run: |
+      cd /home/ravik/src_git/project_glasswing
+      ./scripts/with-infisical.sh /situation stacks/situation/secrets.list -- \
+        env TELEGRAM_BOT_TOKEN="$$TELEGRAM_BOT_TOKEN" \
+            TELEGRAM_CHAT_ID="$$TELEGRAM_CHAT_ID" \
+            LITELLM_MASTER_KEY="$$LITELLM_MASTER_KEY" \
+            TZ="$$GLASSWING_TZ" \
+            OLLAMA_URL="http://glasswing-ollama:11434" \
+            OLLAMA_MODEL="qwen3.8-opencode" \
+            KUMA_URL="http://glasswing-uptime-kuma:3001" \
+            BESZEL_URL="http://glasswing-beszel:8090" \
+            LITELLM_URL="http://glasswing-litellm:4000" \
+          docker run --rm \
+            --network glasswing \
+            --memory 256m \
+            --pids-limit 64 \
+            glasswing/situation:latest
+    timeout_sec: 300    # 5 minutes max (inference + delivery)
