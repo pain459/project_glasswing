@@ -125,23 +125,37 @@ Rows written before the unit fix carried ₹-as-$ amounts, so all qwen spend for
 spend = cached × 6.2e-9 + (prompt - cached) × 4.59e-8 + completion × 1.3925e-6
 ```
 
-Applied to `LiteLLM_SpendLogs` (1,765 rows), `LiteLLM_DailyUserSpend`, and
-`LiteLLM_DailyModelUsage`. Pre-2026-11-10 rows and the dolphin/llama rows are
-untouched (different rate basis).
+Applied to **every row** in `LiteLLM_SpendLogs` (all 1,797 priced rows; the whole
+ledger starts 2026-11-10, so no pre-calibration rows exist), plus
+`LiteLLM_DailyUserSpend` and `LiteLLM_DailyModelUsage`. No row is left on a
+superseded rate card.
+
+- **qwen3.8 / qwen3.6 / dolphin** → electricity card
+  (`6.2e-9` / `4.59e-8` / `1.3925e-6`). The dolphin models are retired from
+  `model_list`, but they ran on the same GPU and the wall meter cannot separate
+  them, so the session card applies.
+- **llama3.1** → its own live card (`4.34e-8` / `1.104e-7`, no cache rate).
+
+Aggregates were rebuilt by re-deriving from `SpendLogs`; three 2026-11-10
+health-check rows missing from the daily rollup were inserted. All three stores
+now tie to the cent: **$1.867418 = ₹177.24**. The `Last30d*` / `Monthly*` tables
+are views, so they recompute automatically.
 
 Backups: `LiteLLM_SpendLogs_bak_20261115`, `LiteLLM_DailyUserSpend_bak_20261115`,
 `LiteLLM_DailyModelUsage_bak_20261115`.
 
-**Recalculated total (Nov 10 03:58 → Nov 15, 1,765 qwen requests):**
+**Recalculated total (whole ledger, Nov 10 → present):**
 
-| Token type | Tokens | Rate | Cost |
+| Model | Rows | USD | INR |
 |---|---|---|---|
-| Cached | 120,074,820 | $0.0062/MTok | $0.7445 |
-| Fresh input | 5,180,581 | $0.0459/MTok | $0.2378 |
-| Output | 632,136 | $1.3925/MTok | $0.8802 |
-| **Total** | | | **$1.8625 = ₹176.77** |
+| qwen3.8-opencode | 1,755 | $1.84753 | ₹175.35 |
+| qwen3.6 | 14 | $0.01503 | ₹1.43 |
+| dolphin3 | 4 | $0.00398 | ₹0.38 |
+| dolphin-nemo | 5 | $0.00087 | ₹0.08 |
+| llama3.1 | 4 | $0.00001 | ₹0.00 |
+| **Total** | **1,782** | **$1.86742** | **₹177.24** |
 
-₹176.77 vs the ₹171.68 wall-meter reading is window mismatch, not error: the
+₹177.24 vs the ₹171.68 wall-meter reading is window mismatch, not error: the
 meter was read at 18:00 on Nov 15 while the ledger runs to the last request,
 and the ₹171.68 figure is the attribution target for the calibration set.
 
