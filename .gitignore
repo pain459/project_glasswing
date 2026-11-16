@@ -18,3 +18,9 @@ stacks/versions.rollback.log
 releases/
 banyan-tree/*
 /banyan-tree/*
+
+# Forgejo CI scratch (canonical copies live in glasswing-apps Forgejo repo)
+.forgejo-tmp/
+
+# Runner runtime state (binary, token, cache, compose plugin)
+stacks/forgejo-runner/.runner-data/

@@ -34,14 +34,25 @@ shift 2
 [[ "$1" == "--" ]] || fail "Missing -- separator"
 shift
 
-[[ -f "$CREDS" ]] || fail "Infisical credentials missing"
-[[ -f "$CERT" ]] || fail "Infisical certificate missing"
 [[ -f "$KEYS_FILE" ]] || fail "Secret manifest missing"
 [[ "$SECRET_PATH" == /* ]] || fail "Secret path must begin with /"
 
-# Load local machine identity.
-# Do not export bootstrap credentials to child processes.
-source "$CREDS"
+# Check if credentials are available via environment variables (CI mode)
+# or from the local credentials file (local mode)
+if [[ -n "${INFISICAL_URL:-}" && -n "${INFISICAL_CLIENT_ID:-}" && -n "${INFISICAL_CLIENT_SECRET:-}" ]]; then
+  # CI mode: credentials already in environment
+  :
+elif [[ -f "$CREDS" ]]; then
+  # Local mode: load from credentials file
+  source "$CREDS"
+else
+  fail "Infisical credentials missing (set INFISICAL_URL, INFISICAL_CLIENT_ID, INFISICAL_CLIENT_SECRET or provide credentials.env)"
+fi
+
+# Certificate is optional in CI (may use system CA or self-signed)
+if [[ -f "$CERT" ]]; then
+  export INFISICAL_CA_CERT="$CERT"
+fi
 
 for name in INFISICAL_URL INFISICAL_PROJECT_ID \
             INFISICAL_ENV INFISICAL_CLIENT_ID \
