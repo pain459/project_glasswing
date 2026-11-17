@@ -388,6 +388,8 @@ situation:
 	    -e BESZEL_URL="http://glasswing-beszel:8090" \
 	    -e OPENOBSERVE_URL="http://glasswing-openobserve:5080" \
 	    -e LITELLM_URL="http://glasswing-litellm:4000" \
+	    -e PAPERLESS_URL="http://glasswing-paperless:8000" \
+	    -e PAPERLESS_API_TOKEN \
 	    glasswing/situation:latest'; \
 	echo ""; \
 	echo "[PASS] Situation brief delivered"

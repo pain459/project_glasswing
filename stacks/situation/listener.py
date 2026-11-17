@@ -51,6 +51,9 @@ from brief import (
     gather_uptime_kuma,
     gather_openobserve_errors,
     gather_litellm_spend,
+    paperless_ingest,
+    paperless_list_tags,
+    paperless_download_from_telegram,
     HTTP_TIMEOUT,
 )
 
@@ -59,6 +62,7 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 POLL_TIMEOUT = 30  # seconds per getUpdates long-poll
 POLL_INTERVAL = 1  # brief pause between polls (avoids tight loop on error)
+LISTENER_START_TIME = time.time()
 
 # Formatting helpers
 SEPARATOR = "─────────────────"
@@ -86,6 +90,115 @@ def section_header(emoji: str, title: str) -> str:
     return f"{emoji} *{title.upper()}*"
 
 
+# ---------------------------------------------------------------------------
+# Paperless inbox: tag set and caption grammar
+# ---------------------------------------------------------------------------
+
+# Load the allowed tag set from paperless-tags.list (baked into the image).
+# Falls back to a default set if the file is missing.
+_DEFAULT_TAGS = ["bills", "cards", "invites", "others"]
+try:
+    with open("/app/paperless-tags.list", "r") as _f:
+        ALLOWED_TAGS = [
+            line.strip().lower()
+            for line in _f
+            if line.strip() and not line.strip().startswith("#")
+        ]
+    if not ALLOWED_TAGS:
+        ALLOWED_TAGS = _DEFAULT_TAGS
+except FileNotFoundError:
+    ALLOWED_TAGS = _DEFAULT_TAGS
+    print("[warn] paperless-tags.list not found — using default tag set", file=sys.stderr)
+
+# Staleness threshold: messages older than this (seconds) are considered
+# "sent while offline" and get the ingested_late tag.
+STALE_THRESHOLD = 300  # 5 minutes
+
+# Maximum file size for ingestion (bytes).
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+# Allowed MIME types for ingestion.
+ALLOWED_MIME_TYPES = {
+    "image/jpeg",
+    "image/heic",
+    "image/heif",
+    "application/pdf",
+}
+ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".heic", ".heif", ".pdf"}
+
+
+def format_age(seconds: float) -> str:
+    """Format a duration in seconds as a human-readable string."""
+    if seconds < 60:
+        return f"{int(seconds)}s"
+    if seconds < 3600:
+        return f"{int(seconds // 60)}m"
+    if seconds < 86400:
+        hours = int(seconds // 3600)
+        mins = int((seconds % 3600) // 60)
+        if mins:
+            return f"{hours}h {mins}m"
+        return f"{hours}h"
+    days = int(seconds // 86400)
+    hours = int((seconds % 86400) // 3600)
+    if hours:
+        return f"{days}d {hours}h"
+    return f"{days}d"
+
+
+def parse_file_caption(caption: str) -> dict | None:
+    """Parse a '#file ...' caption into metadata for Paperless ingestion.
+
+    Returns None if the caption doesn't start with '#file'.
+    Returns a dict with keys: title, tag, correspondence, subject.
+    Returns {"error": "..."} if the tag is invalid.
+
+    Grammar:
+      #file                          → tag=others, no title
+      #file tag=bills                → tag=bills
+      #file tag=cards subject=Oct   → tag=cards, subject="Oct"
+      #file tag=bills corr=HSBC     → tag=bills, correspondence="HSBC"
+      #file electricity bill Oct    → title="electricity bill Oct", tag=others
+      #file tag=bills electricity  → title="electricity", tag=bills
+    """
+    caption = caption.strip()
+    if not caption.startswith("#file"):
+        return None
+
+    # Strip the '#file' prefix
+    rest = caption[5:].strip()
+    if not rest:
+        return {"title": "", "tag": "others", "correspondence": "", "subject": ""}
+
+    tag = "others"
+    correspondence = ""
+    subject = ""
+    title_parts: list[str] = []
+
+    for token in rest.split():
+        if token.startswith("tag="):
+            value = token[4:].lower()
+            if value not in ALLOWED_TAGS:
+                return {
+                    "error": f"Unknown tag '{value}'. Valid tags: {', '.join(ALLOWED_TAGS)}"
+                }
+            tag = value
+        elif token.startswith("corr=") or token.startswith("correspondence="):
+            prefix = "corr=" if token.startswith("corr=") else "correspondence="
+            correspondence = token[len(prefix):]
+        elif token.startswith("subject="):
+            subject = token[8:]
+        else:
+            title_parts.append(token)
+
+    return {
+        "title": " ".join(title_parts),
+        "tag": tag,
+        "correspondence": correspondence,
+        "subject": subject,
+    }
+
+
 def tg_api(method: str, payload: dict | None = None) -> dict | None:
     """Call the Telegram Bot API. Returns the parsed JSON or None."""
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/{method}"
@@ -105,16 +218,21 @@ def tg_api(method: str, payload: dict | None = None) -> dict | None:
         return None
 
 
-def send_message(chat_id: str, text: str) -> bool:
-    """Send a text message to a chat. Returns True on success."""
+def send_message(chat_id: str, text: str, parse_mode: str | None = "Markdown") -> bool:
+    """Send a text message to a chat. Returns True on success.
+
+    Set parse_mode=None for plain text (no Markdown formatting).
+    """
     if len(text) > 4000:
         text = text[:4000] + "\n\n…(truncated)"
-    result = tg_api("sendMessage", {
+    payload: dict = {
         "chat_id": chat_id,
         "text": text,
-        "parse_mode": "Markdown",
         "disable_web_page_preview": True,
-    })
+    }
+    if parse_mode:
+        payload["parse_mode"] = parse_mode
+    result = tg_api("sendMessage", payload)
     return bool(result and result.get("ok"))
 
 
@@ -394,6 +512,14 @@ def handle_help(chat_id: str) -> None:
         "*Metrics*",
         "   /spend — LLM spend",
         "",
+        "*Inbox*",
+        "   Send a photo/PDF with caption '#file' to ingest into Paperless",
+        f"   e.g. #file tag=bills, #file tag=cards subject=October",
+        f"   Valid tags: {', '.join(ALLOWED_TAGS)} (default: others)",
+        "",
+        "*Liveness*",
+        "   /ping — Check if the bot is alive",
+        "",
         "*Help*",
         "   /help — Show this message",
         "",
@@ -405,15 +531,176 @@ def handle_help(chat_id: str) -> None:
     print("[PASS] /help: delivered", flush=True)
 
 
+def handle_photo(update: dict) -> None:
+    """Handle a photo or document update: ingest into Paperless if captioned #file."""
+    msg = update.get("message", {})
+    chat_id = str(msg.get("chat", {}).get("id", ""))
+
+    # Extract the file from the update
+    file_id = ""
+    file_size = 0
+    file_name = ""
+    mime_type = ""
+
+    if "photo" in msg:
+        # Take the largest photo variant
+        photos = msg["photo"]
+        if photos:
+            largest = photos[-1]
+            file_id = largest.get("file_id", "")
+            file_size = largest.get("file_size", 0)
+            file_name = "photo.jpg"
+            mime_type = "image/jpeg"
+    elif "document" in msg:
+        doc = msg["document"]
+        file_id = doc.get("file_id", "")
+        file_size = doc.get("file_size", 0)
+        file_name = doc.get("file_name", "document")
+        mime_type = doc.get("mime_type", "")
+
+    if not file_id:
+        send_message(chat_id, "⚠️ Could not extract a file from the message.")
+        return
+
+    # Size check
+    if file_size > MAX_FILE_SIZE:
+        size_mb = file_size / (1024 * 1024)
+        send_message(
+            chat_id,
+            f"⚠️ File is {size_mb:.1f} MB — over the 10 MB limit. NOT ingested.",
+        )
+        return
+
+    # Type check
+    if mime_type and mime_type not in ALLOWED_MIME_TYPES:
+        # Also check by extension as a fallback
+        ext = "." + file_name.rsplit(".", 1)[-1].lower() if "." in file_name else ""
+        if ext not in ALLOWED_EXTENSIONS:
+            send_message(
+                chat_id,
+                f"⚠️ Unsupported file type '{mime_type}'. Send a photo or PDF. NOT ingested.",
+            )
+            return
+
+    # Staleness check
+    msg_date = msg.get("date", 0)
+    age = time.time() - msg_date if msg_date else 0
+    is_stale = age > STALE_THRESHOLD
+
+    # Parse caption
+    caption = msg.get("caption", "") or msg.get("text", "") or ""
+    parsed = parse_file_caption(caption)
+
+    if parsed is None:
+        # No '#file' prefix — hint the user
+        send_message(
+            chat_id,
+            "ℹ️ Send with a '#file' caption to ingest into Paperless.\n"
+            "   e.g. #file tag=bills\n"
+            f"   Valid tags: {', '.join(ALLOWED_TAGS)}",
+            parse_mode=None,
+        )
+        return
+
+    if "error" in parsed:
+        send_message(chat_id, f"⚠️ {parsed['error']}", parse_mode=None)
+        return
+
+    # Download from Telegram
+    print(f"[INFO] Downloading file from Telegram (id={file_id[:8]}...)", flush=True)
+    downloaded = paperless_download_from_telegram(file_id)
+    if downloaded is None:
+        send_message(
+            chat_id,
+            "⚠️ Failed to download the file from Telegram. NOT ingested. Re-send if needed.",
+        )
+        return
+
+    file_bytes, filename = downloaded
+
+    # Build the tag list
+    user_tag = parsed.get("tag", "others")
+    tag_list = [user_tag]
+    if is_stale:
+        tag_list.append("ingested_late")
+
+    # Ingest into Paperless
+    print(f"[INFO] Ingesting into Paperless (tags={tag_list})", flush=True)
+    result = paperless_ingest(
+        file_bytes=file_bytes,
+        filename=filename,
+        title=parsed.get("title", ""),
+        tags=tag_list,
+        correspondence=parsed.get("correspondence", ""),
+        subject=parsed.get("subject", ""),
+    )
+
+    if result is None:
+        send_message(
+            chat_id,
+            "⚠️ Paperless is unreachable. The file was NOT ingested.\n"
+            "   Re-send once Paperless is back up.",
+        )
+        return
+
+    if result.get("duplicate"):
+        send_message(
+            chat_id,
+            "ℹ️ Paperless already has this file (duplicate). NOT re-ingested.",
+        )
+        return
+
+    doc_id = result.get("id", "?")
+    doc_title = result.get("title", filename) or filename
+
+    if is_stale:
+        send_message(
+            chat_id,
+            f"⏰ Ingested a file from {format_age(age)} ago (sent while offline).\n"
+            f"   Document: {doc_id}\n"
+            f"   Title: {doc_title}\n"
+            f"   Tags: {', '.join(tag_list)}",
+            parse_mode=None,
+        )
+    else:
+        send_message(
+            chat_id,
+            f"✅ Ingested as document: {doc_id}\n"
+            f"   Title: {doc_title}\n"
+            f"   Tags: {', '.join(tag_list)}",
+            parse_mode=None,
+        )
+
+    print(f"[PASS] Paperless ingest: doc #{doc_id}", flush=True)
+
+
+def handle_ping(chat_id: str) -> None:
+    """Reply with liveness info."""
+    uptime = time.time() - LISTENER_START_TIME
+    lines = [f"🏓 pong — up for {format_age(uptime)}"]
+
+    # Check Paperless reachability
+    tags = paperless_list_tags()
+    if tags is not None:
+        lines.append(f"   Paperless: ✅ reachable ({len(tags)} tags)")
+    else:
+        lines.append("   Paperless: ❌ unreachable")
+
+    send_message(chat_id, "\n".join(lines))
+    print("[PASS] /ping: delivered", flush=True)
+
+
 def main() -> int:
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         print("[FAIL] TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set", file=sys.stderr)
         return 1
 
     print(f"[INFO] Situation listener started (chat_id={TELEGRAM_CHAT_ID[:4]}...)", flush=True)
+    print(f"[INFO] Allowed tags: {', '.join(ALLOWED_TAGS)}", flush=True)
     print(f"[INFO] Waiting for commands…", flush=True)
 
     offset = None
+    first_batch = True
 
     while True:
         payload = {"timeout": POLL_TIMEOUT}
@@ -433,17 +720,60 @@ def main() -> int:
 
         updates = result.get("result", [])
 
+        # Catch-up summary: if this is the first batch and it has multiple
+        # updates, the server was likely offline. Send a summary before
+        # processing so the user knows what's coming.
+        if first_batch and len(updates) > 1:
+            first_batch = False
+            photos = sum(
+                1
+                for u in updates
+                if "photo" in u.get("message", {}) or "document" in u.get("message", {})
+            )
+            commands = len(updates) - photos
+            dates = [
+                u["message"]["date"]
+                for u in updates
+                if "message" in u and "date" in u.get("message", {})
+            ]
+            if dates:
+                oldest_age = time.time() - min(dates)
+                summary = [f"⏰ I was offline for {format_age(oldest_age)}."]
+                if photos:
+                    summary.append(f"   {photos} photo(s) queued — will ingest.")
+                if commands:
+                    summary.append(f"   {commands} command(s) queued — will run.")
+                summary.append("   Processing now…")
+                send_message(TELEGRAM_CHAT_ID, "\n".join(summary))
+                print(f"[INFO] Catch-up summary sent ({len(updates)} queued updates)", flush=True)
+        elif updates:
+            first_batch = False
+
         for update in updates:
             # Track offset to avoid reprocessing
             offset = update["update_id"] + 1
 
             msg = update.get("message", {})
             chat_id = str(msg.get("chat", {}).get("id", ""))
-            text = msg.get("text", "").strip()
 
-            # Only respond to commands from the authorized chat
+            # Only respond to messages from the authorized chat
             if chat_id != TELEGRAM_CHAT_ID:
                 continue
+
+            # --- Photo / document handling (Paperless inbox) ---
+            if "photo" in msg or "document" in msg:
+                print("[INFO] Photo/document received — routing to Paperless inbox", flush=True)
+                try:
+                    handle_photo(update)
+                except Exception as e:
+                    print(f"[FAIL] handle_photo error: {e}", file=sys.stderr, flush=True)
+                    try:
+                        send_message(chat_id, f"⚠️ Ingest failed: {e}")
+                    except Exception:
+                        pass
+                continue
+
+            text = msg.get("text", "").strip()
 
             # Route to the appropriate handler
             if text == "/status":
@@ -464,6 +794,9 @@ def main() -> int:
             elif text == "/uptime":
                 print("[INFO] /uptime received", flush=True)
                 handle_uptime(chat_id)
+            elif text == "/ping":
+                print("[INFO] /ping received", flush=True)
+                handle_ping(chat_id)
             elif text == "/help":
                 print("[INFO] /help received", flush=True)
                 handle_help(chat_id)

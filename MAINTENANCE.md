@@ -1119,6 +1119,72 @@ a certificate does not cover `GLASSWING_HOST_IP` or expires within 21 days, and
 
 ---
 
+## Telegram inbox (#file)
+
+Send a photo or PDF to the Glasswing bot with a `#file` caption to ingest
+it into Paperless-ngx. The situation listener handles this — no separate
+service needed.
+
+### Grammar
+
+```
+#file                          → ingest, tag=others, no title
+#file tag=bills                → ingest, tag=bills
+#file tag=cards subject=Oct   → ingest, tag=cards, subject="Oct"
+#file tag=bills corr=HSBC     → ingest, tag=bills, correspondence="HSBC"
+#file electricity bill Oct    → ingest, tag=others, title="electricity bill Oct"
+#file tag=bills electricity  → ingest, tag=bills, title="electricity"
+```
+
+- `tag=` must be one of the valid tags (see below). Invalid tags are rejected.
+- `corr=` or `correspondence=` sets the Paperless correspondence field.
+- `subject=` sets the Paperless subject field.
+- Remaining text becomes the document title.
+- Omit `tag=` to default to `others`.
+
+### Valid tags
+
+Defined in `stacks/situation/paperless-tags.list` (one per line):
+
+```
+bills
+cards
+invites
+others
+```
+
+To change the set: edit the file, rebuild the situation image
+(`docker build -t glasswing/situation:latest stacks/situation/`), and restart
+the listener (`docker compose -f stacks/situation/compose.yaml restart situation-listener`).
+Tags are auto-created in Paperless on first use — no manual setup needed.
+
+### Offline behavior
+
+- Messages sent while the server is off are queued by Telegram (up to 24 hours).
+- When the server returns, the listener sends a catch-up summary before
+  processing the backlog.
+- Photos older than 5 minutes at processing time are tagged `ingested_late`
+  in addition to the user-chosen tag (e.g. `bills` + `ingested_late`).
+- Paperless' built-in hash dedup prevents double-ingestion of identical files.
+- If the server is off for more than 24 hours, Telegram drops the oldest
+  updates — they are lost, not delayed.
+
+### Liveness
+
+Send `/ping` to check if the bot is alive and whether Paperless is reachable.
+
+### Limits
+
+- Max file size: 10 MB (Telegram Bot API cap is 20 MB; we enforce 10 MB).
+- Allowed types: photos (JPG/HEIC), PDFs.
+- One tag per document (v1). Multiple tags can be added later.
+
+### Setup (one-time)
+
+1. Create an API token in Paperless: **Settings → API tokens → Create token**.
+2. Add the token to Infisical under `/situation` as `PAPERLESS_API_TOKEN`.
+3. Rebuild and restart the situation listener.
+
 ## Quick reference
 
 | Task | Command |

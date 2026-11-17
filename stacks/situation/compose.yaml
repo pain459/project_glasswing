@@ -39,6 +39,10 @@ services:
       LITELLM_URL: ${LITELLM_URL:-http://glasswing-litellm:4000}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-}
 
+      # Paperless (for #file inbox)
+      PAPERLESS_URL: ${PAPERLESS_URL:-http://glasswing-paperless:8000}
+      PAPERLESS_API_TOKEN: ${PAPERLESS_API_TOKEN:-}
+
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-situation
 
@@ -94,6 +98,10 @@ services:
       OPENOBSERVE_PASSWORD: ${OPENOBSERVE_PASSWORD:-}
       LITELLM_URL: ${LITELLM_URL:-http://glasswing-litellm:4000}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-}
+
+      # Paperless (for #file inbox)
+      PAPERLESS_URL: ${PAPERLESS_URL:-http://glasswing-paperless:8000}
+      PAPERLESS_API_TOKEN: ${PAPERLESS_API_TOKEN:-}
 
       # OTEL integration
       OTEL_SERVICE_NAME: glasswing-situation-listener

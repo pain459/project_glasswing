@@ -53,6 +53,8 @@ OPENOBSERVE_EMAIL = os.environ.get("OPENOBSERVE_EMAIL", "")
 OPENOBSERVE_PASSWORD = os.environ.get("OPENOBSERVE_PASSWORD", "")
 LITELLM_URL = os.environ.get("LITELLM_URL", "http://glasswing-litellm:4000").rstrip("/")
 LITELLM_MASTER_KEY = os.environ.get("LITELLM_MASTER_KEY", "")
+PAPERLESS_URL = os.environ.get("PAPERLESS_URL", "http://glasswing-paperless:8000").rstrip("/")
+PAPERLESS_API_TOKEN = os.environ.get("PAPERLESS_API_TOKEN", "")
 
 HTTP_TIMEOUT = 15  # seconds per HTTP call
 
@@ -473,6 +475,210 @@ def deliver(brief: str) -> bool:
     else:
         print(f"[FAIL] Telegram delivery failed: {data}", file=sys.stderr)
         return False
+
+
+# ---------------------------------------------------------------------------
+# Paperless: ingest documents via the Paperless-ngx REST API
+# ---------------------------------------------------------------------------
+
+
+def paperless_list_tags() -> list | None:
+    """List all tags in Paperless. Returns a list of tag dicts or None on failure."""
+    if not PAPERLESS_URL or not PAPERLESS_API_TOKEN:
+        return None
+    url = f"{PAPERLESS_URL}/api/tags/?page_size=100"
+    headers = {"Authorization": f"Token {PAPERLESS_API_TOKEN}"}
+    data = http_get(url, headers=headers)
+    if data is None:
+        return None
+    # Paperless returns {"count": N, "results": [...]}
+    if isinstance(data, dict) and "results" in data:
+        return data["results"]
+    if isinstance(data, list):
+        return data
+    return None
+
+
+def paperless_ensure_tag(name: str) -> dict | None:
+    """Ensure a tag exists in Paperless. Returns the tag dict or None on failure.
+
+    If the tag doesn't exist, creates it via POST /api/tags/.
+    """
+    tags = paperless_list_tags()
+    if tags is None:
+        return None
+
+    # Check if the tag already exists
+    for tag in tags:
+        if tag.get("name", "").lower() == name.lower():
+            return tag
+
+    # Tag doesn't exist — create it
+    url = f"{PAPERLESS_URL}/api/tags/"
+    headers = {
+        "Authorization": f"Token {PAPERLESS_API_TOKEN}",
+        "Content-Type": "application/json",
+    }
+    data = http_post(url, {"name": name}, headers=headers)
+    if data is None:
+        return None
+    return data
+
+
+def paperless_download_from_telegram(file_id: str) -> tuple[bytes, str] | None:
+    """Download a file from Telegram using the bot token.
+
+    Returns (file_bytes, filename) or None on failure.
+    """
+    if not TELEGRAM_BOT_TOKEN:
+        return None
+
+    # Step 1: getFile to get the file_path
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getFile"
+    data = http_post(url, {"file_id": file_id})
+    if data is None or not data.get("ok"):
+        return None
+
+    file_path = data.get("result", {}).get("file_path", "")
+    if not file_path:
+        return None
+
+    # Derive a filename from the file_path basename
+    filename = file_path.rsplit("/", 1)[-1] if "/" in file_path else "document"
+
+    # Step 2: Download the actual file
+    download_url = f"https://api.telegram.org/file/bot{TELEGRAM_BOT_TOKEN}/{file_path}"
+    try:
+        req = urllib.request.Request(download_url)
+        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT + 30) as resp:
+            file_bytes = resp.read()
+    except (urllib.error.URLError, urllib.error.HTTPError, OSError) as e:
+        print(f"[warn] Telegram file download failed: {e}", file=sys.stderr)
+        return None
+
+    return (file_bytes, filename)
+
+
+def _build_multipart(fields: list[tuple[str, bytes | str, str | None]]) -> tuple[bytes, str]:
+    """Build a multipart/form-data body.
+
+    fields: list of (name, value, filename) tuples.
+      - value: bytes (file) or str (form field)
+      - filename: str or None (None for non-file fields)
+
+    Returns (body_bytes, content_type_header).
+    """
+    boundary = "----GlasswingBoundary" + str(os.getpid())
+    lines: list[bytes] = []
+
+    for name, value, filename in fields:
+        lines.append(f"--{boundary}".encode())
+        if filename is not None:
+            lines.append(
+                f'Content-Disposition: form-data; name="{name}"; filename="{filename}"'.encode()
+            )
+            lines.append(b"Content-Type: application/octet-stream")
+        else:
+            lines.append(f'Content-Disposition: form-data; name="{name}"'.encode())
+        lines.append(b"")  # blank line
+        if isinstance(value, str):
+            lines.append(value.encode("utf-8"))
+        else:
+            lines.append(value)
+
+    lines.append(f"--{boundary}--".encode())
+    lines.append(b"")
+
+    body = b"\r\n".join(lines)
+    content_type = f"multipart/form-data; boundary={boundary}"
+    return body, content_type
+
+
+def paperless_ingest(
+    file_bytes: bytes,
+    filename: str,
+    title: str = "",
+    tags: list[str] | None = None,
+    correspondence: str = "",
+    subject: str = "",
+) -> dict | None:
+    """Ingest a document into Paperless via the REST API.
+
+    Returns the created document dict, {"duplicate": True} on 409,
+    or None on failure.
+    """
+    if not PAPERLESS_URL or not PAPERLESS_API_TOKEN:
+        print("[warn] Paperless not configured (URL or token missing)", file=sys.stderr)
+        return None
+
+    # Resolve tag names to IDs
+    tag_ids: list[int] = []
+    if tags:
+        for tag_name in tags:
+            tag = paperless_ensure_tag(tag_name)
+            if tag is None:
+                print(f"[warn] Could not resolve tag '{tag_name}'", file=sys.stderr)
+                return None
+            tag_ids.append(tag["id"])
+
+    # Build multipart form data
+    # Paperless expects tags as repeated form fields (one per tag ID),
+    # not as a JSON array.
+    fields: list[tuple[str, bytes | str, str | None]] = [
+        ("document", file_bytes, filename),
+    ]
+    if title:
+        fields.append(("title", title, None))
+    for tag_id in tag_ids:
+        fields.append(("tags", str(tag_id), None))
+    if correspondence:
+        fields.append(("correspondence", correspondence, None))
+    if subject:
+        fields.append(("subject", subject, None))
+
+    body, content_type = _build_multipart(fields)
+
+    url = f"{PAPERLESS_URL}/api/documents/post_document/"
+    headers = {
+        "Authorization": f"Token {PAPERLESS_API_TOKEN}",
+        "Content-Type": content_type,
+    }
+
+    try:
+        req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT + 30) as resp:
+            resp_body = resp.read().decode("utf-8", errors="replace")
+            # Paperless 3.x returns a JSON-encoded UUID string: "abc123-..."
+            # Older versions may return a dict or plain text. Handle all.
+            try:
+                parsed = json.loads(resp_body)
+                if isinstance(parsed, dict):
+                    return parsed
+                if isinstance(parsed, str):
+                    # UUID string — this is the document ID
+                    return {"id": parsed, "title": filename}
+            except (json.JSONDecodeError, ValueError):
+                pass
+            # Plain text fallback: "Success. New document id 42 created"
+            import re
+            match = re.search(r"document id (\d+)", resp_body)
+            if match:
+                return {"id": match.group(1), "title": filename}
+            # Last resort: return the raw body as the ID
+            return {"id": resp_body.strip().strip('"'), "title": filename}
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")
+        if e.code == 409:
+            print("[INFO] Paperless: duplicate document (409)", file=sys.stderr)
+            return {"duplicate": True}
+        if "duplicate" in error_body.lower() or "already" in error_body.lower():
+            print("[INFO] Paperless: duplicate document", file=sys.stderr)
+            return {"duplicate": True}
+        print(f"[warn] Paperless ingest failed (HTTP {e.code}): {error_body}", file=sys.stderr)
+        return None
+    except (urllib.error.URLError, OSError) as e:
+        print(f"[warn] Paperless ingest failed: {e}", file=sys.stderr)
+        return None
 
 
 # ---------------------------------------------------------------------------
