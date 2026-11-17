@@ -7,7 +7,9 @@ Day-to-day operations for keeping the platform healthy, current, and backed up.
 **Homepage:** `http://192.168.68.62:3006`  
 **Infisical:** `https://192.168.68.62:8095`  
 **Portainer:** `https://192.168.68.62:9443`  
-**Dagu:** `http://192.168.68.62:3014`
+**Dagu:** `http://192.168.68.62:3014`  
+**Forgejo:** `http://192.168.68.62:3011`  
+**Registry:** `http://192.168.68.62:5000`
 
 ---
 
@@ -17,6 +19,7 @@ Day-to-day operations for keeping the platform healthy, current, and backed up.
 - [Weekly tasks](#weekly-tasks)
 - [Monthly tasks](#monthly-tasks)
 - [Image updates](#image-updates)
+- [Release pipeline (Forgejo)](#release-pipeline-forgejo)
 - [Secret management](#secret-management)
 - [Backup operations](#backup-operations)
 - [Docker network capacity](#docker-network-capacity)
@@ -296,6 +299,421 @@ git add stacks/flowise/compose.yaml
 git commit -m "revert: flowise to 3.1.3 (3.2.0 unstable)"
 make up STACK=flowise
 ```
+
+---
+
+## Release pipeline (Forgejo)
+
+The Forgejo Actions pipeline is the primary deployment mechanism for stacks that participate in the release flow. It lives in the `glasswing-apps` repository (Forgejo org `glasswing`) and is driven by the `glasswing-release` workflow.
+
+### Architecture
+
+```
+Forgejo (control plane)
+  └─ glasswing-apps repo
+       ├─ .forgejo/workflows/glasswing-release.yml   ← workflow definition
+       ├─ scripts/ci/{build,validate,promote,rollback,status}.sh
+       └─ stacks/<name>/{build.yaml,compose.yaml,secrets.list,pre-up.sh}
+
+Forgejo Runner (execution)
+  └─ glasswing-forgejo-runner (host mode, Docker socket)
+       └─ executes jobs in Alpine containers with docker-cli
+
+Local Registry (192.168.68.62:5000)
+  └─ glasswing/<stack>:{future,current,previous,rolled-back-*}
+```
+
+### Release (build → validate → promote)
+
+**From the Forgejo UI:**
+
+1. Go to **Repositories → glasswing-apps → Actions → glasswing-release → Run workflow**
+2. Set inputs:
+   - `action`: `release`
+   - `stack`: e.g. `vikunja`
+   - `version`: e.g. `2.7.1` (the upstream version to pull)
+3. Click **Run workflow**
+4. Monitor the run: the workflow shows `connectivity → release` jobs
+5. Each step logs `[PASS]` or `[FAIL]` — a `[FAIL]` stops the pipeline
+
+**What each step does:**
+
+| Step | Action |
+| --- | --- |
+| `connectivity` | Verifies the runner is online, Docker is available, and the registry is reachable |
+| `build` | Pulls `vikunja/vikunja:2.7.1` from Docker Hub, tags as `glasswing/vikunja:future`, pushes to the local registry |
+| `validate` | Runs `docker compose config` with secrets injected, boots a scratch container, probes `/health` |
+| `promote` | Retags `previous ← current`, `current ← future`, writes `manifest.yaml`, redeploys the stack, health-checks the live container |
+
+**Via the Forgejo API:**
+
+```bash
+# Trigger a release
+curl -X POST "http://192.168.68.62:3011/api/v1/repos/glasswing/glasswing-apps/actions/workflows/glasswing-release.yml/dispatches" \
+  -H "Authorization: token <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"ref":"main","inputs":{"action":"release","stack":"vikunja","version":"2.7.1"}}'
+
+# Check the latest run
+curl -s "http://192.168.68.62:3011/api/v1/repos/glasswing/glasswing-apps/actions/runs?limit=1" \
+  -H "Authorization: token <TOKEN>" | jq '.workflow_runs[0] | {id, status, conclusion}'
+
+# Download job logs (ZIP)
+curl -s -o /tmp/run-logs.zip "http://192.168.68.62:3011/api/v1/repos/glasswing/glasswing-apps/actions/runs/<RUN_ID>/logs" \
+  -H "Authorization: token <TOKEN>"
+unzip /tmp/run-logs.zip
+```
+
+### Rollback
+
+Rollback is instant — no rebuild, no pull. It promotes `previous` to `current` and redeploys.
+
+**From the Forgejo UI:**
+
+1. **Repositories → glasswing-apps → Actions → glasswing-release → Run workflow**
+2. Set `action`: `rollback`, `stack`: `vikunja`
+3. No version input needed
+4. The old current is preserved as `glasswing/vikunja:rolled-back-<timestamp>`
+
+**Via the API:**
+
+```bash
+curl -X POST "http://192.168.68.62:3011/api/v1/repos/glasswing/glasswing-apps/actions/workflows/glasswing-release.yml/dispatches" \
+  -H "Authorization: token <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"ref":"main","inputs":{"action":"rollback","stack":"vikunja"}}'
+```
+
+### Status
+
+Show the current/previous/future state, running container, registry tags, and manifest:
+
+```bash
+curl -X POST "http://192.168.68.62:3011/api/v1/repos/glasswing/glasswing-apps/actions/workflows/glasswing-release.yml/dispatches" \
+  -H "Authorization: token <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"ref":"main","inputs":{"action":"status","stack":"vikunja"}}'
+```
+
+### Verifying a release
+
+After a release completes:
+
+```bash
+# 1. Container is running the new image
+docker ps --filter "name=glasswing-vikunja" --format '{{.Image}}'
+# Expected: 192.168.68.62:5000/glasswing/vikunja:current
+
+# 2. Health endpoint responds
+curl -sf http://192.168.68.62:3031/health && echo "healthy"
+
+# 3. Registry tags are consistent
+curl -sf http://192.168.68.62:5000/v2/glasswing/vikunja/tags/list | jq .
+# Expected: ["2.7.1", "current", "previous", "future", ...]
+
+# 4. Manifest is up to date (in the glasswing-apps repo)
+# Check via Forgejo UI or:
+git clone --depth 1 http://192.168.68.62:3011/glasswing/glasswing-apps.git /tmp/ga
+cat /tmp/ga/stacks/vikunja/manifest.yaml
+```
+
+### Verifying a rollback
+
+```bash
+# 1. Container is running the previous version
+docker ps --filter "name=glasswing-vikunja" --format '{{.Image}}'
+
+# 2. Health endpoint responds
+curl -sf http://192.168.68.62:3031/health && echo "healthy"
+
+# 3. The rolled-back tag exists in the registry
+curl -sf http://192.168.68.62:5000/v2/glasswing/vikunja/tags/list | jq .
+# Look for a rolled-back-<timestamp> tag
+```
+
+### Runner maintenance
+
+#### Check runner status
+
+```bash
+# Via Forgejo API
+curl -s "http://192.168.68.62:3011/api/v1/orgs/glasswing/actions/runners" \
+  -H "Authorization: token <TOKEN>" | jq '.data[] | {id, name, status, version}'
+
+# Via Docker
+docker ps --filter "name=glasswing-forgejo-runner" --format '{{.Names}}\t{{.Status}}'
+docker logs glasswing-forgejo-runner --tail 20
+```
+
+#### Restart the runner
+
+```bash
+make up STACK=forgejo-runner
+```
+
+#### Rotate the runner token
+
+1. In Forgejo: **Orgs → glasswing → Actions → Runners** → delete the old runner
+2. Register a new runner: **Orgs → glasswing → Actions → Runners → New runner**
+3. Copy the UUID and token
+4. Update `stacks/forgejo-runner/.runner-data/runner-config.yml`:
+   ```yaml
+   server:
+     connections:
+       glasswing:
+         url: http://192.168.68.62:3011
+         uuid: <NEW_UUID>
+         token: <NEW_TOKEN>
+         labels:
+           - glasswing:host
+   ```
+5. Restart: `make up STACK=forgejo-runner`
+
+#### Update the runner binary
+
+The runner downloads its binary on first boot. To update:
+
+```bash
+# Stop the runner
+docker stop glasswing-forgejo-runner
+
+# Remove the old binary
+rm stacks/forgejo-runner/.runner-data/forgejo-runner
+
+# Start again (downloads the latest version from compose.yaml)
+docker start glasswing-forgejo-runner
+```
+
+Or edit the version in `stacks/forgejo-runner/compose.yaml` and `make up STACK=forgejo-runner`.
+
+### Secret rotation (Forgejo repo secrets)
+
+The CI pipeline uses these Forgejo repo secrets (set in **Repositories → glasswing-apps → Settings → Actions → Secrets**):
+
+| Secret | Purpose |
+| --- | --- |
+| `CI_TOKEN` | Forgejo access token for the runner connectivity check and git clone |
+| `INFISICAL_URL` | Infisical API endpoint |
+| `INFISICAL_PROJECT_ID` | Infisical project ID |
+| `INFISICAL_ENV` | Infisical environment (e.g. `prod`) |
+| `INFISICAL_CLIENT_ID` | CI-scoped Infisical client ID |
+| `INFISICAL_CLIENT_SECRET` | CI-scoped Infisical client secret |
+
+To rotate:
+
+```bash
+# Update a secret via the Forgejo API
+curl -X PUT "http://192.168.68.62:3011/api/v1/repos/glasswing/glasswing-apps/actions/secrets/<SECRET_NAME>" \
+  -H "Authorization: token <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"data":"<new-value>"}'
+```
+
+Note: the secret name `FORGEJO_TOKEN` is rejected by Forgejo as "invalid secret name" — use `CI_TOKEN` instead.
+
+### Troubleshooting
+
+#### Workflow fails at connectivity
+
+```bash
+# Is the runner online?
+curl -s "http://192.168.68.62:3011/api/v1/orgs/glasswing/actions/runners" \
+  -H "Authorization: token <TOKEN>" | jq '.data[] | {name, status}'
+# Expected: status "idle" or "busy"
+
+# Is the runner container running?
+docker ps --filter "name=glasswing-forgejo-runner"
+
+# Check runner logs
+docker logs glasswing-forgejo-runner --tail 50
+```
+
+#### Build fails (pull error)
+
+- Verify the upstream image exists: `docker pull vikunja/vikunja:<version>`
+- Check the registry is reachable: `curl -sf http://192.168.68.62:5000/v2/`
+- Check `build.yaml` in `glasswing-apps` has the correct image name and registry name
+
+#### Validate fails (health probe)
+
+- The scratch container may not have the right environment variables
+- Some services don't have a `/health` endpoint — the probe warns but continues
+- Check the scratch container logs: `docker logs glasswing-vikunja-validate` (if it still exists)
+
+#### Promote fails (deploy error)
+
+- Check the stack's compose file in `glasswing-apps` is valid
+- Verify Infisical secrets are set: `make secrets-check`
+- Check the Docker socket is mounted: `docker exec glasswing-forgejo-runner ls -la /var/run/docker.sock`
+
+#### Rollback fails (no previous image)
+
+- This means there was no prior release — nothing to roll back to
+- Check the registry: `curl -sf http://192.168.68.62:5000/v2/glasswing/<stack>/tags/list | jq .`
+- If `previous` is missing, do a fresh release instead
+
+#### Runner job environment issues
+
+Common pitfalls (all encountered during the pilot):
+
+| Issue | Fix |
+| --- | --- |
+| `apk: command not found` | Each job is a fresh Alpine container — install tools per job: `apk add --no-cache docker-cli curl jq bash git` |
+| `actions/checkout@v4` fails | Node.js is not available — use manual `git clone` with `CI_TOKEN` |
+| `docker compose: unknown command` | Install the compose plugin to `/opt/runner/.docker/cli-plugins/` (runner HOME is `/opt/runner`, not `~`) |
+| `--wait` fails | Some images have `healthcheck: test: [NONE]` — use `docker compose up -d` without `--wait` |
+| `FORGEJO_TOKEN` rejected as secret name | Use `CI_TOKEN` instead |
+| Bind mount permission denied | Use named volumes with `--user 0:0` in the scratch container |
+
+### Expanding to new stacks
+
+To add a new stack to the release pipeline:
+
+1. **Create the stack directory** in `glasswing-apps`:
+   ```
+   stacks/<name>/
+   ├── build.yaml       ← upstream image, registry name, deploy priority
+   ├── compose.yaml     ← copied from project_glasswing
+   ├── secrets.list     ← copied from project_glasswing
+   └── pre-up.sh        ← copied from project_glasswing (if any)
+   ```
+
+2. **`build.yaml` format:**
+   ```yaml
+   name: <stack>
+   tier: app
+   build-type: external
+   images:
+     - name: <upstream-image>      # e.g. vikunja/vikunja
+       tag: "<default-version>"
+       registry-name: glasswing/<stack>
+   deploy:
+     priority: 50
+     depends-on:
+       - infisical
+     pre-up: pre-up.sh
+   secrets: secrets.list
+   ```
+
+3. **Push to Forgejo:**
+   ```bash
+   cd /tmp/glasswing-apps   # or wherever you have a clone
+   git add stacks/<name>/
+   git commit -m "add <name> to release pipeline"
+   git push
+   ```
+
+4. **Trigger a release** with the new stack name.
+
+5. **Verify** with the status action and the verification steps above.
+
+### Development and testing
+
+#### Option 1: Local dry-run (no Forgejo)
+
+Run the CI scripts directly on the host:
+
+```bash
+# Clone the apps repo
+git clone http://192.168.68.62:3011/glasswing/glasswing-apps.git /tmp/glasswing-apps
+cd /tmp/glasswing-apps
+
+# Set environment
+export STACK=vikunja
+export VERSION=2.7.1
+export REGISTRY=192.168.68.62:5000
+export GLASSWING_HOST_IP=192.168.68.62
+export GLASSWING_NETWORK=glasswing
+
+# Load Infisical credentials (local mode)
+source .local/infisical/credentials.env   # from project_glasswing
+
+# Run individual steps
+bash scripts/ci/build.sh
+bash scripts/ci/validate.sh
+bash scripts/ci/promote.sh
+```
+
+#### Option 2: Forgejo workflow (full pipeline)
+
+Trigger the workflow from the Forgejo UI or API (see above). This is the recommended path — it exercises the full runner environment.
+
+#### Option 3: Scratch container only
+
+Test a specific image version without touching the live stack:
+
+```bash
+docker run -d --name test-<stack> \
+  --network glasswing \
+  -e GLASSWING_HOST_IP=192.168.68.62 \
+  -p 3031:3456 \
+  192.168.68.62:5000/glasswing/vikunja:future
+
+# Probe
+curl -sf http://192.168.68.62:3031/health
+
+# Clean up
+docker rm -f test-<stack>
+```
+
+### Day-2 operations
+
+#### Registry maintenance
+
+```bash
+# List all images and tags
+curl -sf http://192.168.68.62:5000/v2/_catalog | jq .
+curl -sf http://192.168.68.62:5000/v2/glasswing/vikunja/tags/list | jq .
+
+# Check registry disk usage
+docker system df
+
+# Prune unused images (careful — only removes images not used by any container)
+docker image prune -a -f
+```
+
+#### Forgejo maintenance
+
+```bash
+# Check Forgejo is running
+make ps STACK=forgejo
+
+# Check Actions are enabled
+docker exec -u 1000 glasswing-forgejo forgejo admin config -l server | grep -i actions
+
+# View workflow runs
+curl -s "http://192.168.68.62:3011/api/v1/repos/glasswing/glasswing-apps/actions/runs?limit=10" \
+  -H "Authorization: token <TOKEN>" | jq '.workflow_runs[] | {id, name, status, conclusion, created_at}'
+```
+
+#### Stack lifecycle (add/remove from pipeline)
+
+**Add:** see "Expanding to new stacks" above.
+
+**Remove:**
+1. Delete the stack directory from `glasswing-apps`
+2. Push to Forgejo
+3. Optionally clean up registry tags:
+   ```bash
+   # List tags to identify what to remove
+   curl -sf http://192.168.68.62:5000/v2/glasswing/<stack>/tags/list | jq .
+   # Note: the registry API does not support tag deletion — use the registry UI or
+   # delete the storage directly (risky, only if you know what you're doing)
+   ```
+
+### Quick reference
+
+| Task | How |
+| --- | --- |
+| Release a new version | Forgejo UI → Run workflow → `release` + stack + version |
+| Rollback | Forgejo UI → Run workflow → `rollback` + stack |
+| Check status | Forgejo UI → Run workflow → `status` + stack |
+| View run logs | Forgejo UI → Actions → click run → click job |
+| Restart runner | `make up STACK=forgejo-runner` |
+| Check runner status | Forgejo UI → Orgs → glasswing → Actions → Runners |
+| Rotate runner token | Forgejo UI → delete runner → register new → update config → restart |
+| Rotate CI secrets | Forgejo UI → Repos → glasswing-apps → Settings → Actions → Secrets |
+| Local dry-run | `bash scripts/ci/build.sh` etc. (see Development and testing) |
 
 ---
 
@@ -724,3 +1142,9 @@ a certificate does not cover `GLASSWING_HOST_IP` or expires within 21 days, and
 | Rebuild / restore | [REBUILD.md](REBUILD.md) / [DR_RUNBOOK.md](DR_RUNBOOK.md) |
 | GPU preflight | `make ai-preflight` |
 | Dagu Web UI | `http://192.168.68.62:3014` |
+| Forgejo (CI control plane) | `http://192.168.68.62:3011` |
+| Release a stack | Forgejo UI → glasswing-apps → Actions → Run workflow → `release` |
+| Rollback a stack | Forgejo UI → glasswing-apps → Actions → Run workflow → `rollback` |
+| Check release status | Forgejo UI → glasswing-apps → Actions → Run workflow → `status` |
+| Restart CI runner | `make up STACK=forgejo-runner` |
+| Local registry | `http://192.168.68.62:5000` |

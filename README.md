@@ -22,6 +22,13 @@ The design goal is not maximum service count. It is a platform that stays unders
   - [Per-stack secrets](#per-stack-secrets)
   - [Variables intentionally excluded](#variables-intentionally-excluded)
   - [Managing secrets via the Infisical API](#managing-secrets-via-the-infisical-api)
+- [Release pipeline (Forgejo)](#release-pipeline-forgejo)
+  - [How it works](#how-it-works)
+  - [Triggering a release](#triggering-a-release)
+  - [Rollback](#rollback)
+  - [Status](#status)
+  - [Expanding to new stacks](#expanding-to-new-stacks)
+  - [Runner maintenance](#runner-maintenance)
 - [Observability](#observability)
 - [Backups](#backups)
 - [Verification](#verification)
@@ -225,7 +232,9 @@ Every lifecycle target calls the same `run_compose` macro. It validates the stac
 | `homepage` | 3006 | Dashboard and service map |
 | `adguard` | 53, 3007, 3008 | DNS filtering |
 | `excalidraw` | 3009 | Diagrams |
-| `forgejo` | 3011, 2222 | Self-hosted Git and SSH |
+| `forgejo` | 3011, 2222 | Self-hosted Git and SSH (also the CI control plane) |
+| `forgejo-runner` | — | Forgejo Actions runner (host mode, Docker socket) |
+| `registry` | 5000 | Local Docker registry for release images |
 | `anythingllm` | 3012 | Document chat over local models |
 | `cyberchef` | 3013 | Data transformations |
 | `calculators` | 3021 | Math, finance, and conversion calculators |
@@ -289,6 +298,91 @@ Open Notebook notes searchable without evicting it.
 same budget. `make ai-preflight` validates the container settings, the effective
 host OpenCode model configuration, GPU residency, embedding co-residency, VRAM
 headroom, and a real standalone prompt.
+
+## Release pipeline (Forgejo)
+
+Glasswing uses Forgejo Actions as its deployment control plane. The `glasswing-apps` repository (under the `glasswing` org in Forgejo) holds the CI workflow, build scripts, and per-stack release manifests. The runner executes jobs in host mode with the Docker socket mounted, giving it direct access to `docker compose` and the local registry.
+
+### How it works
+
+Each stack in `glasswing-apps` has three version states tracked by registry tags:
+
+| Tag | Meaning |
+| --- | --- |
+| `:future` | Built and pushed, not yet live |
+| `:current` | Running in production |
+| `:previous` | Last promoted version (instant rollback target) |
+
+The release flow is:
+
+```
+build (pull upstream → tag :future → push)
+  → validate (compose config + health probe in scratch container)
+    → promote (previous ← current, current ← future, redeploy, health check)
+```
+
+Rollback is instant: `current ← previous`, redeploy. The old current is preserved as a `rolled-back-<timestamp>` tag.
+
+The per-stack `manifest.yaml` in `glasswing-apps` is the source of truth for which version is current, previous, and future.
+
+### Triggering a release
+
+From the Forgejo UI: **Repositories → glasswing-apps → Actions → glasswing-release → Run workflow**
+
+Inputs:
+- **action**: `release` (build + validate + promote), `rollback`, or `status`
+- **stack**: the stack name (e.g. `vikunja`)
+- **version**: the upstream version to release (e.g. `2.7.1`) — required for `release`
+
+Or via the Forgejo API:
+
+```bash
+curl -X POST "http://192.168.68.62:3011/api/v1/repos/glasswing/glasswing-apps/actions/workflows/glasswing-release.yml/dispatches" \
+  -H "Authorization: token <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"ref":"main","inputs":{"action":"release","stack":"vikunja","version":"2.7.1"}}'
+```
+
+Check run status:
+
+```bash
+curl -s "http://192.168.68.62:3011/api/v1/repos/glasswing/glasswing-apps/actions/runs?limit=1" \
+  -H "Authorization: token <TOKEN>" | jq '.workflow_runs[0] | {id, status, conclusion}'
+```
+
+### Rollback
+
+Trigger the workflow with `action: rollback` and the stack name. No version input needed — it promotes `previous` to `current` and redeploys.
+
+### Status
+
+Trigger with `action: status` to see the running container, registry tags, and manifest for a stack.
+
+### Expanding to new stacks
+
+To add a new stack to the release pipeline:
+
+1. Create `stacks/<name>/build.yaml` in `glasswing-apps` (declares upstream image, registry name, deploy priority)
+2. Copy the stack's `compose.yaml`, `secrets.list`, and `pre-up.sh` into `stacks/<name>/` in `glasswing-apps`
+3. Push to Forgejo
+4. Trigger a release with the new stack name
+
+The workflow is stack-agnostic — it reads `build.yaml` for the image and registry name, and `secrets.list` for Infisical injection.
+
+### Runner maintenance
+
+The runner is a Glasswing stack (`stacks/forgejo-runner/`). Key facts:
+
+- **Binary**: downloaded from `code.forgejo.org` on first boot (v13.2.1)
+- **Config**: `stacks/forgejo-runner/.runner-data/runner-config.yml` (gitignored)
+- **Label**: `glasswing` (org-scope runner)
+- **Job environment**: minimal Alpine; each job installs its own tools (`apk add docker-cli curl jq bash git`)
+- **Compose plugin**: installed to `/opt/runner/.docker/cli-plugins/` (runner HOME is `/opt/runner`)
+- **Secrets**: `CI_TOKEN`, `INFISICAL_URL`, `INFISICAL_PROJECT_ID`, `INFISICAL_ENV`, `INFISICAL_CLIENT_ID`, `INFISICAL_CLIENT_SECRET` (set in Forgejo repo secrets)
+
+To restart the runner: `make up STACK=forgejo-runner`
+
+To check runner status in Forgejo: **Orgs → glasswing → Actions → Runners**
 
 ## Image management
 
@@ -551,7 +645,7 @@ A green container is not proof a service works. Check the destination too: telem
 - [ACCESS.md](ACCESS.md) — generated IP:port map for every stack (`make access`)
 - **[REBUILD.md](REBUILD.md)** — clean rebuild from a fresh Ubuntu install, phase by phase, with the secrets you must supply.
 
-- **[MAINTENANCE.md](MAINTENANCE.md)** — Daily, weekly, and monthly maintenance tasks. Image updates, secret management, backup operations, troubleshooting, and adding new stacks.
+- **[MAINTENANCE.md](MAINTENANCE.md)** — Daily, weekly, and monthly maintenance tasks. Image updates, secret management, backup operations, Forgejo release pipeline operations, troubleshooting, and adding new stacks.
 - **[DR_RUNBOOK.md](DR_RUNBOOK.md)** — Disaster recovery procedures for hardware failure, OS reinstall, or complete data loss. Step-by-step recovery from a fresh Ubuntu install.
 - **[backup/GLASSWING_RESTIC_BACKUP_RUNBOOK.md](backup/GLASSWING_RESTIC_BACKUP_RUNBOOK.md)** — Restic backup scope, encryption, restore procedures, and known risks.
 - **Dagu Web UI** (`http://192.168.68.62:3014`) — Workflow orchestrator for scheduled image updates and health checks.
