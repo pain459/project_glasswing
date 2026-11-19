@@ -33,6 +33,7 @@ import json
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 
@@ -679,6 +680,85 @@ def paperless_ingest(
     except (urllib.error.URLError, OSError) as e:
         print(f"[warn] Paperless ingest failed: {e}", file=sys.stderr)
         return None
+
+
+# ---------------------------------------------------------------------------
+# Paperless: search and retrieve documents
+# ---------------------------------------------------------------------------
+
+
+def paperless_search(
+    query: str = "",
+    tag: str = "",
+    corr: str = "",
+    page: int = 1,
+) -> dict | None:
+    """Search Paperless documents.
+
+    Returns {"count": int, "results": [...]} or None on failure.
+    Uses GET /api/documents/ with text/tag/corr filters.
+    """
+    if not PAPERLESS_URL or not PAPERLESS_API_TOKEN:
+        return None
+
+    params: list[tuple[str, str]] = [
+        ("page_size", "5"),
+        ("page", str(page)),
+    ]
+    if query:
+        params.append(("text", query[:200]))
+    if tag:
+        params.append(("tags__name__icontains", tag))
+    if corr:
+        params.append(("correspondent__name__icontains", corr))
+
+    qs = "&".join(f"{k}={urllib.parse.quote(v)}" for k, v in params)
+    url = f"{PAPERLESS_URL}/api/documents/?{qs}"
+    headers = {"Authorization": f"Token {PAPERLESS_API_TOKEN}"}
+    data = http_get(url, headers=headers)
+    if data is None:
+        return None
+    if isinstance(data, dict) and "results" in data:
+        return {"count": data.get("count", 0), "results": data["results"]}
+    return None
+
+
+def paperless_recent(limit: int = 5) -> dict | None:
+    """Get the most recent documents.
+
+    Returns {"count": int, "results": [...]} or None on failure.
+    Uses GET /api/documents/?ordering=-created&page_size=<limit>
+    """
+    if not PAPERLESS_URL or not PAPERLESS_API_TOKEN:
+        return None
+
+    url = f"{PAPERLESS_URL}/api/documents/?page_size={limit}&ordering=-created"
+    headers = {"Authorization": f"Token {PAPERLESS_API_TOKEN}"}
+    data = http_get(url, headers=headers)
+    if data is None:
+        return None
+    if isinstance(data, dict) and "results" in data:
+        return {"count": data.get("count", 0), "results": data["results"]}
+    return None
+
+
+def paperless_get_document(doc_id: int) -> dict | None:
+    """Get a single document by ID.
+
+    Returns the document dict or None on failure.
+    Uses GET /api/documents/<id>/
+    """
+    if not PAPERLESS_URL or not PAPERLESS_API_TOKEN:
+        return None
+
+    url = f"{PAPERLESS_URL}/api/documents/{doc_id}/"
+    headers = {"Authorization": f"Token {PAPERLESS_API_TOKEN}"}
+    data = http_get(url, headers=headers)
+    if data is None:
+        return None
+    if isinstance(data, dict) and "id" in data:
+        return data
+    return None
 
 
 # ---------------------------------------------------------------------------

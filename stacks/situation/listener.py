@@ -54,6 +54,9 @@ from brief import (
     paperless_ingest,
     paperless_list_tags,
     paperless_download_from_telegram,
+    paperless_search,
+    paperless_recent,
+    paperless_get_document,
     HTTP_TIMEOUT,
 )
 
@@ -512,10 +515,14 @@ def handle_help(chat_id: str) -> None:
         "*Metrics*",
         "   /spend — LLM spend",
         "",
-        "*Inbox*",
+        "*Inbox & Search*",
         "   Send a photo/PDF with caption '#file' to ingest into Paperless",
         f"   e.g. #file tag=bills, #file tag=cards subject=October",
         f"   Valid tags: {', '.join(ALLOWED_TAGS)} (default: others)",
+        "",
+        "   /docs <query> — Search documents (tag=X, corr=Y, page=N)",
+        "   /recent — Last 5 documents",
+        "   /doc <id> — Document detail",
         "",
         "*Liveness*",
         "   /ping — Check if the bot is alive",
@@ -674,6 +681,221 @@ def handle_photo(update: dict) -> None:
     print(f"[PASS] Paperless ingest: doc #{doc_id}", flush=True)
 
 
+def _strip_html(text: str) -> str:
+    """Strip HTML tags from a string (for search highlights)."""
+    import re
+    return re.sub(r"<[^>]+>", "", text)
+
+
+def _format_doc_line(idx: int, doc: dict, show_highlights: bool = False) -> list[str]:
+    """Format a single document as a list of lines for Telegram."""
+    doc_id = doc.get("id", "?")
+    title = doc.get("title", "(untitled)") or "(untitled)"
+    created = doc.get("created", "")[:10]  # YYYY-MM-DD
+    tags = [t.get("name", "") for t in doc.get("tags", []) if isinstance(t, dict)]
+    corr = doc.get("correspondent", "")
+
+    lines = [f"{idx}. #{doc_id} — {title}"]
+    meta_parts = []
+    if created:
+        meta_parts.append(f"📅 {created}")
+    if tags:
+        meta_parts.append(f"🏷️ {', '.join(tags)}")
+    if corr:
+        meta_parts.append(f"✉️ {corr}")
+    if meta_parts:
+        lines.append("   " + "  ".join(meta_parts))
+
+    if show_highlights:
+        hit = doc.get("__search_hit__", {})
+        highlights = hit.get("highlights", "")
+        if highlights:
+            clean = _strip_html(highlights)
+            # Truncate long highlights
+            if len(clean) > 120:
+                clean = clean[:117] + "..."
+            lines.append(f'   "{clean}"')
+
+    return lines
+
+
+def parse_docs_command(text: str) -> dict | None:
+    """Parse '/docs ...' into {query, tag, corr, page}.
+
+    Grammar:
+      /docs electricity              → {query: "electricity"}
+      /docs tag=bills                → {tag: "bills"}
+      /docs corr=HSBC                → {corr: "HSBC"}
+      /docs tag=bills electricity   → {tag: "bills", query: "electricity"}
+      /docs page=2 electricity      → {query: "electricity", page: 2}
+
+    Returns None if the text doesn't start with '/docs'.
+    Returns {"error": "..."} if the tag is invalid.
+    """
+    text = text.strip()
+    if not text.startswith("/docs"):
+        return None
+
+    rest = text[5:].strip()
+    if not rest:
+        return None  # No args — caller shows usage
+
+    query_parts: list[str] = []
+    tag = ""
+    corr = ""
+    page = 1
+
+    for token in rest.split():
+        if token.startswith("tag="):
+            value = token[4:].lower()
+            if value not in ALLOWED_TAGS:
+                return {
+                    "error": f"Unknown tag '{value}'. Valid tags: {', '.join(ALLOWED_TAGS)}"
+                }
+            tag = value
+        elif token.startswith("corr=") or token.startswith("correspondence="):
+            prefix = "corr=" if token.startswith("corr=") else "correspondence="
+            corr = token[len(prefix):]
+        elif token.startswith("page="):
+            try:
+                page = max(1, int(token[5:]))
+            except ValueError:
+                page = 1
+        else:
+            query_parts.append(token)
+
+    return {
+        "query": " ".join(query_parts),
+        "tag": tag,
+        "corr": corr,
+        "page": page,
+    }
+
+
+def handle_docs(chat_id: str, args: dict) -> None:
+    """Search Paperless and format results for Telegram."""
+    if "error" in args:
+        send_message(chat_id, f"⚠️ {args['error']}", parse_mode=None)
+        return
+
+    query = args.get("query", "")
+    tag = args.get("tag", "")
+    corr = args.get("corr", "")
+    page = args.get("page", 1)
+
+    # Need at least one search criterion
+    if not query and not tag and not corr:
+        send_message(
+            chat_id,
+            "Usage: /docs <query> [tag=X] [corr=Y] [page=N]\n"
+            f"   e.g. /docs electricity, /docs tag=bills, /docs corr=HSBC",
+            parse_mode=None,
+        )
+        return
+
+    send_message(chat_id, "📄 Searching Paperless…")
+
+    result = paperless_search(query=query, tag=tag, corr=corr, page=page)
+    if result is None:
+        send_message(chat_id, "⚠️ Paperless is unreachable. Try again later.")
+        return
+
+    count = result.get("count", 0)
+    results = result.get("results", [])
+
+    if count == 0:
+        search_desc = query or tag or corr
+        send_message(chat_id, f"No documents found for '{search_desc}'.")
+        return
+
+    lines = [f"📄 {count} result(s) for '{query or tag or corr}'", ""]
+
+    for i, doc in enumerate(results, 1):
+        lines.extend(_format_doc_line(i, doc, show_highlights=True))
+        lines.append("")
+
+    # Pagination hint
+    if count > len(results):
+        next_page = page + 1
+        query_hint = query or tag or corr
+        lines.append(f"   ({count} total — /docs page={next_page} {query_hint} for more)")
+
+    send_message(chat_id, "\n".join(lines), parse_mode=None)
+    print(f"[PASS] /docs: {count} results, page {page}", flush=True)
+
+
+def handle_recent(chat_id: str) -> None:
+    """Show the last 5 documents."""
+    send_message(chat_id, "📄 Fetching recent documents…")
+
+    result = paperless_recent(limit=5)
+    if result is None:
+        send_message(chat_id, "⚠️ Paperless is unreachable. Try again later.")
+        return
+
+    results = result.get("results", [])
+    if not results:
+        send_message(chat_id, "No documents in Paperless yet.")
+        return
+
+    lines = ["📄 Recent documents", ""]
+    for i, doc in enumerate(results, 1):
+        lines.extend(_format_doc_line(i, doc, show_highlights=False))
+        lines.append("")
+
+    send_message(chat_id, "\n".join(lines), parse_mode=None)
+    print(f"[PASS] /recent: {len(results)} documents", flush=True)
+
+
+def handle_doc(chat_id: str, doc_id: int) -> None:
+    """Show detail for a single document."""
+    send_message(chat_id, f"📄 Fetching document #{doc_id}…")
+
+    doc = paperless_get_document(doc_id)
+    if doc is None:
+        send_message(chat_id, f"Document #{doc_id} not found (or Paperless unreachable).")
+        return
+
+    title = doc.get("title", "(untitled)") or "(untitled)"
+    created = doc.get("created", "")
+    modified = doc.get("modified", "")
+    tags = [t.get("name", "") for t in doc.get("tags", []) if isinstance(t, dict)]
+    corr = doc.get("correspondent", "")
+    subject = doc.get("subject", "")
+    pages = doc.get("page_count", 0)
+    size = doc.get("file_size", 0)
+    filename = doc.get("original_file_name", "")
+
+    # Format size
+    if size > 1024 * 1024:
+        size_str = f"{size / (1024 * 1024):.1f} MB"
+    elif size > 1024:
+        size_str = f"{size / 1024:.0f} KB"
+    else:
+        size_str = f"{size} B"
+
+    # Format dates
+    created_str = created[:16].replace("T", " ") if created else "N/A"
+    modified_str = modified[:16].replace("T", " ") if modified else "N/A"
+
+    lines = [
+        f"📄 Document #{doc_id}",
+        "",
+        f"   Title:         {title}",
+        f"   Created:       {created_str}",
+        f"   Modified:      {modified_str}",
+        f"   Tags:          {', '.join(tags) if tags else '(none)'}",
+        f"   Correspondent: {corr if corr else '(none)'}",
+        f"   Subject:       {subject if subject else '(none)'}",
+        f"   Pages:         {pages if pages else 'N/A'}",
+        f"   Size:          {size_str}",
+        f"   File:          {filename if filename else 'N/A'}",
+    ]
+
+    send_message(chat_id, "\n".join(lines), parse_mode=None)
+    print(f"[PASS] /doc: #{doc_id} ({title})", flush=True)
+
+
 def handle_ping(chat_id: str) -> None:
     """Reply with liveness info."""
     uptime = time.time() - LISTENER_START_TIME
@@ -794,6 +1016,28 @@ def main() -> int:
             elif text == "/uptime":
                 print("[INFO] /uptime received", flush=True)
                 handle_uptime(chat_id)
+            elif text.startswith("/docs"):
+                print("[INFO] /docs received", flush=True)
+                args = parse_docs_command(text)
+                if args is None:
+                    send_message(
+                        chat_id,
+                        "Usage: /docs <query> [tag=X] [corr=Y] [page=N]\n"
+                        f"   e.g. /docs electricity, /docs tag=bills, /docs corr=HSBC",
+                        parse_mode=None,
+                    )
+                else:
+                    handle_docs(chat_id, args)
+            elif text == "/recent":
+                print("[INFO] /recent received", flush=True)
+                handle_recent(chat_id)
+            elif text.startswith("/doc "):
+                doc_id_str = text[5:].strip()
+                if not doc_id_str.isdigit():
+                    send_message(chat_id, "Usage: /doc <id>  (e.g. /doc 42)", parse_mode=None)
+                else:
+                    print(f"[INFO] /doc {doc_id_str} received", flush=True)
+                    handle_doc(chat_id, int(doc_id_str))
             elif text == "/ping":
                 print("[INFO] /ping received", flush=True)
                 handle_ping(chat_id)

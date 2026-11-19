@@ -34,6 +34,9 @@ brief_mock.gather_litellm_spend = lambda: {}
 brief_mock.paperless_ingest = lambda **kw: None
 brief_mock.paperless_list_tags = lambda: None
 brief_mock.paperless_download_from_telegram = lambda fid: None
+brief_mock.paperless_search = lambda **kw: None
+brief_mock.paperless_recent = lambda **kw: None
+brief_mock.paperless_get_document = lambda doc_id: None
 brief_mock.HTTP_TIMEOUT = 15
 
 sys.modules["brief"] = brief_mock
@@ -189,3 +192,158 @@ class TestConstants:
         assert ".jpg" in listener.ALLOWED_EXTENSIONS
         assert ".pdf" in listener.ALLOWED_EXTENSIONS
         assert ".heic" in listener.ALLOWED_EXTENSIONS
+
+
+# ---------------------------------------------------------------------------
+# parse_docs_command
+# ---------------------------------------------------------------------------
+
+
+class TestParseDocsCommand:
+    def test_no_prefix_returns_none(self):
+        assert listener.parse_docs_command("") is None
+        assert listener.parse_docs_command("hello") is None
+        assert listener.parse_docs_command("/other") is None
+        assert listener.parse_docs_command("docs electricity") is None
+
+    def test_bare_docs_returns_none(self):
+        # No args — caller shows usage
+        assert listener.parse_docs_command("/docs") is None
+        assert listener.parse_docs_command("/docs   ") is None
+
+    def test_query_only(self):
+        result = listener.parse_docs_command("/docs electricity")
+        assert result is not None
+        assert result["query"] == "electricity"
+        assert result["tag"] == ""
+        assert result["corr"] == ""
+        assert result["page"] == 1
+
+    def test_tag_only(self):
+        result = listener.parse_docs_command("/docs tag=bills")
+        assert result["tag"] == "bills"
+        assert result["query"] == ""
+
+    def test_tag_case_insensitive(self):
+        result = listener.parse_docs_command("/docs tag=BILLS")
+        assert result["tag"] == "bills"
+
+    def test_tag_invalid(self):
+        result = listener.parse_docs_command("/docs tag=receipts")
+        assert "error" in result
+        assert "receipts" in result["error"]
+        assert "bills" in result["error"]
+
+    def test_corr_short(self):
+        result = listener.parse_docs_command("/docs corr=HSBC")
+        assert result["corr"] == "HSBC"
+
+    def test_corr_long(self):
+        result = listener.parse_docs_command("/docs correspondence=HSBC")
+        assert result["corr"] == "HSBC"
+
+    def test_tag_and_query(self):
+        result = listener.parse_docs_command("/docs tag=bills electricity")
+        assert result["tag"] == "bills"
+        assert result["query"] == "electricity"
+
+    def test_page(self):
+        result = listener.parse_docs_command("/docs page=2 electricity")
+        assert result["page"] == 2
+        assert result["query"] == "electricity"
+
+    def test_page_invalid(self):
+        result = listener.parse_docs_command("/docs page=abc electricity")
+        assert result["page"] == 1  # falls back to 1
+
+    def test_page_zero_clamped(self):
+        result = listener.parse_docs_command("/docs page=0 electricity")
+        assert result["page"] == 1  # clamped to 1
+
+    def test_all_fields(self):
+        result = listener.parse_docs_command("/docs tag=bills corr=HSBC page=3 electricity")
+        assert result["tag"] == "bills"
+        assert result["corr"] == "HSBC"
+        assert result["page"] == 3
+        assert result["query"] == "electricity"
+
+    def test_multi_word_query(self):
+        result = listener.parse_docs_command("/docs electricity bill October")
+        assert result["query"] == "electricity bill October"
+
+    def test_whitespace_handling(self):
+        result = listener.parse_docs_command("  /docs   tag=bills   electricity  ")
+        assert result["tag"] == "bills"
+        assert result["query"] == "electricity"
+
+
+# ---------------------------------------------------------------------------
+# _strip_html
+# ---------------------------------------------------------------------------
+
+
+class TestStripHtml:
+    def test_no_html(self):
+        assert listener._strip_html("plain text") == "plain text"
+
+    def test_span_tags(self):
+        assert listener._strip_html("text <span class=\"match\">Test</span> text") == "text Test text"
+
+    def test_multiple_tags(self):
+        assert listener._strip_html("<b>bold</b> and <i>italic</i>") == "bold and italic"
+
+    def test_empty(self):
+        assert listener._strip_html("") == ""
+
+
+# ---------------------------------------------------------------------------
+# _format_doc_line
+# ---------------------------------------------------------------------------
+
+
+class TestFormatDocLine:
+    def test_basic(self):
+        doc = {
+            "id": 42,
+            "title": "Electricity Bill",
+            "created": "2026-10-15T14:32:00Z",
+            "tags": [{"id": 1, "name": "bills"}],
+            "correspondent": "HSBC",
+        }
+        lines = listener._format_doc_line(1, doc)
+        assert "1. #42 — Electricity Bill" in lines[0]
+        assert any("📅 2026-10-15" in l for l in lines)
+        assert any("🏷️ bills" in l for l in lines)
+        assert any("✉️ HSBC" in l for l in lines)
+
+    def test_no_tags_no_corr(self):
+        doc = {
+            "id": 7,
+            "title": "Random",
+            "created": "2026-01-01T00:00:00Z",
+            "tags": [],
+            "correspondent": None,
+        }
+        lines = listener._format_doc_line(1, doc)
+        assert "1. #7 — Random" in lines[0]
+        # Should still have the date line
+        assert any("📅 2026-01-01" in l for l in lines)
+
+    def test_highlights(self):
+        doc = {
+            "id": 1,
+            "title": "Test",
+            "created": "2026-01-01T00:00:00Z",
+            "tags": [],
+            "correspondent": None,
+            "__search_hit__": {
+                "highlights": "your <span class=\"match\">electricity</span> bill",
+            },
+        }
+        lines = listener._format_doc_line(1, doc, show_highlights=True)
+        assert any('"your electricity bill"' in l for l in lines)
+
+    def test_untitled(self):
+        doc = {"id": 1, "title": None, "created": "", "tags": [], "correspondent": None}
+        lines = listener._format_doc_line(1, doc)
+        assert "(untitled)" in lines[0]
