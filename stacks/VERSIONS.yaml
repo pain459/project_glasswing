@@ -33,6 +33,14 @@ stacks:
     build-type: external
     notes: "Inference backend — update manually after testing models"
 
+  comfyui:
+    image: glasswing/comfyui
+    tag: "local"
+    mutable: false
+    updated: "2026-11-21"
+    build-type: source
+    notes: "Self-built — pytorch/pytorch:2.14.1-cuda13.0 base + ComfyUI v0.46.0 + Manager 4.2.2. GPU arbitration with Ollama via scripts/gpu-mode.sh. Excluded from restart-all."
+
   homepage:
     image: ghcr.io/gethomepage/homepage
     tag: "v2.7.0"

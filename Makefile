@@ -286,9 +286,9 @@ restart-all: netcheck
 	$(MAKE) --no-print-directory up STACK=ollama || exit 1; \
 	logdir=$$(mktemp -d); \
 	echo ""; \
-	echo "[INFO] Reconciling $(words $(filter-out infisical ollama,$(STACKS))) stacks, $(JOBS) at a time"; \
+	echo "[INFO] Reconciling $(words $(filter-out infisical ollama comfyui,$(STACKS))) stacks, $(JOBS) at a time"; \
 	running=0; \
-	for stack in $(filter-out infisical ollama,$(STACKS)); do \
+	for stack in $(filter-out infisical ollama comfyui,$(STACKS)); do \
 	  echo "[INFO] Deploying $$stack"; \
 	  ( \
 	    if $(MAKE) --no-print-directory up STACK=$$stack >"$$logdir/$$stack.log" 2>&1; then \
@@ -351,6 +351,24 @@ mcp-preflight:
 	 python3 scripts/mcp-preflight.py --name serena http://127.0.0.1:9121/mcp || status=1; \
 	 python3 scripts/mcp-preflight.py --name searxng http://127.0.0.1:8005/mcp || status=1; \
 	 exit $$status
+
+
+# --------------------------------------------------
+# GPU arbitration: ComfyUI and Ollama share the RTX 4090
+# --------------------------------------------------
+
+gpu-comfyui:
+	@echo "[INFO] Switching GPU to ComfyUI (evicting Ollama)..."
+	@./scripts/gpu-mode.sh comfyui
+	@$(MAKE) --no-print-directory up STACK=comfyui
+
+gpu-ollama:
+	@echo "[INFO] Switching GPU to Ollama (evicting ComfyUI)..."
+	@./scripts/gpu-mode.sh ollama
+	@$(MAKE) --no-print-directory up STACK=ollama
+
+gpu-status:
+	@./scripts/gpu-mode.sh status
 
 
 # --------------------------------------------------

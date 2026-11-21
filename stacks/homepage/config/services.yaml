@@ -103,6 +103,13 @@
         container: glasswing-ollama
         siteMonitor: http://192.168.68.62:11434/api/version
 
+    - ComfyUI:
+        icon: mdi-image-multiple
+        href: http://192.168.68.62:3042
+        description: RTX 4090 · Image Generation (on-demand)
+        container: glasswing-comfyui
+        siteMonitor: http://192.168.68.62:3042/system_stats
+
     - Open WebUI:
         icon: mdi-message-text-outline
         href: http://192.168.68.62:3041

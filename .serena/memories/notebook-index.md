@@ -26,3 +26,7 @@
 # - Runbook - project_glasswing - Switch Serena Active Project (note:vy6enywq6eprzafiea5u)
 # - Fix - project_glasswing - Serena 'No Active Project' on Startup (note:d0nz2qh8czn2hf0fbv5i)
 # - Ref - project_glasswing - CI/CD and Operations (note:6ib4vaglp2mk511z0vhb)
+# ComfyUI (2026-11-21):
+# - Code Map - project_glasswing - ComfyUI Image Generation Stack (note:j3olkw3razpugkpva4vw)
+# - Decision - project_glasswing - ComfyUI - Self-Built Image Strategy (note:tpd93ryqo0a1uxp5fwe5)
+# - Session - 2026-11-21 - ComfyUI Onboarded and Verified (note:b30tplc75inwbxdwrh4j)

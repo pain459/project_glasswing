@@ -47,6 +47,8 @@ Host IP: `192.168.68.62` (from `GLASSWING_HOST_IP`, else `stacks/infisical/.env`
 | `sudokui` | `sudokui` | http://192.168.68.62:3038 | 3000/tcp | glasswing | LAN |
 | `virtualtabletop` | `virtualtabletop` | http://192.168.68.62:3039 | 8272/tcp | glasswing | LAN |
 | `parlour` | `parlour` | http://192.168.68.62:3040 | 3000/tcp | glasswing | LAN |
+| `open-webui` | `open-webui` | http://192.168.68.62:3041 | 8080/tcp | glasswing | LAN |
+| `comfyui` | `comfyui` | http://192.168.68.62:3042 | 8188/tcp | glasswing | LAN |
 | `steel` | `steel` | http://192.168.68.62:3100 | 3000/tcp | glasswing | LAN |
 | `otel-collector` | `otel-collector` | http://192.168.68.62:4318 | 4318/tcp | glasswing | LAN |
 | `registry` | `registry` | http://192.168.68.62:5000 | 5000/tcp | default | LAN |
@@ -75,5 +77,5 @@ Host IP: `192.168.68.62` (from `GLASSWING_HOST_IP`, else `stacks/infisical/.env`
 
 `dns`, `postgres`, `ssh` rows are not web UIs.
 
-`network_mode: host` stacks (`dagu`, `plex`) publish outside Compose; their ports come from the stack defaults.
+`network_mode: host` stacks (`dagu`, `forgejo-runner`, `plex`) publish outside Compose; their ports come from the stack defaults.
 

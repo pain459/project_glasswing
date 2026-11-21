@@ -1,0 +1,67 @@
+# ComfyUI — local image generation on the RTX 4090.
+#
+# Self-built image (see Dockerfile). Non-root (uid/gid 1000).
+#
+# GPU arbitration: this stack and Ollama share the RTX 4090. Use
+#   make gpu-comfyui   # evict Ollama, start ComfyUI
+#   make gpu-ollama    # evict ComfyUI, start Ollama
+#   make gpu-status    # show who owns the GPU
+#
+# Do NOT run `make up STACK=comfyui` directly — it does not evict Ollama.
+# Use `make gpu-comfyui` instead.
+#
+# Storage: bind mounts under /mnt/storage/comfyui/ (owned by uid/gid 1000).
+#   models/         — SDXL, LoRAs, VAEs (downloaded via Manager or CLI)
+#   custom_nodes/   — ComfyUI-Manager installs land here
+#   input/          — uploaded images
+#   output/         — generated images
+#   temp/           — scratch
+#   user/           — UI-saved workflows (user/default/workflows/*.json)
+#   .local/         — pip user-site (node deps, PIP_USER=1)
+#
+# No auth: ComfyUI has no built-in auth. LAN-bind only via GLASSWING_HOST_IP.
+
+services:
+  comfyui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: glasswing/comfyui:local
+    container_name: glasswing-comfyui
+    restart: unless-stopped
+    ports:
+      - "${GLASSWING_HOST_IP:-127.0.0.1}:3042:8188"
+    environment:
+      - COMFYUI_EXTRA_ARGS=${COMFYUI_EXTRA_ARGS:-}
+      # Runtime-only: Manager installs custom-node requirements into the
+      # mounted /home/comfy/.local so they survive container recreation.
+      # Build-time installs stay in system site-packages (see Dockerfile).
+      - PIP_USER=1
+      - PIP_BREAK_SYSTEM_PACKAGES=1
+    volumes:
+      - /mnt/storage/comfyui/models:/app/ComfyUI/models
+      - /mnt/storage/comfyui/custom_nodes:/app/ComfyUI/custom_nodes
+      - /mnt/storage/comfyui/input:/app/ComfyUI/input
+      - /mnt/storage/comfyui/output:/app/ComfyUI/output
+      - /mnt/storage/comfyui/temp:/app/ComfyUI/temp
+      - /mnt/storage/comfyui/user:/app/ComfyUI/user
+      - /mnt/storage/comfyui/.local:/home/comfy/.local
+    gpus: all
+    networks:
+      - glasswing
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8188/system_stats"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 180s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true
