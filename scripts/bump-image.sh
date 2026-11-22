@@ -3,7 +3,7 @@
 #
 # Usage:
 #   ./scripts/bump-image.sh <stack> <old-tag> <new-tag>
-#   ./scripts/bump-image.sh ollama latest 0.40.11
+#   ./scripts/bump-image.sh vllm latest 0.10.0
 #   ./scripts/bump-image.sh flowise 3.1.3 3.2.0
 #
 # This edits the compose.yaml in-place. Review the diff before committing.
@@ -18,7 +18,7 @@ usage() {
   echo "Usage: $0 <stack> <old-tag> <new-tag>"
   echo ""
   echo "Examples:"
-  echo "  $0 ollama latest 0.40.11"
+  echo "  $0 vllm latest 0.10.0"
   echo "  $0 flowise 3.1.3 3.2.0"
   echo ""
   echo "This edits stacks/<stack>/compose.yaml in-place."

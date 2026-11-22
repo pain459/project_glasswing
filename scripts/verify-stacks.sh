@@ -15,7 +15,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 # Stack list comes from the Makefile, so a newly added stack is never missed.
 # Infisical must be healthy first (every other stack fetches secrets from it),
-# then Ollama (the inference backend), then the rest in a stable order.
+# then vLLM + TEI (the inference backends), then the rest in a stable order.
 DISCOVERED=$(make --no-print-directory list-stacks)
 [[ -n "$DISCOVERED" ]] || {
   echo "No stacks found under stacks/*/compose.yaml" >&2
@@ -23,11 +23,11 @@ DISCOVERED=$(make --no-print-directory list-stacks)
 }
 
 STACKS=()
-for stack in infisical ollama; do
+for stack in infisical vllm tei; do
   printf '%s\n' "$DISCOVERED" | grep -qx "$stack" && STACKS+=("$stack")
 done
 while IFS= read -r stack; do
-  [[ "$stack" == infisical || "$stack" == ollama ]] && continue
+  [[ "$stack" == infisical || "$stack" == vllm || "$stack" == tei ]] && continue
   STACKS+=("$stack")
 done <<< "$DISCOVERED"
 

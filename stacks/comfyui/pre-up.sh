@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ComfyUI pre-up:
 #   1. Ensure the bind-mount tree exists and is writable by the container user.
-#   2. Evict Ollama from the GPU.
+#   2. Sleep the resident vLLM model to free VRAM for ComfyUI.
 #
 # The ownership guard matters: Docker auto-creates a missing bind-mount source
 # as root, and ComfyUI then dies with a PermissionError the first time
@@ -41,6 +41,6 @@ if [ ! -w "${STORAGE}" ]; then
     exit 1
 fi
 
-echo "[comfyui:pre-up] Evicting Ollama from GPU..."
+echo "[comfyui:pre-up] Sleeping vLLM to free the GPU..."
 bash "${GPU_MODE}" comfyui
 echo "[comfyui:pre-up] GPU is free for ComfyUI."

@@ -2,13 +2,14 @@
 #
 # Self-built image (see Dockerfile). Non-root (uid/gid 1000).
 #
-# GPU arbitration: this stack and Ollama share the RTX 4090. Use
-#   make gpu-comfyui   # evict Ollama, start ComfyUI
-#   make gpu-ollama    # evict ComfyUI, start Ollama
+# GPU arbitration: this stack and the vLLM models share the RTX 4090.
+#   make gpu-comfyui   # sleep vLLM, start ComfyUI
+#   make gpu-vllm      # evict ComfyUI, wake the default vLLM model
 #   make gpu-status    # show who owns the GPU
 #
-# Do NOT run `make up STACK=comfyui` directly — it does not evict Ollama.
-# Use `make gpu-comfyui` instead.
+# The always-on `comfyui-gate` stack owns host port 3042. ComfyUI is reachable
+# only inside the glasswing network (glasswing-comfyui:8188) and is started on
+# demand by the gate when the UI is opened or a prompt is submitted.
 #
 # Storage: bind mounts under /mnt/storage/comfyui/ (owned by uid/gid 1000).
 #   models/         — SDXL, LoRAs, VAEs (downloaded via Manager or CLI)
@@ -29,8 +30,10 @@ services:
     image: glasswing/comfyui:local
     container_name: glasswing-comfyui
     restart: unless-stopped
-    ports:
-      - "${GLASSWING_HOST_IP:-127.0.0.1}:3042:8188"
+    # Internal-only: stacks/comfyui-gate publishes :3042 and starts this
+    # container on demand, after sleeping the resident vLLM model.
+    expose:
+      - "8188"
     environment:
       - COMFYUI_EXTRA_ARGS=${COMFYUI_EXTRA_ARGS:-}
       # Runtime-only: Manager installs custom-node requirements into the

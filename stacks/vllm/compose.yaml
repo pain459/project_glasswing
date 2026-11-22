@@ -1,0 +1,356 @@
+# vLLM — LLM inference on the RTX 4090, replacing Ollama.
+#
+# Option C: One vLLM container per model. Only one is awake at a time.
+# Sleeping containers keep weights in CPU RAM for fast switching (~2s).
+#
+# KV-cache profiles (identical geometry for both Qwen models):
+#   Qwen 3.8 : default vllm-qwen38 / --profile alt-4bit vllm-qwen38-4bit  (:3043)
+#   Qwen 3.6 : --profile failback vllm-qwen36 / --profile failback-4bit
+#              vllm-qwen36-4bit                                          (:3044)
+# Default k8v4 = full 131072 context; 4-bit variants have the same context
+# with more KV/VRAM headroom. Both variants of a model serve ONE model ID and
+# share a port, so clients need no changes. Never run two variants together:
+#   make vllm-model MODEL=qwen3.6
+#   make vllm-model MODEL=qwen3.6-4bit
+# Or directly:
+#   docker compose --profile failback-4bit up -d vllm-qwen36-4bit
+#
+# GPU arbitration: this stack and ComfyUI share the RTX 4090. Use
+#   make gpu-comfyui   # sleep all vLLM, start ComfyUI
+#   make gpu-vllm      # stop ComfyUI, wake the default vLLM
+#   make gpu-status    # show who owns the GPU
+#
+# Model switching:
+#   make vllm-model MODEL=qwen3.6       # switch to failback
+#   make vllm-model MODEL=qwen3.8-opencode  # switch back
+#   make vllm-model list                # list available models
+#
+# Storage: /mnt/storage/models/ (Safetensors weights from HuggingFace).
+#
+# To add a new model:
+#   1. Download: HF_TOKEN=hf_... huggingface-cli download org/model \
+#        --local-dir /mnt/storage/models/<name>
+#   2. Add a service block below (copy an existing one, change model path)
+#   3. make up STACK=vllm
+#   4. make vllm-model MODEL=<name>
+
+name: glasswing-vllm
+
+services:
+  # ── Primary: Qwen 3.8 27B ──────────────────────────────────────
+  vllm-qwen38:
+    extends:
+      file: ../base.yaml
+      service: base
+    image: vllm/vllm-openai:latest
+    container_name: glasswing-vllm-qwen38
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3043:8000"
+
+    environment:
+      OTEL_SERVICE_NAME: glasswing-vllm-qwen38
+      # Required for /sleep and /wake_up endpoints.
+      VLLM_SERVER_DEV_MODE: "1"
+
+    volumes:
+      - /mnt/storage/models:/models:ro
+
+    gpus: all
+
+    command:
+      - "--model"
+      - "/models/qwen3.8-27b-int4"
+      - "--served-model-name"
+      - "qwen3.8-opencode"
+      - "--enable-sleep-mode"
+      # OpenCode sends tool_choice=auto; vLLM rejects it without both flags.
+      # Qwen 3.8 chat template emits XML-style <tool_call> blocks.
+      - "--enable-auto-tool-choice"
+      - "--tool-call-parser"
+      - "qwen3_xml"
+      # Qwen 3.5 defaults to thinking ON. OpenCode's reasoning_effort=none is
+      # dropped by LiteLLM, so disable it at the server for every caller.
+      - "--default-chat-template-kwargs"
+      - '{"enable_thinking": false}'
+      # Explicit KV size bypasses the default extensible-cache reservation,
+      # which otherwise caps a 27B model at ~80k tokens. 3.7e9 bytes leaves
+      # ~750 MiB headroom on the 4090 and fits 131072 tokens at k8v4.
+      - "--kv-cache-memory-bytes"
+      - "3700000000"
+      - "--max-model-len"
+      - "131072"
+      # FP8 keys + 4-bit values: +1.17% PPL, full 131k at ~54 tok/s.
+      - "--kv-cache-dtype"
+      - "turboquant_k8v4"
+      - "--max-num-batched-tokens"
+      - "1024"
+      - "--max-num-seqs"
+      - "1"
+
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+    labels:
+      com.glasswing.service: vllm
+      com.glasswing.model: qwen3.8-opencode
+
+    networks:
+      - glasswing
+
+  # ── Alternative KV profile: Qwen 3.8 with 4-bit KV ─────────────
+  # Same model, same port, same client-facing name as the default service.
+  # Lower quality (+2.71% PPL) but 1.37x KV headroom and ~1 GiB more VRAM free.
+  # Opt-in only: stop vllm-qwen38 before starting this one.
+  vllm-qwen38-4bit:
+    extends:
+      file: ../base.yaml
+      service: base
+    image: vllm/vllm-openai:latest
+    container_name: glasswing-vllm-qwen38-4bit
+    profiles: ["alt-4bit"]
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3043:8000"
+
+    environment:
+      OTEL_SERVICE_NAME: glasswing-vllm-qwen38-4bit
+      VLLM_SERVER_DEV_MODE: "1"
+
+    volumes:
+      - /mnt/storage/models:/models:ro
+
+    gpus: all
+
+    command:
+      - "--model"
+      - "/models/qwen3.8-27b-int4"
+      - "--served-model-name"
+      - "qwen3.8-opencode"
+      - "--enable-sleep-mode"
+      - "--enable-auto-tool-choice"
+      - "--tool-call-parser"
+      - "qwen3_xml"
+      - "--default-chat-template-kwargs"
+      - '{"enable_thinking": false}'
+      - "--kv-cache-memory-bytes"
+      - "3500000000"
+      - "--max-model-len"
+      - "131072"
+      - "--kv-cache-dtype"
+      - "turboquant_4bit_nc"
+      - "--max-num-batched-tokens"
+      - "1024"
+      - "--max-num-seqs"
+      - "1"
+
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+    labels:
+      com.glasswing.service: vllm
+      com.glasswing.model: qwen3.8-opencode
+
+    # LiteLLM addresses the primary by container name; keep that DNS name
+    # pointing at the active profile so no client config has to change.
+    networks:
+      glasswing:
+        aliases:
+          - glasswing-vllm-qwen38
+
+  # ── Failback: Qwen 3.6 27B ─────────────────────────────────────
+  # Started on demand. Not in the default `make up` path.
+  # Same hybrid KV geometry as 3.8 (4 KV heads, head_dim 256) and lighter
+  # weights, so the same 131K k8v4 settings fit with more VRAM headroom.
+  # To start: docker compose --profile failback up -d vllm-qwen36
+  vllm-qwen36:
+    extends:
+      file: ../base.yaml
+      service: base
+    image: vllm/vllm-openai:latest
+    container_name: glasswing-vllm-qwen36
+    profiles: ["failback"]
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3044:8000"
+
+    environment:
+      OTEL_SERVICE_NAME: glasswing-vllm-qwen36
+      VLLM_SERVER_DEV_MODE: "1"
+
+    volumes:
+      - /mnt/storage/models:/models:ro
+
+    gpus: all
+
+    command:
+      - "--model"
+      - "/models/qwen3.6-27b-awq-int4"
+      - "--served-model-name"
+      - "qwen3.6"
+      - "--enable-sleep-mode"
+      # Same Qwen XML tool-call format as the primary model.
+      - "--enable-auto-tool-choice"
+      - "--tool-call-parser"
+      - "qwen3_xml"
+      # Qwen 3.5 defaults to thinking ON. OpenCode's reasoning_effort=none is
+      # dropped by LiteLLM, so disable it at the server for every caller.
+      - "--default-chat-template-kwargs"
+      - '{"enable_thinking": false}'
+      # See the 3.8 service: explicit KV bytes bypass extensible-cache sizing.
+      - "--kv-cache-memory-bytes"
+      - "3700000000"
+      - "--max-model-len"
+      - "131072"
+      - "--kv-cache-dtype"
+      - "turboquant_k8v4"
+      - "--max-num-batched-tokens"
+      - "1024"
+      - "--max-num-seqs"
+      - "1"
+
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+    labels:
+      com.glasswing.service: vllm
+      com.glasswing.model: qwen3.6
+
+    networks:
+      - glasswing
+
+  # ── Alternative KV profile: Qwen 3.6 with 4-bit KV ────────────
+  # Same model, port and client-facing name as vllm-qwen36. Lower quality
+  # (+2.71% PPL) but more KV/VRAM headroom. Opt-in; stop vllm-qwen36 first.
+  vllm-qwen36-4bit:
+    extends:
+      file: ../base.yaml
+      service: base
+    image: vllm/vllm-openai:latest
+    container_name: glasswing-vllm-qwen36-4bit
+    profiles: ["failback-4bit"]
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3044:8000"
+
+    environment:
+      OTEL_SERVICE_NAME: glasswing-vllm-qwen36-4bit
+      VLLM_SERVER_DEV_MODE: "1"
+
+    volumes:
+      - /mnt/storage/models:/models:ro
+
+    gpus: all
+
+    command:
+      - "--model"
+      - "/models/qwen3.6-27b-awq-int4"
+      - "--served-model-name"
+      - "qwen3.6"
+      - "--enable-sleep-mode"
+      - "--enable-auto-tool-choice"
+      - "--tool-call-parser"
+      - "qwen3_xml"
+      - "--default-chat-template-kwargs"
+      - '{"enable_thinking": false}'
+      - "--kv-cache-memory-bytes"
+      - "3500000000"
+      - "--max-model-len"
+      - "131072"
+      - "--kv-cache-dtype"
+      - "turboquant_4bit_nc"
+      - "--max-num-batched-tokens"
+      - "1024"
+      - "--max-num-seqs"
+      - "1"
+
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+    labels:
+      com.glasswing.service: vllm
+      com.glasswing.model: qwen3.6
+
+    # LiteLLM addresses the failback by container name; keep that DNS name
+    # pointing at the active profile so no client config has to change.
+    networks:
+      glasswing:
+        aliases:
+          - glasswing-vllm-qwen36
+
+  # ── Lightweight: NVIDIA Nemotron Nano 9B v2 ────────────────────
+  # Small, fast model for quick tasks. Hybrid Transformer-Mamba architecture.
+  # Started on demand. Not in the default `make up` path.
+  # To start: docker compose --profile lightweight up -d
+  vllm-nemotron:
+    extends:
+      file: ../base.yaml
+      service: base
+    image: vllm/vllm-openai:latest
+    container_name: glasswing-vllm-nemotron
+    profiles: ["lightweight"]
+
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3045:8000"
+
+    environment:
+      OTEL_SERVICE_NAME: glasswing-vllm-nemotron
+      VLLM_SERVER_DEV_MODE: "1"
+
+    volumes:
+      - /mnt/storage/models:/models:ro
+
+    gpus: all
+
+    command:
+      - "--model"
+      - "/models/nemotron-nano-9b-v2"
+      - "--served-model-name"
+      - "nemotron-nano"
+      - "--trust-remote-code"
+      - "--mamba_ssm_cache_dtype"
+      - "float32"
+      - "--enable-sleep-mode"
+      - "--gpu-memory-utilization"
+      - "0.99"
+      - "--max-model-len"
+      - "32768"
+      - "--kv-cache-dtype"
+      - "fp8"
+      - "--max-num-seqs"
+      - "1"
+
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+    labels:
+      com.glasswing.service: vllm
+      com.glasswing.model: nemotron-nano
+
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

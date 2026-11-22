@@ -3,7 +3,7 @@
 #
 # Usage:
 #   ./scripts/inspect-images.sh            # all stacks
-#   ./scripts/inspect-images.sh ollama     # specific stack
+#   ./scripts/inspect-images.sh vllm       # specific stack
 #
 # Output format: stack  image:tag  created
 #

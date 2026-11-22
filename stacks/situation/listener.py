@@ -23,8 +23,8 @@ Design:
 Environment (same as brief.py):
   TELEGRAM_BOT_TOKEN   Bot API token (required)
   TELEGRAM_CHAT_ID     Authorized chat ID (required)
-  OLLAMA_URL           e.g. http://glasswing-ollama:11434
-  OLLAMA_MODEL         e.g. qwen3.8-opencode
+  VLLM_URL             e.g. http://glasswing-vllm-qwen38:8000
+  VLLM_MODEL           e.g. qwen3.8-opencode
   KUMA_URL, KUMA_API_TOKEN, BESZEL_URL, BESZEL_API_KEY,
   OPENOBSERVE_URL, OPENOBSERVE_EMAIL, OPENOBSERVE_PASSWORD,
   LITELLM_URL, LITELLM_MASTER_KEY

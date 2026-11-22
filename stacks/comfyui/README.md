@@ -5,39 +5,49 @@ the self-built path (pinned base + pinned ComfyUI tag + non-root user).
 
 ## Quick Start
 
+Just open the app: **http://192.168.68.62:3042**. The always-on gate
+(`stacks/comfyui-gate`) sleeps vLLM, starts ComfyUI, and proxies the UI. First
+load takes ~10–20s; that is expected.
+
+When you switch back to coding, an OpenCode request evicts ComfyUI and wakes
+vLLM automatically. No manual command is needed in either direction.
+
 ```bash
-# Switch to image mode (evicts Ollama, starts ComfyUI)
-make gpu-comfyui
-
-# Switch back to LLM mode (evicts ComfyUI, starts Ollama)
-make gpu-ollama
-
 # Check who owns the GPU
 make gpu-status
+
+# Optional explicit switches
+make gpu-comfyui   # sleep vLLM, start ComfyUI
+make gpu-vllm      # evict ComfyUI, wake the default vLLM model
 ```
 
 ## Access
 
 - **Web UI:** http://192.168.68.62:3042
 - **API:** `http://192.168.68.62:3042/prompt` (POST, API-format JSON)
-- **Health:** `http://192.168.68.62:3042/system_stats`
+- **Gate health:** `http://192.168.68.62:3042/health` (never wakes ComfyUI)
+- **ComfyUI health (internal only):** `http://glasswing-comfyui:8188/system_stats`
+
+ComfyUI no longer publishes a host port. `stacks/comfyui-gate` owns :3042.
 
 ## GPU Arbitration
 
-ComfyUI and Ollama share the RTX 4090 (24 GB). They cannot run simultaneously.
+ComfyUI and the vLLM models share the RTX 4090 (24 GB). They cannot both hold
+VRAM at once. An idle ComfyUI uses no GPU compute, but a generation loads a
+checkpoint, so the handoff happens before a prompt is submitted.
 
-| Command | Action |
+| Trigger | Action |
 |---|---|
-| `make gpu-comfyui` | Evict Ollama → start ComfyUI |
-| `make gpu-ollama` | Evict ComfyUI → start Ollama |
+| Open `http://192.168.68.62:3042` or `POST /prompt` | Gate sleeps vLLM → starts ComfyUI → waits healthy |
+| OpenCode coding request via `.opencode/plugins/vllm-autoswitch.ts` | `switch-model.sh` stops ComfyUI → wakes vLLM |
+| `make gpu-vllm` | Same, explicit |
 | `make gpu-status` | Show who owns the GPU |
 
-**Queue guard:** `make gpu-ollama` refuses to evict ComfyUI if a prompt is in
-flight (check `/queue`). Override with `FORCE=1 make gpu-ollama`.
+**Queue guard:** eviction refuses to stop ComfyUI while `/queue` reports prompts
+in flight. Override with `FORCE=1`. This protects an in-progress generation.
 
-**Reboot behavior:** A stopped `unless-stopped` container stays stopped across
-reboot. After a reboot, run `make gpu-ollama` (or `make gpu-comfyui`) to start
-whichever you need.
+**Reboot behavior:** the gate starts with the normal stack boot. ComfyUI stays
+stopped until the gate first sees a UI/API request.
 
 ## Storage
 
