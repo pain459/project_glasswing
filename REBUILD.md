@@ -99,7 +99,7 @@ The UUIDs are hardcoded at the top of that script:
 
 | Mount | UUID | Contents |
 | --- | --- | --- |
-| `/mnt/storage` | `83259698-d2a6-45e7-b503-7f106b746b39` | Ollama models, experiments |
+| `/mnt/storage` | `83259698-d2a6-45e7-b503-7f106b746b39` | vLLM/TEI models, ComfyUI models, experiments |
 | `/mnt/cold` | `9070ff10-5016-4b6f-a148-b5ed1ad61ae6` | media, books, Restic repository |
 
 If you are rebuilding with *different* disks, edit both the UUID **and** the
@@ -300,10 +300,10 @@ make network
 make restart-all JOBS=4
 ```
 
-`restart-all` deploys Infisical first, then Ollama, then the remaining stacks
-four at a time with per-stack logs. The first Ollama start pulls
-`qwen3.6:27b` (about 17 GB) and builds the checked-in coding model, so allow
-time and disk on `/mnt/storage`; `make up STACK=ollama` reports progress.
+`restart-all` deploys Infisical first, then vLLM and TEI, then the remaining
+stacks four at a time with per-stack logs. The first vLLM start loads
+`qwen3.8-27b-int4` (about 18 GB) from `/mnt/storage/models/`, so allow
+time and disk on `/mnt/storage`; `make up STACK=vllm` reports progress.
 
 Then generate and verify the access map and preflight the host:
 
@@ -347,7 +347,7 @@ make doctor              # pool, shared network, ports, hardcoded IPs, restart l
 make certificates-check  # TLS covers the host IP and is current
 make access-check        # ACCESS.md matches the compose files
 make secrets-check       # Infisical auth + injection
-make ai-preflight        # GPU, Ollama flags, model limits, OpenCode path
+make ai-preflight        # GPU, vLLM health, TEI health, OpenCode path
 make mcp-preflight       # initialize and list tools on all three MCP servers
 make status              # every glasswing-* container Up
 ```
@@ -428,7 +428,7 @@ cd glasswing-9c021aa-20261105-1
 The deploy script:
 1. Verifies image tarball checksum against the SHA256 hash
 2. Loads all Docker images into the local daemon via `docker load`
-3. Deploys all stacks using patched compose files (Infisical first, then Ollama, then the rest)
+3. Deploys all stacks using patched compose files (Infisical first, then vLLM + TEI, then the rest)
 4. Runs health checks on all containers
 
 ### Release Management
@@ -490,8 +490,8 @@ for scope and risks.
   starts.
 - **The Restic repository is on the same machine.** A full loss needs the
   off-host copy that is still not configured.
-- **Model downloads are not backed up.** `make up STACK=ollama` re-pulls about
-  17 GB.
+- **Model downloads are not backed up.** vLLM/TEI models (about 36 GB total)
+  must be re-downloaded from HuggingFace.
 - **The host IP is baked into `ACCESS.md`, Homepage config, and the certificates.**
   Changing it means `./scripts/04-certificates.sh --force`, `make access`, and a review of
   `stacks/homepage/config`.

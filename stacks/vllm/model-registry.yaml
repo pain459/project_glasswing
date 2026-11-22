@@ -1,0 +1,25 @@
+# vLLM model registry — the single source of truth for available models.
+#
+# switch-model.sh reads this file to know which container to wake/sleep.
+# Add a new model by:
+#   1. Downloading weights to /mnt/storage/models/<name>
+#   2. Adding a service block to compose.yaml (copy an existing one)
+#   3. Adding an entry here
+#   4. make up STACK=vllm && make vllm-model MODEL=<name>
+
+models:
+  qwen3.8-opencode:
+    container: glasswing-vllm-qwen38
+    port: 3043
+    description: "Qwen 3.8 27B — primary coding model"
+    default: true
+
+  qwen3.6:
+    container: glasswing-vllm-qwen36
+    port: 3044
+    description: "Qwen 3.6 27B — failback"
+
+  nemotron-nano:
+    container: glasswing-vllm-nemotron
+    port: 3045
+    description: "NVIDIA Nemotron Nano 9B v2 — lightweight, fast"

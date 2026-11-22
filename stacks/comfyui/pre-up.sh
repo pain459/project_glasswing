@@ -41,6 +41,6 @@ if [ ! -w "${STORAGE}" ]; then
     exit 1
 fi
 
-echo "[comfyui:pre-up] Evicting Ollama from GPU..."
+echo "[comfyui:pre-up] Sleeping vLLM to free the GPU..."
 bash "${GPU_MODE}" comfyui
 echo "[comfyui:pre-up] GPU is free for ComfyUI."

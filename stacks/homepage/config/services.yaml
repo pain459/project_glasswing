@@ -96,12 +96,18 @@
         description: LLM Gateway — Cost & Token Tracking for OpenCode
         container: glasswing-litellm
         siteMonitor: http://192.168.68.62:3035/health/liveliness
-    - Ollama:
-        icon: ollama.png
-        href: http://192.168.68.62:11434
-        description: RTX 4090 · Model Inference
-        container: glasswing-ollama
-        siteMonitor: http://192.168.68.62:11434/api/version
+    - vLLM:
+        icon: mdi-robot
+        href: http://192.168.68.62:3043
+        description: RTX 4090 · LLM Inference (Qwen 3.8 27B)
+        container: glasswing-vllm-qwen38
+        siteMonitor: http://192.168.68.62:3043/health
+    - TEI:
+        icon: mdi-text-box-search
+        href: http://192.168.68.62:3046
+        description: CPU · Text Embeddings (nomic-embed-text)
+        container: glasswing-tei
+        siteMonitor: http://192.168.68.62:3046/health
 
     - ComfyUI:
         icon: mdi-image-multiple
@@ -113,7 +119,7 @@
     - Open WebUI:
         icon: mdi-message-text-outline
         href: http://192.168.68.62:3041
-        description: OpenUI Chat — Ollama models
+        description: OpenUI Chat — vLLM models
         container: glasswing-open-webui
         siteMonitor: http://192.168.68.62:3041/health
 

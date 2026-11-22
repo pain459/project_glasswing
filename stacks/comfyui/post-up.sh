@@ -66,4 +66,4 @@ PY
 
 echo ""
 echo "[comfyui:post-up] ComfyUI is ready at http://${HOST_IP}:${PORT}"
-echo "[comfyui:post-up] Switch back to Ollama with: make gpu-ollama"
+echo "[comfyui:post-up] Switch back to vLLM with: make gpu-vllm"

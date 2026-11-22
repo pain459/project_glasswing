@@ -2,7 +2,7 @@
 """Glasswing situation brief.
 
 Gathers a compact snapshot of the platform, reasons over it with the local
-Ollama model, and pushes a plain-English brief to Telegram.
+vLLM model, and pushes a plain-English brief to Telegram.
 
 Design goals:
   - Local inference only (no cloud calls).
@@ -13,8 +13,8 @@ Design goals:
 Environment (injected by Infisical via with-infisical.sh):
   TELEGRAM_BOT_TOKEN   Bot API token (required)
   TELEGRAM_CHAT_ID     Destination chat (required)
-  OLLAMA_URL           e.g. http://glasswing-ollama:11434 (required)
-  OLLAMA_MODEL         e.g. qwen3.8-opencode (default)
+  VLLM_URL             e.g. http://glasswing-vllm-qwen38:8000 (required)
+  VLLM_MODEL           e.g. qwen3.8-opencode (default)
   KUMA_URL             e.g. http://glasswing-uptime-kuma:3001 (optional)
   KUMA_API_TOKEN       Uptime Kuma API token (optional, for /api/status)
   BESZEL_URL           e.g. http://glasswing-beszel:8090 (optional)
@@ -43,8 +43,8 @@ from datetime import datetime, timezone
 
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "")
-OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://glasswing-ollama:11434").rstrip("/")
-OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "qwen3.8-opencode")
+VLLM_URL = os.environ.get("VLLM_URL", "http://glasswing-vllm-qwen38:8000").rstrip("/")
+VLLM_MODEL = os.environ.get("VLLM_MODEL", "qwen3.8-opencode")
 KUMA_URL = os.environ.get("KUMA_URL", "http://glasswing-uptime-kuma:3001").rstrip("/")
 KUMA_API_TOKEN = os.environ.get("KUMA_API_TOKEN", "")
 BESZEL_URL = os.environ.get("BESZEL_URL", "http://glasswing-beszel:8090").rstrip("/")
@@ -422,7 +422,7 @@ def reason(snapshot: dict) -> str:
     user_message = f"Here is the current snapshot:\n\n{json.dumps(snapshot, indent=2)}"
 
     payload = {
-        "model": OLLAMA_MODEL,
+        "model": VLLM_MODEL,
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
@@ -433,7 +433,7 @@ def reason(snapshot: dict) -> str:
     }
 
     # Ollama OpenAI-compatible endpoint
-    data = http_post(f"{OLLAMA_URL}/v1/chat/completions", payload)
+    data = http_post(f"{VLLM_URL}/v1/chat/completions", payload)
     if data is None:
         return "⚠️ **Brief generation failed** — Ollama is unreachable or the model is not loaded. The raw snapshot is attached below.\n\n```\n" + json.dumps(snapshot, indent=2) + "\n```"
 
@@ -768,7 +768,7 @@ def paperless_get_document(doc_id: int) -> dict | None:
 
 def main() -> int:
     print(f"[INFO] Glasswing situation brief — {datetime.now(timezone.utc).isoformat()}")
-    print(f"[INFO] Ollama: {OLLAMA_URL} (model: {OLLAMA_MODEL})")
+    print(f"[INFO] vLLM: {VLLM_URL} (model: {VLLM_MODEL})")
     print(f"[INFO] Telegram: chat_id={TELEGRAM_CHAT_ID[:4]}...")
 
     # 1. Gather

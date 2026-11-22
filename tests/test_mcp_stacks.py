@@ -183,7 +183,7 @@ class MCPStackTests(unittest.TestCase):
             "DR_RUNBOOK.md",
             "MAINTENANCE.md",
             "stacks/infisical-plan.md",
-            "stacks/ollama/README.md",
+            "stacks/vllm/README.md",
         ]
         obsolete = (":3019", "STACK=opencode", "stacks/opencode", "glasswing-opencode")
         failures = []

@@ -14,9 +14,10 @@ services:
 
     environment:
       OTEL_SERVICE_NAME: glasswing-open-webui
-      OLLAMA_BASE_URL: http://glasswing-ollama:11434
+      # Open WebUI supports OpenAI-compatible endpoints. Point it at vLLM.
+      OPENAI_API_BASE_URL: http://glasswing-vllm-qwen38:8000/v1
+      OPENAI_API_KEY: vllm
       WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:?Required from Infisical}
-      ENABLE_OLLAMA_API: "true"
 
     volumes:
       - open-webui_data:/app/backend/data

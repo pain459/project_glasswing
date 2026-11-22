@@ -1,7 +1,7 @@
 # Situation Brief
 #
 # Runs the Glasswing situation brief every 6 hours: gathers a snapshot of
-# the platform, reasons over it with the local Ollama model, and pushes a
+# the platform, reasons over it with the local vLLM model, and pushes a
 # plain-English brief to Telegram.
 #
 # How it works:
@@ -33,19 +33,29 @@ steps:
   - id: run_brief
     run: |
       cd /home/ravik/src_git/project_glasswing
+      # Single-quoted bash -c defers $VAR expansion until after with-infisical.sh
+      # has exported the secrets. Expanding in the outer shell would pass empties.
       ./scripts/with-infisical.sh /situation stacks/situation/secrets.list -- \
-        env TELEGRAM_BOT_TOKEN="$$TELEGRAM_BOT_TOKEN" \
-            TELEGRAM_CHAT_ID="$$TELEGRAM_CHAT_ID" \
-            LITELLM_MASTER_KEY="$$LITELLM_MASTER_KEY" \
-            TZ="$$GLASSWING_TZ" \
-            OLLAMA_URL="http://glasswing-ollama:11434" \
-            OLLAMA_MODEL="qwen3.8-opencode" \
-            KUMA_URL="http://glasswing-uptime-kuma:3001" \
-            BESZEL_URL="http://glasswing-beszel:8090" \
-            LITELLM_URL="http://glasswing-litellm:4000" \
-          docker run --rm \
-            --network glasswing \
-            --memory 256m \
-            --pids-limit 64 \
-            glasswing/situation:latest
+        bash -c 'docker run --rm \
+          --network glasswing \
+          --memory 256m \
+          --pids-limit 64 \
+          -v /var/run/docker.sock:/var/run/docker.sock:ro \
+          -e TELEGRAM_BOT_TOKEN \
+          -e TELEGRAM_CHAT_ID \
+          -e LITELLM_MASTER_KEY \
+          -e KUMA_API_TOKEN \
+          -e BESZEL_API_KEY \
+          -e PAPERLESS_API_TOKEN \
+          -e OPENOBSERVE_EMAIL="$ZO_ROOT_USER_EMAIL" \
+          -e OPENOBSERVE_PASSWORD="$ZO_ROOT_USER_PASSWORD" \
+          -e TZ="$GLASSWING_TZ" \
+          -e VLLM_URL="http://glasswing-vllm-qwen38:8000" \
+          -e VLLM_MODEL="qwen3.8-opencode" \
+          -e KUMA_URL="http://glasswing-uptime-kuma:3001" \
+          -e BESZEL_URL="http://glasswing-beszel:8090" \
+          -e OPENOBSERVE_URL="http://glasswing-openobserve:5080" \
+          -e LITELLM_URL="http://glasswing-litellm:4000" \
+          -e PAPERLESS_URL="http://glasswing-paperless:8000" \
+          glasswing/situation:latest'
     timeout_sec: 300    # 5 minutes max (inference + delivery)

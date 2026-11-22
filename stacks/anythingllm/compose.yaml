@@ -17,10 +17,14 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Required from Infisical}
 
       LLM_PROVIDER: ${LLM_PROVIDER:?Required from Infisical}
-      OLLAMA_BASE_PATH: ${OLLAMA_BASE_PATH:?Required from Infisical}
+      GENERIC_OPEN_AI_BASE_PATH: ${GENERIC_OPEN_AI_BASE_PATH:?Required from Infisical}
+      GENERIC_OPEN_AI_API_KEY: ${GENERIC_OPEN_AI_API_KEY:-vllm}
+      GENERIC_OPEN_AI_MODEL_PREF: ${GENERIC_OPEN_AI_MODEL_PREF:-qwen3.8-opencode}
 
       EMBEDDING_ENGINE: ${EMBEDDING_ENGINE:?Required from Infisical}
       EMBEDDING_BASE_PATH: ${EMBEDDING_BASE_PATH:?Required from Infisical}
+      GENERIC_OPEN_AI_EMBEDDING_API_KEY: ${GENERIC_OPEN_AI_EMBEDDING_API_KEY:-tei}
+      EMBEDDING_MODEL_PREF: ${EMBEDDING_MODEL_PREF:-nomic-embed-text-v1.5}
 
       TZ: ${GLASSWING_TZ:?Required from Infisical}
       # OTEL integration

@@ -3,7 +3,7 @@
 #
 # Usage:
 #   ./scripts/check-updates.sh              # check all stacks
-#   ./scripts/check-updates.sh ollama       # check specific stack
+#   ./scripts/check-updates.sh vllm         # check specific stack
 #
 # Requires: docker, jq
 # Run on the host where Docker is available.
@@ -69,7 +69,8 @@ KNOWN_LATEST=(
   ["ghcr.io/kareadita/kavita"]="0.9.1.4"
   ["docker.io/adguard/adguardhome"]="0.107.79"
   ["docker.io/infisical/infisical"]="0.167.4"
-  ["docker.io/ollama/ollama"]="0.40.11"
+  ["vllm/vllm-openai"]="latest"
+  ["ghcr.io/huggingface/text-embeddings-inference"]="cpu-1.5"
   ["docker.io/otel/opentelemetry-collector-contrib"]="0.164.0"
   ["docker.io/excalidraw/excalidraw"]="0.18.1"
   ["docker.io/mintplexlabs/anythingllm"]="1.19"

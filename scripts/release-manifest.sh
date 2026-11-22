@@ -217,7 +217,7 @@ cmd_bump() {
 
   if [ $# -lt 2 ]; then
     fail "Usage: $0 bump <stack> <new-tag>"
-    fail "Example: $0 bump ollama 0.40.12"
+    fail "Example: $0 bump vllm 0.10.0"
     exit 1
   fi
 
@@ -645,7 +645,7 @@ Release Pipeline:
 
 Examples:
   ./scripts/release-manifest.sh status
-  ./scripts/release-manifest.sh bump ollama 0.40.12
+  ./scripts/release-manifest.sh bump vllm 0.10.0
   ./scripts/release-manifest.sh apply
   ./scripts/release-manifest.sh release-list
 EOF

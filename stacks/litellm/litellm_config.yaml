@@ -1,6 +1,6 @@
 # LiteLLM Proxy Configuration — Glasswing
 #
-# Purpose: Route OpenCode's Ollama models through LiteLLM for unified
+# Purpose: Route OpenCode's vLLM models through LiteLLM for unified
 # cost and token tracking. Spend logs are stored in the shared Postgres
 # database (litellm DB) and viewable in the Admin UI at /ui.
 #
@@ -18,23 +18,26 @@
 #   Energy attribution:   cached → equipment + idle; fresh → prefill; output → generation
 #   Rates:                cached ₹0.59/MTok, input ₹4.36/MTok, output ₹132.16/MTok
 #                       at ₹94.91/USD. USD is display-only; ₹ is the primary basis.
-#   llama3.1 still uses the 2026-10-30 basis (re-audit pending; loading it
-#   would evict the 27B model with only ~1.8 GB headroom).
+#
+# Inference backend: vLLM (replaces Ollama).
+#   Primary:  glasswing-vllm-qwen38:8000  (port 3043)
+#   Failback: glasswing-vllm-qwen36:8000  (port 3044)
+# Embeddings: TEI (glasswing-tei:80, port 3046) — not routed through LiteLLM.
 
 # To add a new model, append to model_list. The model_name is what
 # OpenCode (or any client) uses in the API request.
 
 model_list:
   # ── Primary coding model ─────────────────────────────────────
-  # Serve qwen3.8-opencode with:
-  #   OLLAMA_KV_CACHE_TYPE=q4_0, OLLAMA_MAX_LOADED_MODELS=2, num_ctx 131072
-  # which keeps all 66 layers on the GPU and leaves the embedding model
-  # resident beside it. See stacks/ollama/README.md.
+  # Qwen 3.8 27B served by vLLM with:
+  #   --gpu-memory-utilization 0.99, --kv-cache-dtype fp8,
+  #   --max-model-len 32768, --max-num-seqs 1
+  # See stacks/vllm/README.md.
   - model_name: qwen3.8-opencode
     litellm_params:
       model: openai/qwen3.8-opencode
-      api_base: http://glasswing-ollama:11434/v1
-      api_key: ollama
+      api_base: http://glasswing-vllm-qwen38:8000/v1
+      api_key: vllm
       # Electricity-based pricing, 2026-11-15 wall-meter calibration (₹9/kWh).
       # Wall draw 19.075 kWh = ₹171.68 over 163 h (Nov 9-15).
       # Equipment 41W + server idle 24W → cached tokens.
@@ -45,28 +48,30 @@ model_list:
       cache_read_input_token_cost: 0.0000000062
 
   # ── Failback coding model ────────────────────────────────────
-  # Must be the *tuned* qwen3.6-opencode alias, not the qwen3.6:27b base
-  # model: the base carries a small default context and default thinking, so
-  # a failover to it would silently lose most of the window. Build it with
-  # `make ollama-failback`. Same budget and temperature as the primary.
+  # Qwen 3.6 27B served by vLLM. Same context window and budget as primary.
+  # Switch with: make vllm-model MODEL=qwen3.6
   - model_name: qwen3.6
     litellm_params:
-      model: openai/qwen3.6-opencode:latest
-      api_base: http://glasswing-ollama:11434/v1
-      api_key: ollama
+      model: openai/qwen3.6
+      api_base: http://glasswing-vllm-qwen36:8000/v1
+      api_key: vllm
       # Same rates as primary (see qwen3.8-opencode entry).
       input_cost_per_token: 0.0000000459
       output_cost_per_token: 0.0000013925
       cache_read_input_token_cost: 0.0000000062
 
-  # ── Llama 3.1 8B (lightweight) ───────────────────────────────
-  - model_name: llama3.1
+  # ── NVIDIA Nemotron Nano 9B v2 (lightweight) ──────────────────
+  # Hybrid Transformer-Mamba, thinking budget, vLLM-native.
+  # Switch with: make vllm-model MODEL=nemotron-nano
+  - model_name: nemotron-nano
     litellm_params:
-      model: openai/llama3.1:8b
-      api_base: http://glasswing-ollama:11434/v1
-      api_key: ollama
-      input_cost_per_token: 0.0000000434
-      output_cost_per_token: 0.0000001104
+      model: openai/nemotron-nano
+      api_base: http://glasswing-vllm-nemotron:8000/v1
+      api_key: vllm
+      # Same rates as primary (see qwen3.8-opencode entry).
+      input_cost_per_token: 0.0000000459
+      output_cost_per_token: 0.0000013925
+      cache_read_input_token_cost: 0.0000000062
 
 litellm_settings:
   # Drop unsupported params instead of failing

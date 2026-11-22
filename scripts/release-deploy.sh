@@ -375,20 +375,29 @@ main() {
   fi
   total=$((total + 1))
 
-  # Deploy ollama second (inference backend)
-  info "Deploying Ollama (inference backend)..."
-  if deploy_stack "ollama"; then
+  # Deploy vllm + tei second (inference backends)
+  info "Deploying vLLM (inference backend)..."
+  if deploy_stack "vllm"; then
     success=$((success + 1))
   else
     failed=$((failed + 1))
-    fail_list="$fail_list\n  - ollama"
+    fail_list="$fail_list\n  - vllm"
+  fi
+  total=$((total + 1))
+
+  info "Deploying TEI (embeddings backend)..."
+  if deploy_stack "tei"; then
+    success=$((success + 1))
+  else
+    failed=$((failed + 1))
+    fail_list="$fail_list\n  - tei"
   fi
   total=$((total + 1))
 
   # Deploy remaining stacks
   while IFS= read -r stack; do
     # Skip already deployed
-    [ "$stack" = "infisical" ] || [ "$stack" = "ollama" ] && continue
+    [ "$stack" = "infisical" ] || [ "$stack" = "vllm" ] || [ "$stack" = "tei" ] && continue
 
     total=$((total + 1))
     if deploy_stack "$stack"; then

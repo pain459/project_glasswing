@@ -23,7 +23,7 @@ GLASSWING_NETWORK_SUBNET ?= 10.89.0.0/24
 # shared network everywhere.
 export GLASSWING_NETWORK
 
-# How many stacks `make restart-all` deploys at once. Infisical and Ollama always
+# How many stacks `make restart-all` deploys at once. Infisical and vLLM always
 # start first (secrets and the inference backend); the rest are independent.
 JOBS ?= 4
 
@@ -58,9 +58,10 @@ help:
 	@echo "make ps STACK=name                Show stack status"
 	@echo "make check STACK=name             Validate Compose configuration and show status"
 	@echo "make status                       Show all Docker containers"
-	@echo "make ollama-model                 Rebuild the coding model from its Modelfile"
-	@echo "make ollama-failback              Build the tuned qwen3.6 failback model"
-	@echo "make ai-preflight                 Validate the Ollama/OpenCode inference baseline"
+	@echo "make vllm-model MODEL=name        Switch the active vLLM model"
+	@echo "make vllm-model list              List available vLLM models"
+	@echo "make vllm-model current           Show the current vLLM model"
+	@echo "make ai-preflight                 Validate the vLLM/OpenCode inference baseline"
 	@echo "make mcp-preflight                Validate all host-only MCP endpoints"
 	@echo "make secrets-check                Verify Infisical integration"
 	@echo "make secrets-plan                 List keys still to supply / emit templates"
@@ -262,7 +263,7 @@ secrets-injection-check:
 # Glasswing platform-wide lifecycle management
 # --------------------------------------------------
 
-.PHONY: list-stacks restart-all ollama-model ollama-failback ai-preflight
+.PHONY: list-stacks restart-all vllm-model ai-preflight
 
 # Discover all independently managed Compose projects.
 STACKS := $(patsubst stacks/%/compose.yaml,%,$(wildcard stacks/*/compose.yaml))
@@ -282,13 +283,15 @@ restart-all: netcheck
 	$(MAKE) --no-print-directory network; \
 	echo "[INFO] Starting Infisical (secret source)"; \
 	$(MAKE) --no-print-directory up STACK=infisical || exit 1; \
-	echo "[INFO] Starting Ollama (inference backend)"; \
-	$(MAKE) --no-print-directory up STACK=ollama || exit 1; \
+	echo "[INFO] Starting vLLM (inference backend)"; \
+	$(MAKE) --no-print-directory up STACK=vllm || exit 1; \
+	echo "[INFO] Starting TEI (embeddings backend)"; \
+	$(MAKE) --no-print-directory up STACK=tei || exit 1; \
 	logdir=$$(mktemp -d); \
 	echo ""; \
-	echo "[INFO] Reconciling $(words $(filter-out infisical ollama comfyui,$(STACKS))) stacks, $(JOBS) at a time"; \
+	echo "[INFO] Reconciling $(words $(filter-out infisical vllm tei comfyui,$(STACKS))) stacks, $(JOBS) at a time"; \
 	running=0; \
-	for stack in $(filter-out infisical ollama comfyui,$(STACKS)); do \
+	for stack in $(filter-out infisical vllm tei comfyui,$(STACKS)); do \
 	  echo "[INFO] Deploying $$stack"; \
 	  ( \
 	    if $(MAKE) --no-print-directory up STACK=$$stack >"$$logdir/$$stack.log" 2>&1; then \
@@ -315,31 +318,24 @@ restart-all: netcheck
 
 
 # --------------------------------------------------
-# Pathfinder local inference baseline
+# Pathfinder local inference baseline (vLLM)
 # --------------------------------------------------
 
-OLLAMA_CONTAINER ?= glasswing-ollama
-OLLAMA_MODEL ?= qwen3.8-opencode:latest
-OLLAMA_BASE_MODEL ?= qwen3.8:27b
-OLLAMA_MODELFILE ?= stacks/ollama/models/qwen3.8-opencode.Modelfile
+VLLM_REGISTRY ?= stacks/vllm/model-registry.yaml
+VLLM_SWITCH ?= stacks/vllm/switch-model.sh
 
-# Stack hooks and the build script read these; command-line overrides still win.
-export OLLAMA_CONTAINER OLLAMA_MODEL OLLAMA_BASE_MODEL OLLAMA_MODELFILE
-export SKIP_PREFLIGHT FORCE
-
-# Lower-level target. `make up STACK=ollama` runs this automatically through
-# stacks/ollama/post-up.sh, including pulling the base model when it is missing.
-ollama-model:
-	@./stacks/ollama/build-model.sh
-
-# The failback is the same tuning on the previous base model. It is built on
-# demand rather than on every deploy, because it costs another ~17 GB of
-# weights that are only needed if the primary model has to be replaced.
-ollama-failback:
-	@OLLAMA_MODEL=qwen3.6-opencode:latest \
-	 OLLAMA_BASE_MODEL=qwen3.6:27b \
-	 OLLAMA_MODELFILE=stacks/ollama/models/qwen3.6-opencode.Modelfile \
-	 ./stacks/ollama/build-model.sh
+# Switch the active vLLM model.
+# Usage: make vllm-model MODEL=qwen3.6
+#        make vllm-model list
+#        make vllm-model current
+vllm-model:
+	@if [ -z "$(MODEL)" ]; then \
+	  echo "Usage: make vllm-model MODEL=<name>"; \
+	  echo "Available models:"; \
+	  ./$(VLLM_SWITCH) list; \
+	  exit 1; \
+	fi
+	@./$(VLLM_SWITCH) $(MODEL)
 
 ai-preflight:
 	@./scripts/ai-preflight.sh --opencode
@@ -354,18 +350,18 @@ mcp-preflight:
 
 
 # --------------------------------------------------
-# GPU arbitration: ComfyUI and Ollama share the RTX 4090
+# GPU arbitration: ComfyUI and vLLM share the RTX 4090
 # --------------------------------------------------
 
 gpu-comfyui:
-	@echo "[INFO] Switching GPU to ComfyUI (evicting Ollama)..."
+	@echo "[INFO] Switching GPU to ComfyUI (sleeping vLLM)..."
 	@./scripts/gpu-mode.sh comfyui
 	@$(MAKE) --no-print-directory up STACK=comfyui
 
-gpu-ollama:
-	@echo "[INFO] Switching GPU to Ollama (evicting ComfyUI)..."
-	@./scripts/gpu-mode.sh ollama
-	@$(MAKE) --no-print-directory up STACK=ollama
+gpu-vllm:
+	@echo "[INFO] Switching GPU to vLLM (evicting ComfyUI)..."
+	@./scripts/gpu-mode.sh vllm
+	@$(MAKE) --no-print-directory up STACK=vllm
 
 gpu-status:
 	@./scripts/gpu-mode.sh status
@@ -400,8 +396,8 @@ situation:
 	    -e OPENOBSERVE_EMAIL="$$ZO_ROOT_USER_EMAIL" \
 	    -e OPENOBSERVE_PASSWORD="$$ZO_ROOT_USER_PASSWORD" \
 	    -e TZ="$$GLASSWING_TZ" \
-	    -e OLLAMA_URL="http://glasswing-ollama:11434" \
-	    -e OLLAMA_MODEL="qwen3.8-opencode" \
+	    -e VLLM_URL="http://glasswing-vllm-qwen38:8000" \
+	    -e VLLM_MODEL="qwen3.8-opencode" \
 	    -e KUMA_URL="http://glasswing-uptime-kuma:3001" \
 	    -e BESZEL_URL="http://glasswing-beszel:8090" \
 	    -e OPENOBSERVE_URL="http://glasswing-openobserve:5080" \
@@ -465,7 +461,7 @@ release-status-updates:
 release-bump:
 	@if [ -z "$(RELEASE_TAG)" ]; then \
 	  echo "Usage: make release-bump STACK=name TAG=version"; \
-	  echo "Example: make release-bump STACK=ollama TAG=0.40.12"; \
+	  echo "Example: make release-bump STACK=vllm TAG=0.10.0"; \
 	  exit 1; \
 	fi
 	@./scripts/release-manifest.sh bump $(STACK) $(RELEASE_TAG)
