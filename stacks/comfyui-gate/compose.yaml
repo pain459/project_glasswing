@@ -1,0 +1,49 @@
+# ComfyUI gate — the always-on face of ComfyUI on :3042.
+#
+# The Homepage tile and browser bookmark point here. This container never
+# sleeps. ComfyUI itself is internal-only (:8188 on the glasswing network) and
+# is started by the gate when the UI is opened or work is submitted.
+#
+# Startup sequence (see app.py):
+#   1. any awake vLLM model is put to sleep via /sleep (weights -> CPU RAM)
+#   2. the stopped glasswing-comfyui container is started via Docker API
+#   3. ComfyUI /system_stats is polled until healthy, then the request is proxied
+#
+# Opening a page can therefore take ~10-20s on first use; that is expected.
+# The reverse handoff (coding reclaims the GPU) is in scripts/gpu-mode.sh.
+#
+# Docker socket is rw because the gate must be able to start the ComfyUI
+# container. Treat this service as privileged, like Portainer.
+
+name: glasswing-comfyui-gate
+
+services:
+  comfyui-gate:
+    extends:
+      file: ../base.yaml
+      service: base
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: glasswing/comfyui-gate:local
+    container_name: glasswing-comfyui-gate
+    ports:
+      - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3042:80"
+    environment:
+      OTEL_SERVICE_NAME: glasswing-comfyui-gate
+      GLASSWING_HOST_IP: ${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}
+      COMFYUI_CONTAINER: glasswing-comfyui
+      COMFYUI_BACKEND: http://glasswing-comfyui:8188
+      COMFYUI_WS_BACKEND: ws://glasswing-comfyui:8188
+      VLLM_REGISTRY: /app/model-registry.yaml
+      COMFYUI_WAKE_TIMEOUT: "90"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../vllm/model-registry.yaml:/app/model-registry.yaml:ro
+    networks:
+      - glasswing
+
+networks:
+  glasswing:
+    name: ${GLASSWING_NETWORK:-glasswing}
+    external: true

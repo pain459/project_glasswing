@@ -361,6 +361,7 @@ mcp-preflight:
 gpu-comfyui:
 	@echo "[INFO] Switching GPU to ComfyUI (sleeping vLLM)..."
 	@./scripts/gpu-mode.sh comfyui
+	@$(MAKE) --no-print-directory up STACK=comfyui-gate
 	@$(MAKE) --no-print-directory up STACK=comfyui
 
 gpu-vllm:

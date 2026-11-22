@@ -3,19 +3,20 @@
 set -euo pipefail
 
 HOST_IP="${GLASSWING_HOST_IP:-127.0.0.1}"
-PORT=3042
-BASE="http://${HOST_IP}:${PORT}"
+CONTAINER="glasswing-comfyui"
 
-echo "[comfyui:post-up] Verifying ComfyUI at ${BASE}..."
+# ComfyUI is internal-only now; host :3042 belongs to the always-on gate.
+# Probe through the container so this check also works while ComfyUI is stopped.
+echo "[comfyui:post-up] Verifying ComfyUI inside ${CONTAINER}..."
 
 for i in $(seq 1 36); do
-    if wget -q -O /dev/null "${BASE}/system_stats" 2>/dev/null; then
+    if docker exec "${CONTAINER}" wget -q -O /dev/null http://127.0.0.1:8188/system_stats 2>/dev/null; then
         echo "[comfyui:post-up] ComfyUI is healthy."
         break
     fi
     if [ "$i" -eq 36 ]; then
         echo "[comfyui:post-up] ERROR: ComfyUI did not become healthy in 180s." >&2
-        docker logs --tail 60 glasswing-comfyui 2>&1 || true
+        docker logs --tail 60 "${CONTAINER}" 2>&1 || true
         exit 1
     fi
     sleep 5
@@ -23,7 +24,7 @@ done
 
 STATS_FILE="$(mktemp)"
 trap 'rm -f "${STATS_FILE}"' EXIT
-curl -sf "${BASE}/system_stats" > "${STATS_FILE}"
+docker exec "${CONTAINER}" wget -q -O - http://127.0.0.1:8188/system_stats > "${STATS_FILE}"
 
 # This is the only meaningful GPU check: BuildKit builds have no GPU, so the
 # Dockerfile can only assert torch/CUDA versions, not device availability.
@@ -65,5 +66,5 @@ PY
 }
 
 echo ""
-echo "[comfyui:post-up] ComfyUI is ready at http://${HOST_IP}:${PORT}"
+echo "[comfyui:post-up] ComfyUI is ready via the gate at http://${HOST_IP}:3042"
 echo "[comfyui:post-up] Switch back to vLLM with: make gpu-vllm"

@@ -146,6 +146,11 @@ cmd_switch() {
 
   echo "Switching to $target ($t_container)..."
 
+  # Step 0: the GPU can only have one consumer. ComfyUI holds VRAM until its
+  # container is stopped (no mid-prompt free endpoint), so evict it first.
+  # The queue guard lives in gpu-mode.sh; FORCE=1 passes through this script.
+  "${SCRIPT_DIR}/../../scripts/gpu-mode.sh" evict-comfyui
+
   # Step 1: relinquish the GPU. Sleep models on other ports for a fast wake,
   # but STOP anything sharing the target's port so Compose can bind it.
   while IFS='|' read -r model container service profile port desc; do

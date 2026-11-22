@@ -2,14 +2,16 @@
 # GPU arbitration: ComfyUI and vLLM share the RTX 4090.
 #
 # Usage:
-#   scripts/gpu-mode.sh comfyui   # sleep vLLM, free the GPU for ComfyUI
-#   scripts/gpu-mode.sh vllm      # evict ComfyUI, free the GPU for vLLM
-#   scripts/gpu-mode.sh status    # show who owns the GPU
+#   scripts/gpu-mode.sh comfyui        # sleep vLLM, free the GPU for ComfyUI
+#   scripts/gpu-mode.sh vllm           # evict ComfyUI, wake the default vLLM model
+#   scripts/gpu-mode.sh evict-comfyui  # stop ComfyUI only (used by model switching)
+#   scripts/gpu-mode.sh status         # show who owns the GPU
 #
 # Called by:
 #   make gpu-comfyui  →  scripts/gpu-mode.sh comfyui
 #   make gpu-vllm     →  scripts/gpu-mode.sh vllm
 #   make gpu-status   →  scripts/gpu-mode.sh status
+#   switch-model.sh   →  scripts/gpu-mode.sh evict-comfyui
 #
 # Design:
 #   - vLLM has /sleep and /wake_up endpoints (VLLM_SERVER_DEV_MODE=1).
@@ -21,7 +23,9 @@
 
 set -euo pipefail
 
-VLLM_REGISTRY="$(cd "$(dirname "${BASH_SOURCE[0]}")/../stacks/vllm" && pwd)/model-registry.yaml"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VLLM_REGISTRY="${REPO_ROOT}/stacks/vllm/model-registry.yaml"
+VLLM_SWITCH="${REPO_ROOT}/stacks/vllm/switch-model.sh"
 # Docker publishes these ports on the LAN IP, not on loopback.
 HOST_IP="${GLASSWING_HOST_IP:-$(sed -n 's/^GLASSWING_HOST_IP=//p;s/^HOST_IP=//p' "$(dirname "${BASH_SOURCE[0]}")/../stacks/infisical/.env" 2>/dev/null | head -n1 | tr -d '"')}"
 HOST_IP="${HOST_IP:-192.168.68.62}"
@@ -50,6 +54,28 @@ vllm_models() {
       port=$(grep -A5 "^  $current_model:" "$VLLM_REGISTRY" | grep 'port:' | awk '{print $2}' || true)
       echo "$container|$port"
       current_model=""
+    fi
+  done < <(awk '/^models:/{found=1;next} found' "$VLLM_REGISTRY")
+}
+
+# Parse the registry for the model marked `default: true`.
+# Output: model|container|port
+vllm_defaults() {
+  local model="" container="" port="" is_default=""
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^[[:space:]]{2}([a-zA-Z0-9._-]+):$ ]]; then
+      model="${BASH_REMATCH[1]}"; container=""; port=""; is_default=""
+      continue
+    fi
+    [[ -n "$model" && "$line" =~ ^[[:space:]]{4}container:[[:space:]]*(.+)$ ]] && \
+      container="${BASH_REMATCH[1]}"
+    [[ -n "$model" && "$line" =~ ^[[:space:]]{4}port:[[:space:]]*([0-9]+) ]] && \
+      port="${BASH_REMATCH[1]}"
+    [[ -n "$model" && "$line" =~ ^[[:space:]]{4}default:[[:space:]]*true ]] && \
+      is_default="true"
+    if [[ -n "$container" && -n "$port" && "$is_default" == "true" ]]; then
+      echo "$model|$container|$port"
+      model=""; container=""; port=""; is_default=""
     fi
   done < <(awk '/^models:/{found=1;next} found' "$VLLM_REGISTRY")
 }
@@ -122,19 +148,11 @@ mode_comfyui() {
 
 # --- vllm mode: evict ComfyUI -------------------------------------------------
 
-mode_vllm() {
+# Stop ComfyUI only. No vLLM wake here: switch-model.sh calls this before
+# starting/waking whichever model the caller actually asked for.
+evict_comfyui() {
   if ! comfyui_running; then
     log "ComfyUI is not running. GPU is free for vLLM."
-    # Wake the default model if it's asleep
-    local default_container default_port
-    while IFS='|' read -r container port; do
-      if ! vllm_awake "$port"; then
-        log "  Waking $container (port $port)..."
-        if curl -sf -X POST "http://${HOST_IP}:$port/wake_up" >/dev/null 2>&1; then
-          log "  $container is awake."
-        fi
-      fi
-    done < <(vllm_models)
     return 0
   fi
 
@@ -157,19 +175,40 @@ mode_vllm() {
   local free_mb
   free_mb=$(gpu_free_mb)
   log "GPU is free (${free_mb:-unknown} MiB available). Ready for vLLM."
+}
 
-  # Wake the default model
-  local default_container default_port
-  while IFS='|' read -r container port; do
-    if ! vllm_awake "$port"; then
-      log "  Waking $container (port $port)..."
-      if curl -sf -X POST "http://${HOST_IP}:$port/wake_up" >/dev/null 2>&1; then
-        log "  $container is awake."
+# Wake only the registry's default model. Waking every asleep model would make
+# the Qwen 3.8 and 3.6 containers fight over the same 24 GiB card.
+wake_vllm_default() {
+  local found=false
+  while IFS='|' read -r model container port; do
+    found=true
+    local state
+    state=$(docker inspect "$container" --format='{{.State.Status}}' 2>/dev/null || echo "not_found")
+    if [[ "$state" == "running" ]]; then
+      if vllm_awake "$port"; then
+        log "  $container is already awake."
       else
-        log "  WARNING: /wake_up failed for $container."
+        log "  Waking $container (port $port)..."
+        if curl -sf -X POST "http://${HOST_IP}:$port/wake_up" >/dev/null 2>&1; then
+          log "  $container is awake."
+        else
+          log "  WARNING: /wake_up failed for $container."
+        fi
       fi
+    else
+      log "  $container is $state. Starting it via switch-model.sh..."
+      "$VLLM_SWITCH" "$model" || log "  WARNING: could not start $model."
     fi
-  done < <(vllm_models)
+  done < <(vllm_defaults)
+  if ! $found; then
+    err "No default model found in $VLLM_REGISTRY."
+  fi
+}
+
+mode_vllm() {
+  evict_comfyui
+  wake_vllm_default
 }
 
 # --- status ------------------------------------------------------------------
@@ -227,11 +266,14 @@ case "${1:-}" in
     vllm)
         mode_vllm
         ;;
+    evict-comfyui)
+        evict_comfyui
+        ;;
     status)
         mode_status
         ;;
     *)
-        echo "Usage: $0 {comfyui|vllm|status}" >&2
+        echo "Usage: $0 {comfyui|vllm|evict-comfyui|status}" >&2
         exit 1
         ;;
 esac
