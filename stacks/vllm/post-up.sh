@@ -12,15 +12,21 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REGISTRY="$SCRIPT_DIR/model-registry.yaml"
 
-# Find the default model
-DEFAULT_MODEL=$(grep -B5 'default: true' "$REGISTRY" | grep -oE '^  [a-zA-Z0-9_.-]+:' | head -1 | sed 's/^  //; s/:$//')
+# Find the default model (walk the registry blocks, independent of field count)
+DEFAULT_MODEL=$(awk '
+  /^models:/ { in_models=1; next }
+  in_models && /^  [A-Za-z0-9_.-]+:[[:space:]]*$/ {
+    model=$1; sub(/:$/, "", model)
+  }
+  in_models && /default:[[:space:]]*true/ { print model; exit }
+' "$REGISTRY")
 if [[ -z "$DEFAULT_MODEL" ]]; then
   DEFAULT_MODEL="qwen3.8-opencode"
 fi
 
 # Find its container and port
-CONTAINER=$(grep -A5 "^  $DEFAULT_MODEL:" "$REGISTRY" | grep 'container:' | awk '{print $2}')
-PORT=$(grep -A5 "^  $DEFAULT_MODEL:" "$REGISTRY" | grep 'port:' | awk '{print $2}')
+CONTAINER=$(grep -A8 "^  $DEFAULT_MODEL:" "$REGISTRY" | grep 'container:' | awk '{print $2}')
+PORT=$(grep -A8 "^  $DEFAULT_MODEL:" "$REGISTRY" | grep 'port:' | awk '{print $2}')
 
 if [[ -z "$CONTAINER" || -z "$PORT" ]]; then
   echo "ERROR: could not resolve default model from registry." >&2

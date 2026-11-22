@@ -30,8 +30,8 @@
 model_list:
   # ── Primary coding model ─────────────────────────────────────
   # Qwen 3.8 27B served by vLLM with:
-  #   --gpu-memory-utilization 0.99, --kv-cache-dtype fp8,
-  #   --max-model-len 32768, --max-num-seqs 1
+  #   --kv-cache-memory-bytes 3700000000, --kv-cache-dtype turboquant_k8v4,
+  #   --max-model-len 131072, --max-num-batched-tokens 1024, --max-num-seqs 1
   # See stacks/vllm/README.md.
   - model_name: qwen3.8-opencode
     litellm_params:
@@ -48,8 +48,10 @@ model_list:
       cache_read_input_token_cost: 0.0000000062
 
   # ── Failback coding model ────────────────────────────────────
-  # Qwen 3.6 27B served by vLLM. Same context window and budget as primary.
+  # Qwen 3.6 27B served by vLLM with the same 131K k8v4 KV profile as primary
+  # (--kv-cache-memory-bytes 3700000000, --max-model-len 131072).
   # Switch with: make vllm-model MODEL=qwen3.6
+  # 4-bit variant: make vllm-model MODEL=qwen3.6-4bit
   - model_name: qwen3.6
     litellm_params:
       model: openai/qwen3.6

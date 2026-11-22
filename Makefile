@@ -263,7 +263,7 @@ secrets-injection-check:
 # Glasswing platform-wide lifecycle management
 # --------------------------------------------------
 
-.PHONY: list-stacks restart-all vllm-model ai-preflight
+.PHONY: list-stacks restart-all vllm-model list current ai-preflight
 
 # Discover all independently managed Compose projects.
 STACKS := $(patsubst stacks/%/compose.yaml,%,$(wildcard stacks/*/compose.yaml))
@@ -329,13 +329,18 @@ VLLM_SWITCH ?= stacks/vllm/switch-model.sh
 #        make vllm-model list
 #        make vllm-model current
 vllm-model:
-	@if [ -z "$(MODEL)" ]; then \
+	@arg="$(MODEL)$(filter-out vllm-model,$(MAKECMDGOALS))"; \
+	if [ -z "$$arg" ]; then \
 	  echo "Usage: make vllm-model MODEL=<name>"; \
 	  echo "Available models:"; \
 	  ./$(VLLM_SWITCH) list; \
 	  exit 1; \
-	fi
-	@./$(VLLM_SWITCH) $(MODEL)
+	fi; \
+	./$(VLLM_SWITCH) $$arg
+
+# Consumed by `make vllm-model list|current`; do nothing on their own.
+list current:
+	@:
 
 ai-preflight:
 	@./scripts/ai-preflight.sh --opencode
