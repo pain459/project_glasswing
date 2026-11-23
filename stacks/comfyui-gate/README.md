@@ -16,11 +16,12 @@ ComfyUI itself listens only on the internal Docker network (`glasswing-comfyui:8
 
 Wake sequence:
 
-1. Parse `stacks/vllm/model-registry.yaml` for awake vLLM ports.
-2. `POST /is_sleeping` check, then `POST /sleep` on each awake model (~2s, weights stay in host RAM).
-3. Start the stopped `glasswing-comfyui` container via the Docker socket.
-4. Poll `http://glasswing-comfyui:8188/system_stats` until healthy (up to 90s).
-5. Stream the original request/response; WebSockets are bridged in both directions.
+1. Parse `stacks/vllm/model-registry.yaml` for every vLLM container and port.
+2. `GET /is_sleeping`, then `POST /sleep` on each awake model (~2s, weights stay in host RAM).
+3. Containers that are `restarting`, unresponsive, or fail to confirm a clean sleep are **stopped** through the Docker API, because they may still hold VRAM.
+4. Start the stopped `glasswing-comfyui` container via the Docker socket.
+5. Poll `http://glasswing-comfyui:8188/system_stats` until healthy (up to 90s).
+6. Stream the original request/response; WebSockets are bridged in both directions.
 
 **Expected cold start:** 10–20s on first use after coding. Idle ComfyUI consumes no
 GPU compute, but it does hold VRAM, so the handoff must happen before a prompt

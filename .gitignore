@@ -25,3 +25,4 @@ banyan-tree/*
 # Runner runtime state (binary, token, cache, compose plugin)
 stacks/forgejo-runner/.runner-data/
 /stacks/situation/__pycache__/
+/stacks/comfyui-gate/__pycache__/

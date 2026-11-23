@@ -50,9 +50,26 @@ make vllm-model MODEL=qwen3.8-4bit
 
 # GPU mode switching
 make gpu-comfyui    # sleep vLLM, start ComfyUI
-make gpu-vllm       # stop ComfyUI, wake vLLM
+make gpu-vllm       # stop ComfyUI, wake the default vLLM model
 make gpu-status     # show who owns the GPU
 ```
+
+### Exclusivity
+
+Only one vLLM service should ever be awake. Every switch sleeps all other
+registry models first:
+
+- `switch-model.sh` sleeps awake models on other ports, stops models sharing the
+  target port, and stops any container that is `restarting` or unresponsive
+  (those still hold VRAM and cause the next start to fail with a
+  `Free memory ... less than desired GPU memory utilization` error).
+- `gpu-mode.sh vllm` does the same before waking the default: sleep everyone
+  else, then wake or restart the target.
+- `gpu-mode.sh comfyui` sleeps every vLLM model and stops any that cannot reach
+  a clean sleep.
+
+A container that is running but cannot confirm `{"is_sleeping": true}` is
+treated as unsafe and stopped, not trusted.
 
 ## OpenCode model selector
 

@@ -74,23 +74,50 @@ parse_registry() {
 
 # ── State helpers ────────────────────────────────────────────────────────
 
-container_running() {
-  docker inspect "$1" --format='{{.State.Status}}' 2>/dev/null | grep -q '^running$'
-}
-
-# /health stays 200 while asleep, so /is_sleeping is authoritative.
-is_sleeping() {
+container_state() {
   local state
-  state=$(curl -sf --max-time 5 "$BASE:$1/is_sleeping" 2>/dev/null || true)
-  [[ "$state" == *'"is_sleeping":true'* ]]
+  state=$(docker inspect "$1" --format='{{.State.Status}}' 2>/dev/null || true)
+  echo "${state:-missing}"
 }
 
-endpoint_live() {
-  curl -sf --max-time 5 "$BASE:$1/health" >/dev/null 2>&1
+# One word per container: awake, asleep, unresponsive, restarting, starting,
+# stopped, missing. /health stays 200 while asleep, so /is_sleeping decides
+# whether a running container actually released the GPU.
+model_state() {
+  local container="$1" port="$2" state sleep_state
+  state=$(container_state "$container")
+  case "$state" in
+    running)
+      sleep_state=$(curl -sf --max-time 5 "$BASE:$port/is_sleeping" 2>/dev/null || true)
+      if [[ "$sleep_state" == *'"is_sleeping":true'* ]]; then
+        echo "asleep"
+      elif [[ "$sleep_state" == *'"is_sleeping":false'* ]]; then
+        echo "awake"
+      else
+        echo "unresponsive"
+      fi
+      ;;
+    exited|created|dead|paused)
+      echo "stopped"
+      ;;
+    *)
+      echo "$state"
+      ;;
+  esac
 }
 
 model_awake() {
-  endpoint_live "$1" && ! is_sleeping "$1"
+  [[ "$(model_state "$1" "$2")" == "awake" ]]
+}
+
+wait_for_model_state() {
+  local container="$1" port="$2" want="$3" timeout="${4:-20}"
+  local deadline=$((SECONDS + timeout))
+  while (( SECONDS < deadline )); do
+    [[ "$(model_state "$container" "$port")" == "$want" ]] && return 0
+    sleep 1
+  done
+  return 1
 }
 
 # ── Commands ─────────────────────────────────────────────────────────────
@@ -101,10 +128,15 @@ cmd_list() {
   printf "  %-20s %-26s %-16s %-6s %s\n" "MODEL" "CONTAINER" "PROFILE" "PORT" "STATUS"
   printf "  %-20s %-26s %-16s %-6s %s\n" "-----" "---------" "-------" "----" "------"
   while IFS='|' read -r model container service profile port desc; do
-    local status="stopped"
-    if container_running "$container"; then
-      if model_awake "$port"; then status="AWAKE"; else status="asleep"; fi
-    fi
+    local status
+    status=$(model_state "$container" "$port")
+    case "$status" in
+      awake) status="AWAKE" ;;
+      asleep) status="asleep" ;;
+      unresponsive) status="UNRESPONSIVE (holds VRAM; stop it)" ;;
+      restarting|starting) status="$status (restart loop)" ;;
+      stopped|missing) status="stopped" ;;
+    esac
     printf "  %-20s %-26s %-16s %-6s %s\n" \
       "$model" "$container" "${profile:-default}" "$port" "$status"
     printf "  %-20s %-26s %-16s %-6s %s\n" "" "" "" "" "$desc"
@@ -113,7 +145,7 @@ cmd_list() {
 
 cmd_current() {
   while IFS='|' read -r model container service profile port desc; do
-    if container_running "$container" && model_awake "$port"; then
+    if model_awake "$container" "$port"; then
       echo "Current model: $model (container: $container, port: $port, profile: ${profile:-default})"
       return 0
     fi
@@ -152,41 +184,75 @@ cmd_switch() {
   "${SCRIPT_DIR}/../../scripts/gpu-mode.sh" evict-comfyui
 
   # Step 1: relinquish the GPU. Sleep models on other ports for a fast wake,
-  # but STOP anything sharing the target's port so Compose can bind it.
+  # but STOP anything sharing the target's port so Compose can bind it. A
+  # restarting or unresponsive container still holds VRAM, so it is stopped
+  # rather than trusted to release memory on its own.
   while IFS='|' read -r model container service profile port desc; do
     [[ "$container" == "$t_container" ]] && continue
-    container_running "$container" || continue
+
+    local state
+    state=$(model_state "$container" "$port")
 
     if [[ "$port" == "$t_port" ]]; then
-      echo "  Stopping $model ($container) — shares port $t_port..."
-      docker stop "$container" >/dev/null
-    elif model_awake "$port"; then
-      echo "  Sleeping $model ($container)..."
-      curl -sf -X POST --max-time 10 "$BASE:$port/sleep" >/dev/null 2>&1 || \
-        echo "  WARNING: /sleep failed for $container" >&2
+      case "$state" in
+        stopped|missing) ;;
+        *)
+          echo "  Stopping $model ($container) — shares port $t_port ($state)..."
+          docker stop "$container" >/dev/null 2>&1 || true
+          ;;
+      esac
+      continue
     fi
+
+    case "$state" in
+      stopped|missing|asleep)
+        ;;
+      awake)
+        echo "  Sleeping $model ($container)..."
+        if ! curl -sf -X POST --max-time 15 "$BASE:$port/sleep" >/dev/null 2>&1 || \
+           ! wait_for_model_state "$container" "$port" asleep 15; then
+          echo "  WARNING: /sleep did not settle for $container; stopping it." >&2
+          docker stop "$container" >/dev/null 2>&1 || true
+        fi
+        ;;
+      unresponsive|restarting|starting)
+        echo "  Stopping $model ($container) — $state and still holding VRAM..."
+        docker stop "$container" >/dev/null 2>&1 || true
+        ;;
+    esac
   done < <(parse_registry)
 
-  # Step 2: wake or start the target.
+  # Step 2: wake or start the target. A target that is restarting or
+  # unresponsive is stopped first so Compose can start it cleanly.
   local state
-  state=$(docker inspect "$t_container" --format='{{.State.Status}}' 2>/dev/null || echo "not_found")
-  if [[ "$state" == "running" ]]; then
-    if is_sleeping "$t_port"; then
+  state=$(model_state "$t_container" "$t_port")
+  case "$state" in
+    awake)
+      echo "  $t_container is already awake."
+      ;;
+    asleep)
       echo "  Waking $t_container..."
       curl -sf -X POST --max-time 10 "$BASE:$t_port/wake_up" >/dev/null 2>&1 || {
         echo "ERROR: /wake_up failed for $t_container." >&2
         return 1
       }
-    fi
-  else
-    echo "  Starting $t_service via compose (profile: ${t_profile:-default})..."
-    compose "$t_profile" up -d --wait --wait-timeout 180 "$t_service"
-  fi
+      ;;
+    stopped|missing)
+      echo "  Starting $t_service via compose (profile: ${t_profile:-default})..."
+      compose "$t_profile" up -d --wait --wait-timeout 180 "$t_service"
+      ;;
+    *)
+      echo "  $t_container is $state. Stopping it before a clean start..."
+      docker stop "$t_container" >/dev/null 2>&1 || true
+      echo "  Starting $t_service via compose (profile: ${t_profile:-default})..."
+      compose "$t_profile" up -d --wait --wait-timeout 180 "$t_service"
+      ;;
+  esac
 
   # Step 3: confirm it is actually serving (not merely asleep).
   echo "  Waiting for $target to be healthy..."
   for _ in $(seq 1 90); do
-    if model_awake "$t_port"; then
+    if model_awake "$t_container" "$t_port"; then
       echo "  $target is awake and healthy."
       return 0
     fi

@@ -62,24 +62,33 @@ _wake_lock = asyncio.Lock()
 # Registry parsing
 # --------------------------------------------------------------------------- #
 
-def parse_registry() -> list[tuple[str, int]]:
-    """Return [(model, port)] from model-registry.yaml (source of truth)."""
-    entries: list[tuple[str, int]] = []
+def parse_registry() -> list[tuple[str, str, int]]:
+    """Return [(model, container, port)] from model-registry.yaml."""
+    entries: list[tuple[str, str, int]] = []
     model = ""
+    container = ""
     port: int | None = None
+
+    def flush() -> None:
+        if model and container and port:
+            entries.append((model, container, port))
+
     for raw in VLLM_REGISTRY.read_text(encoding="utf-8").splitlines():
         key = re.match(r"^  ([A-Za-z0-9._-]+):\s*$", raw)
         if key:
-            if model and port:
-                entries.append((model, port))
-            model, port = key.group(1), None
+            flush()
+            model, container, port = key.group(1), "", None
             continue
-        if model and port is None:
-            found = re.match(r"^\s{4}port:\s*(\d+)\s*$", raw)
-            if found:
-                port = int(found.group(1))
-    if model and port:
-        entries.append((model, port))
+        if not model:
+            continue
+        found_container = re.match(r"^\s{4}container:\s*(\S+)\s*$", raw)
+        if found_container:
+            container = found_container.group(1)
+            continue
+        found_port = re.match(r"^\s{4}port:\s*(\d+)\s*$", raw)
+        if found_port:
+            port = int(found_port.group(1))
+    flush()
     return entries
 
 
@@ -95,53 +104,115 @@ async def backend_healthy(session: aiohttp.ClientSession) -> bool:
         return False
 
 
-async def sleep_vllm(session: aiohttp.ClientSession) -> None:
-    """Level-1 sleep every awake vLLM model so ComfyUI can own the VRAM."""
-    for model, port in parse_registry():
+async def container_status(docker: aiohttp.ClientSession, name: str) -> str:
+    """Docker state word for a container: running, restarting, exited, missing..."""
+    try:
+        async with docker.get(
+            f"http://docker/containers/{name}/json",
+            timeout=aiohttp.ClientTimeout(total=5),
+        ) as resp:
+            if resp.status == 404:
+                return "missing"
+            if resp.status >= 400:
+                return "unknown"
+            info = await resp.json()
+    except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
+        return "unknown"
+    return info.get("State", {}).get("Status", "unknown")
+
+
+async def stop_container(docker: aiohttp.ClientSession, name: str, reason: str) -> None:
+    """Stop a vLLM container so ComfyUI can be certain the VRAM is released."""
+    LOG.warning("stopping vLLM container %s (%s)", name, reason)
+    try:
+        async with docker.post(
+            f"http://docker/containers/{name}/stop",
+            params={"t": "20"},
+            timeout=aiohttp.ClientTimeout(total=30),
+        ) as resp:
+            if resp.status not in (204, 304):
+                LOG.warning("docker stop %s returned HTTP %s", name, resp.status)
+    except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as exc:
+        LOG.warning("could not stop vLLM container %s: %s", name, exc)
+
+
+async def sleep_vllm(session: aiohttp.ClientSession, docker: aiohttp.ClientSession) -> None:
+    """Release the GPU for ComfyUI.
+
+    Healthy models are Level-1 slept. A container that is running but cannot
+    confirm a clean sleep - unresponsive, restarting, or with a failing /sleep -
+    is stopped instead, because it may still be holding VRAM.
+    """
+    for model, container, port in parse_registry():
+        status = await container_status(docker, container)
+        if status == "restarting":
+            await stop_container(docker, container, "restarting and may hold VRAM")
+            continue
+        if status in ("exited", "created", "dead", "paused", "missing"):
+            continue
+        # Anything else (running, or Docker state unknown) is probed directly:
+        # a reachable model must still be slept even if the Docker API is slow.
+
         url = f"http://{VLLM_HOST_IP}:{port}"
+        sleeping: bool | None = None
         try:
             async with session.get(f"{url}/is_sleeping", timeout=aiohttp.ClientTimeout(total=3)) as resp:
                 state = await resp.json(content_type=None)
-            if state.get("is_sleeping") is not False:
-                continue
-            LOG.info("sleeping vLLM model %s on port %s", model, port)
+            sleeping = state.get("is_sleeping")
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError, ValueError) as exc:
+            LOG.warning("could not query /is_sleeping for %s: %s", model, exc)
+
+        if sleeping is True:
+            continue
+        if sleeping is None:
+            await stop_container(docker, container, "unresponsive; cannot confirm sleep")
+            continue
+
+        LOG.info("sleeping vLLM model %s on port %s", model, port)
+        try:
             async with session.post(f"{url}/sleep", timeout=aiohttp.ClientTimeout(total=15)) as resp:
                 if resp.status >= 400:
                     LOG.warning("/sleep for %s returned HTTP %s", model, resp.status)
-            # /sleep is synchronous, but confirm before touching ComfyUI.
-            for _ in range(10):
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as exc:
+            LOG.warning("/sleep for %s failed: %s", model, exc)
+
+        # /sleep is synchronous, but confirm before touching ComfyUI.
+        settled = False
+        for _ in range(10):
+            try:
                 async with session.get(f"{url}/is_sleeping", timeout=aiohttp.ClientTimeout(total=3)) as resp:
                     state = await resp.json(content_type=None)
                 if state.get("is_sleeping") is True:
+                    settled = True
                     break
-                await asyncio.sleep(1)
-        except (aiohttp.ClientError, asyncio.TimeoutError, OSError, ValueError) as exc:
-            LOG.warning("could not sleep vLLM model %s: %s", model, exc)
+            except (aiohttp.ClientError, asyncio.TimeoutError, OSError, ValueError):
+                pass
+            await asyncio.sleep(1)
+        if not settled:
+            await stop_container(docker, container, "sleep did not settle")
 
 
-async def start_comfyui() -> None:
+async def start_comfyui(docker: aiohttp.ClientSession) -> None:
     """Start an existing (stopped) ComfyUI container through the Docker API."""
-    connector = aiohttp.UnixConnector(path=DOCKER_SOCKET)
-    async with aiohttp.ClientSession(connector=connector) as session:
-        base = "http://docker/containers"
-        try:
-            async with session.get(f"{base}/{COMFYUI_CONTAINER}/json", timeout=aiohttp.ClientTimeout(total=5)) as resp:
-                if resp.status == 404:
-                    raise RuntimeError(f"ComfyUI container '{COMFYUI_CONTAINER}' does not exist; run 'make gpu-comfyui' once")
-                if resp.status >= 400:
-                    raise RuntimeError(f"Docker API returned HTTP {resp.status} for {COMFYUI_CONTAINER}")
-                info = await resp.json()
-        except aiohttp.ClientError as exc:
-            raise RuntimeError(f"cannot reach Docker socket {DOCKER_SOCKET}: {exc}") from exc
+    base = "http://docker/containers"
+    try:
+        async with docker.get(f"{base}/{COMFYUI_CONTAINER}/json", timeout=aiohttp.ClientTimeout(total=5)) as resp:
+            if resp.status == 404:
+                raise RuntimeError(f"ComfyUI container '{COMFYUI_CONTAINER}' does not exist; run 'make gpu-comfyui' once")
+            if resp.status >= 400:
+                raise RuntimeError(f"Docker API returned HTTP {resp.status} for {COMFYUI_CONTAINER}")
+            info = await resp.json()
+    except aiohttp.ClientError as exc:
+        raise RuntimeError(f"cannot reach Docker socket {DOCKER_SOCKET}: {exc}") from exc
 
-        if info.get("State", {}).get("Status") == "running":
-            return
+    if info.get("State", {}).get("Status") == "running":
+        return
 
-        LOG.info("starting container %s", COMFYUI_CONTAINER)
-        async with session.post(f"{base}/{COMFYUI_CONTAINER}/start", timeout=aiohttp.ClientTimeout(total=20)) as resp:
-            if resp.status not in (204, 304):
-                body = await resp.text()
-                raise RuntimeError(f"failed to start {COMFYUI_CONTAINER}: HTTP {resp.status}: {body[:300]}")
+    LOG.info("starting container %s", COMFYUI_CONTAINER)
+    async with docker.post(f"{base}/{COMFYUI_CONTAINER}/start", timeout=aiohttp.ClientTimeout(total=20)) as resp:
+        if resp.status not in (204, 304):
+            body = await resp.text()
+            raise RuntimeError(f"failed to start {COMFYUI_CONTAINER}: HTTP {resp.status}: {body[:300]}")
 
 
 async def wait_for_backend(session: aiohttp.ClientSession) -> bool:
@@ -157,20 +228,25 @@ async def ensure_backend() -> bool:
     """Sleep vLLM, start ComfyUI, wait until it serves. Returns success."""
     async with _wake_lock:
         async with aiohttp.ClientSession() as session:
-            if await backend_healthy(session):
+            async with aiohttp.ClientSession(
+                connector=aiohttp.UnixConnector(path=DOCKER_SOCKET)
+            ) as docker:
+                # Always free the GPU first. ComfyUI may already be running
+                # while some other path woke a vLLM model.
+                LOG.info("wake requested: freeing GPU")
+                await sleep_vllm(session, docker)
+                if await backend_healthy(session):
+                    return True
+                try:
+                    await start_comfyui(docker)
+                except (RuntimeError, aiohttp.ClientError) as exc:
+                    LOG.error("cannot start ComfyUI: %s", exc)
+                    return False
+                if not await wait_for_backend(session):
+                    LOG.error("ComfyUI did not become healthy within %ss", WAKE_TIMEOUT)
+                    return False
+                LOG.info("ComfyUI is ready")
                 return True
-            LOG.info("wake requested: freeing GPU")
-            await sleep_vllm(session)
-            try:
-                await start_comfyui()
-            except (RuntimeError, aiohttp.ClientError) as exc:
-                LOG.error("cannot start ComfyUI: %s", exc)
-                return False
-            if not await wait_for_backend(session):
-                LOG.error("ComfyUI did not become healthy within %ss", WAKE_TIMEOUT)
-                return False
-            LOG.info("ComfyUI is ready")
-            return True
 
 
 # --------------------------------------------------------------------------- #

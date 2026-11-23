@@ -80,12 +80,116 @@ vllm_defaults() {
   done < <(awk '/^models:/{found=1;next} found' "$VLLM_REGISTRY")
 }
 
-# /health stays 200 while asleep (weights offloaded), so use /is_sleeping.
-vllm_awake() {
-  local port="$1"
+container_state() {
   local state
-  state=$(curl -sf --max-time 5 "http://${HOST_IP}:$port/is_sleeping" 2>/dev/null || true)
-  [[ "$state" == *'"is_sleeping":false'* ]]
+  state=$(docker inspect "$1" --format='{{.State.Status}}' 2>/dev/null || true)
+  echo "${state:-missing}"
+}
+
+# One word per container: awake, asleep, unresponsive, restarting, stopped...
+# /health stays 200 while asleep, so /is_sleeping is the only authority.
+vllm_state() {
+  local container="$1" port="$2" state sleep_state
+  state=$(container_state "$container")
+  case "$state" in
+    running)
+      sleep_state=$(curl -sf --max-time 5 "http://${HOST_IP}:$port/is_sleeping" 2>/dev/null || true)
+      if [[ "$sleep_state" == *'"is_sleeping":true'* ]]; then
+        echo "asleep"
+      elif [[ "$sleep_state" == *'"is_sleeping":false'* ]]; then
+        echo "awake"
+      else
+        echo "unresponsive"
+      fi
+      ;;
+    exited|created|dead|paused)
+      echo "stopped"
+      ;;
+    *)
+      echo "$state"
+      ;;
+  esac
+}
+
+vllm_awake() {
+  [[ "$(vllm_state "$1" "$2")" == "awake" ]]
+}
+
+vllm_asleep() {
+  [[ "$(vllm_state "$1" "$2")" == "asleep" ]]
+}
+
+wait_for_vllm_awake() {
+  local container="$1" port="$2" timeout="${3:-90}"
+  local deadline=$((SECONDS + timeout))
+  while (( SECONDS < deadline )); do
+    case "$(vllm_state "$container" "$port")" in
+      awake) return 0 ;;
+      stopped) return 1 ;;
+    esac
+    sleep 2
+  done
+  return 1
+}
+
+stop_vllm_container() {
+  local container="$1" reason="$2"
+  if [[ "$(container_state "$container")" != "missing" ]]; then
+    log "  Stopping $container ($reason)..."
+    docker stop "$container" >/dev/null 2>&1 || true
+  fi
+}
+
+# Sleep one model, or stop it if it cannot reach a clean sleep state. A
+# running-but-unresponsive container is the dangerous case: it still holds
+# VRAM and may be in a restart loop.
+sleep_vllm_container() {
+  local container="$1" port="$2" state
+  state=$(vllm_state "$container" "$port")
+  case "$state" in
+    asleep)
+      log "  $container is already asleep."
+      ;;
+    awake)
+      log "  Sleeping $container (port $port)..."
+      if curl -sf -X POST --max-time 15 "http://${HOST_IP}:$port/sleep" >/dev/null 2>&1; then
+        for _ in $(seq 1 10); do
+          vllm_asleep "$container" "$port" && break
+          sleep 1
+        done
+      fi
+      if vllm_asleep "$container" "$port"; then
+        log "  $container is asleep."
+      else
+        stop_vllm_container "$container" "sleep failed or did not settle"
+      fi
+      ;;
+    unresponsive|restarting|starting)
+      stop_vllm_container "$container" "running but not cleanly asleep ($state)"
+      ;;
+    stopped|missing)
+      ;;
+    *)
+      stop_vllm_container "$container" "unknown state ($state)"
+      ;;
+  esac
+}
+
+# Put every model except the target to sleep. Same-port alternative profiles
+# are stopped instead, because only one service can bind that port.
+sleep_all_vllm_except() {
+  local keep_container="$1" keep_port="$2" container port
+  while IFS='|' read -r container port; do
+    [[ -z "$container" ]] && continue
+    [[ "$container" == "$keep_container" ]] && continue
+    if [[ "$port" == "$keep_port" ]]; then
+      if [[ "$(container_state "$container")" =~ ^(running|restarting)$ ]]; then
+        stop_vllm_container "$container" "shares port $port with the target"
+      fi
+      continue
+    fi
+    sleep_vllm_container "$container" "$port"
+  done < <(vllm_models)
 }
 
 comfyui_running() {
@@ -103,39 +207,24 @@ gpu_free_mb() {
 # --- comfyui mode: sleep vLLM -------------------------------------------------
 
 mode_comfyui() {
-  local any_awake=false
+  log "Sleeping every vLLM model before handing the GPU to ComfyUI..."
 
-  # Check if any vLLM model is awake
-  while IFS='|' read -r container port; do
-    if vllm_awake "$port"; then
-      any_awake=true
+  # No model is the target: pass sentinels so every registry entry is visited.
+  # sleep_vllm_container sleeps healthy models and stops restarting or
+  # unresponsive ones, which may still hold VRAM.
+  sleep_all_vllm_except "__comfyui__" "__comfyui__"
+
+  # Give the driver a moment to reclaim the freed VRAM.
+  local free_mb="" waited=0
+  while (( waited < 30 )); do
+    free_mb=$(gpu_free_mb)
+    if [[ -z "$free_mb" ]] || (( free_mb >= 20000 )); then
       break
     fi
-  done < <(vllm_models)
+    sleep 2
+    waited=$(( waited + 2 ))
+  done
 
-  if ! $any_awake; then
-    log "No vLLM model is awake. GPU is free for ComfyUI."
-    return 0
-  fi
-
-  log "vLLM is awake. Sleeping all models..."
-
-  # Sleep each awake vLLM container
-  while IFS='|' read -r container port; do
-    if vllm_awake "$port"; then
-      log "  Sleeping $container (port $port)..."
-      if curl -sf -X POST "http://${HOST_IP}:$port/sleep" >/dev/null 2>&1; then
-        log "  $container is asleep."
-      else
-        log "  WARNING: /sleep failed for $container. Stopping container."
-        docker stop "$container" >/dev/null 2>&1 || true
-      fi
-    fi
-  done < <(vllm_models)
-
-  # Verify GPU is free.
-  local free_mb
-  free_mb=$(gpu_free_mb)
   if [ -n "${free_mb}" ] && [ "${free_mb}" -lt 20000 ]; then
     log "WARNING: GPU still has ${free_mb} MiB free (expected >20000 MiB)."
     log "  The GPU may still be releasing memory. ComfyUI may OOM on first load."
@@ -177,29 +266,46 @@ evict_comfyui() {
   log "GPU is free (${free_mb:-unknown} MiB available). Ready for vLLM."
 }
 
-# Wake only the registry's default model. Waking every asleep model would make
-# the Qwen 3.8 and 3.6 containers fight over the same 24 GiB card.
+# Wake only the registry's default model, and put every other model to sleep
+# first. Waking every asleep model would make the Qwen 3.8 and 3.6 containers
+# fight over the same 24 GiB card.
 wake_vllm_default() {
-  local found=false
+  local found=false model container port state
   while IFS='|' read -r model container port; do
     found=true
-    local state
-    state=$(docker inspect "$container" --format='{{.State.Status}}' 2>/dev/null || echo "not_found")
-    if [[ "$state" == "running" ]]; then
-      if vllm_awake "$port"; then
+    state=$(vllm_state "$container" "$port")
+
+    # Exclusivity first: the target only gets VRAM once everyone else yields.
+    sleep_all_vllm_except "$container" "$port"
+
+    case "$state" in
+      awake)
         log "  $container is already awake."
-      else
+        ;;
+      asleep)
         log "  Waking $container (port $port)..."
-        if curl -sf -X POST "http://${HOST_IP}:$port/wake_up" >/dev/null 2>&1; then
+        if curl -sf -X POST --max-time 60 "http://${HOST_IP}:$port/wake_up" >/dev/null 2>&1 && \
+           wait_for_vllm_awake "$container" "$port" 120; then
           log "  $container is awake."
         else
-          log "  WARNING: /wake_up failed for $container."
+          log "  WARNING: /wake_up failed for $container. Restarting it..."
+          "$VLLM_SWITCH" "$model" || log "  WARNING: could not restart $model."
         fi
-      fi
-    else
-      log "  $container is $state. Starting it via switch-model.sh..."
-      "$VLLM_SWITCH" "$model" || log "  WARNING: could not start $model."
-    fi
+        ;;
+      unresponsive|restarting|starting)
+        log "  $container is $state. Stopping it before a clean start..."
+        stop_vllm_container "$container" "not cleanly awake ($state)"
+        "$VLLM_SWITCH" "$model" || log "  WARNING: could not start $model."
+        ;;
+      stopped|missing)
+        log "  $container is not running. Starting it via switch-model.sh..."
+        "$VLLM_SWITCH" "$model" || log "  WARNING: could not start $model."
+        ;;
+      *)
+        log "  $container is $state. Starting it via switch-model.sh..."
+        "$VLLM_SWITCH" "$model" || log "  WARNING: could not start $model."
+        ;;
+    esac
   done < <(vllm_defaults)
   if ! $found; then
     err "No default model found in $VLLM_REGISTRY."
@@ -220,21 +326,23 @@ mode_status() {
   echo ""
 
   echo "=== vLLM Status ==="
-  local any_awake=false
+  local any_awake=false awake_count=0
   while IFS='|' read -r container port; do
-    local state="stopped"
-    if docker inspect "$container" --format='{{.State.Status}}' 2>/dev/null | grep -q running; then
-      if vllm_awake "$port"; then
-        state="AWAKE"
-        any_awake=true
-      else
-        state="asleep"
-      fi
-    fi
+    local state
+    state=$(vllm_state "$container" "$port")
+    case "$state" in
+      awake) state="AWAKE"; any_awake=true; awake_count=$(( awake_count + 1 )) ;;
+      asleep) state="asleep" ;;
+      unresponsive) state="UNRESPONSIVE (holds VRAM; stop it)" ;;
+      restarting|starting) state="$state (restart loop)" ;;
+      stopped|missing) state="stopped" ;;
+    esac
     echo "  $container (port $port): $state"
   done < <(vllm_models)
   if ! $any_awake; then
     echo "  (no vLLM model is awake)"
+  elif (( awake_count > 1 )); then
+    echo "  WARNING: $awake_count vLLM models are awake; only one should be."
   fi
 
   echo ""
