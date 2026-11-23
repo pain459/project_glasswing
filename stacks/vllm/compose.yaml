@@ -294,8 +294,8 @@ services:
         aliases:
           - glasswing-vllm-qwen36
 
-  # ── Lightweight: NVIDIA Nemotron Nano 9B v2 ────────────────────
-  # Small, fast model for quick tasks. Hybrid Transformer-Mamba architecture.
+  # ── Lightweight: NVIDIA Nemotron 3 Nano 4B FP8 ─────────────────
+  # Small, fast model for quick tasks. Hybrid Transformer-Mamba (nemotron_h).
   # Started on demand. Not in the default `make up` path.
   # To start: docker compose --profile lightweight up -d
   vllm-nemotron:
@@ -320,17 +320,30 @@ services:
 
     command:
       - "--model"
-      - "/models/nemotron-nano-9b-v2"
+      - "/models/nemotron-3-nano-4b-fp8"
       - "--served-model-name"
       - "nemotron-nano"
       - "--trust-remote-code"
       - "--mamba_ssm_cache_dtype"
       - "float32"
       - "--enable-sleep-mode"
+      # OpenCode sends tool_choice=auto on every turn; vLLM rejects it unless
+      # both flags are set. Nemotron 3's chat template emits the same
+      # <tool_call><function=...><parameter=...> XML as Qwen 3.
+      - "--enable-auto-tool-choice"
+      - "--tool-call-parser"
+      - "qwen3_xml"
+      # Nemotron 3 thinks by default; OpenCode (and the other models) want
+      # direct answers, so disable the reasoning trace server-wide.
+      - "--default-chat-template-kwargs"
+      - '{"enable_thinking": false}'
+      # 4B FP8 needs only ~5.2 GiB for weights + ~0.8 GiB activations.
+      # 0.5 (~11.8 GiB) gives ~5.7 GiB KV cache = full 256K context,
+      # while still leaving ~12 GiB for ComfyUI / other GPU consumers.
       - "--gpu-memory-utilization"
-      - "0.99"
+      - "0.5"
       - "--max-model-len"
-      - "32768"
+      - "262144"
       - "--kv-cache-dtype"
       - "fp8"
       - "--max-num-seqs"

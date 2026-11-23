@@ -44,4 +44,4 @@ models:
     service: vllm-nemotron
     profile: "lightweight"
     port: 3045
-    description: "NVIDIA Nemotron Nano 9B v2 — weights not provisioned yet"
+    description: "NVIDIA Nemotron 3 Nano 4B FP8 — lightweight hybrid Mamba, ~5.3 GB"

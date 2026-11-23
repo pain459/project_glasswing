@@ -46,16 +46,20 @@
             "cache_write": 0
           }
         },
-        "llama3.1": {
-          "name": "Llama 3.1 8B Fallback (via LiteLLM)",
+        "nemotron-nano": {
+          "name": "NVIDIA Nemotron 3 Nano 4B (via LiteLLM, 256k)",
           "limit": {
-            "context": 65536,
+            "context": 253952,
             "output": 8192
           },
+          "body": {
+            "reasoning_effort": "none",
+            "temperature": 0.3
+          },
           "cost": {
-            "input": 0.0434,
-            "output": 0.1104,
-            "cache_read": 0,
+            "input": 0.0459,
+            "output": 1.3925,
+            "cache_read": 0.0062,
             "cache_write": 0
           }
         }
