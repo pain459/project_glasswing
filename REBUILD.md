@@ -66,22 +66,20 @@ Compose stack. Verify the installation with:
 /home/ravik/.opencode/bin/opencode --version
 ```
 
-Copy `config/opencode/opencode.example.json` to
-`/home/ravik/.config/opencode/opencode.json` with mode `0600`, then adjust only
-host-specific values if the LAN address or model inventory differs. Its MCP
-section is:
+Restore the tracked config with:
 
-```json
-{
-  "mcp": {
-    "open-notebook": { "type": "remote", "url": "http://127.0.0.1:8001/mcp", "oauth": false },
-    "steel": { "type": "remote", "url": "http://127.0.0.1:8002/mcp", "oauth": false },
-    "serena": { "type": "remote", "url": "http://127.0.0.1:9121/mcp", "oauth": false }
-  }
-}
+```bash
+./scripts/restore-opencode-config.sh
 ```
 
-These URLs are intentionally loopback-only. They work only from Pathfinder.
+It copies the sanitized `config/opencode/opencode.example.json` into
+`/home/ravik/.config/opencode/opencode.json`, backs up any existing file, asks
+for the LiteLLM master key without echoing it, sets mode `0600`, and validates
+the JSON. No symlinks are used; the key is never stored in the repo.
+
+The MCP URLs in the tracked config are intentionally loopback-only. They work
+only from Pathfinder. See [config/opencode/README.md](config/opencode/README.md)
+for the sync/restore workflow and the list of tracked supporting files.
 
 ---
 

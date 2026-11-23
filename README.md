@@ -270,15 +270,21 @@ through `extends`. See [Compose conventions](MAINTENANCE.md#compose-conventions)
 
 The host-installed OpenCode binary is `/home/ravik/.opencode/bin/opencode`; there is
 no OpenCode container or web UI. Its global configuration at
-`/home/ravik/.config/opencode/opencode.json` selects the local Ollama model and
-connects to three remote MCP servers on loopback. The non-secret, restorable
-reference is `config/opencode/opencode.example.json`.
+`/home/ravik/.config/opencode/opencode.json` selects `litellm/qwen3.8-opencode`
+and connects to several remote MCP servers on loopback. The non-secret,
+restorable reference is `config/opencode/opencode.example.json`. Use
+`./scripts/sync-opencode-config.sh` to refresh that snapshot and
+`./scripts/restore-opencode-config.sh` to install it on a new host — both copy
+files, never symlinks. See [config/opencode/README.md](config/opencode/README.md).
 
 | MCP | Endpoint | Lifecycle | Infisical path |
 | --- | --- | --- | --- |
 | Open Notebook | `http://127.0.0.1:8001/mcp` | `make up STACK=open-notebook-mcp` | `/open-notebook` |
 | Steel | `http://127.0.0.1:8002/mcp` | `make up STACK=steel-mcp` | `/steel` (global values only for the gateway) |
 | Serena | `http://127.0.0.1:9121/mcp` | `make up STACK=serena` | `/serena` (global values only) |
+| REA | `http://127.0.0.1:8003/mcp` | `make up STACK=rea-mcp` | `/rea-mcp` |
+| Sequential Thinking | `http://127.0.0.1:8004/mcp` | `make up STACK=sequential-thinking-mcp` | `/sequential-thinking-mcp` |
+| SearXNG | `http://127.0.0.1:8005/mcp` | `make up STACK=searxng` | `/searxng` |
 
 Serena's active project is set from the single mount line in
 `stacks/serena/repos.env` (gitignored). Change that line to switch repos, then
