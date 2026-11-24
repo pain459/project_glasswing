@@ -12,8 +12,10 @@
 # share a port, so clients need no changes. Never run two variants together:
 #   make vllm-model MODEL=qwen3.6
 #   make vllm-model MODEL=qwen3.6-4bit
-# Or directly:
-#   docker compose --profile failback-4bit up -d vllm-qwen36-4bit
+# Do not start these with `docker compose up` directly: that path cannot sleep a
+# resident model and the incoming one will fail to allocate VRAM. If you must use
+# Compose, `make up STACK=vllm` runs stacks/vllm/pre-up.sh, which enforces the
+# one-awake-model rule first.
 #
 # GPU arbitration: this stack and ComfyUI share the RTX 4090. Use
 #   make gpu-comfyui   # sleep all vLLM, start ComfyUI
@@ -44,6 +46,8 @@ services:
       service: base
     image: vllm/vllm-openai:latest
     container_name: glasswing-vllm-qwen38
+    # One model per GPU: a starved start must fail once, not restart forever.
+    restart: "no"
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3043:8000"
@@ -113,6 +117,7 @@ services:
     image: vllm/vllm-openai:latest
     container_name: glasswing-vllm-qwen38-4bit
     profiles: ["alt-4bit"]
+    restart: "no"
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3043:8000"
@@ -170,7 +175,8 @@ services:
   # Started on demand. Not in the default `make up` path.
   # Same hybrid KV geometry as 3.8 (4 KV heads, head_dim 256) and lighter
   # weights, so the same 131K k8v4 settings fit with more VRAM headroom.
-  # To start: docker compose --profile failback up -d vllm-qwen36
+  # To start: make vllm-model MODEL=qwen3.6
+  # (not `docker compose --profile failback up -d`: that skips GPU arbitration)
   vllm-qwen36:
     extends:
       file: ../base.yaml
@@ -178,6 +184,7 @@ services:
     image: vllm/vllm-openai:latest
     container_name: glasswing-vllm-qwen36
     profiles: ["failback"]
+    restart: "no"
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3044:8000"
@@ -241,6 +248,7 @@ services:
     image: vllm/vllm-openai:latest
     container_name: glasswing-vllm-qwen36-4bit
     profiles: ["failback-4bit"]
+    restart: "no"
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3044:8000"
@@ -297,7 +305,9 @@ services:
   # ── Lightweight: NVIDIA Nemotron 3 Nano 4B FP8 ─────────────────
   # Small, fast model for quick tasks. Hybrid Transformer-Mamba (nemotron_h).
   # Started on demand. Not in the default `make up` path.
-  # To start: docker compose --profile lightweight up -d
+  # To start: make vllm-model MODEL=nemotron-nano
+  # (not `docker compose --profile lightweight up -d`: that skips GPU
+  # arbitration and a resident 27B will crash-loop on allocation)
   vllm-nemotron:
     extends:
       file: ../base.yaml
@@ -305,6 +315,7 @@ services:
     image: vllm/vllm-openai:latest
     container_name: glasswing-vllm-nemotron
     profiles: ["lightweight"]
+    restart: "no"
 
     ports:
       - "${GLASSWING_HOST_IP:?GLASSWING_HOST_IP is required}:3045:8000"

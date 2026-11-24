@@ -147,6 +147,10 @@ rebuild: netcheck
 	@echo "[PASS] Stack $(STACK) rebuilt"
 
 restart: netcheck
+	@if [ -x "$(PRE_UP_HOOK)" ]; then \
+	  echo "[INFO] Running $(PRE_UP_HOOK)"; \
+	  "$(PRE_UP_HOOK)"; \
+	fi
 	@$(call run_compose,restart)
 	@$(call run_compose,up -d --wait --wait-timeout 180)
 	@if [ -x "$(POST_UP_HOOK)" ]; then \

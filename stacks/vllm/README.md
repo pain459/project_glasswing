@@ -56,7 +56,7 @@ make gpu-status     # show who owns the GPU
 
 ### Exclusivity
 
-Only one vLLM service should ever be awake. Every switch sleeps all other
+Only one vLLM service should ever be awake. Every entry point sleeps all other
 registry models first:
 
 - `switch-model.sh` sleeps awake models on other ports, stops models sharing the
@@ -67,9 +67,21 @@ registry models first:
   else, then wake or restart the target.
 - `gpu-mode.sh comfyui` sleeps every vLLM model and stops any that cannot reach
   a clean sleep.
+- `stacks/vllm/pre-up.sh` runs before every `make up`, `update`, `rebuild` and
+  `restart` of this stack. It evicts ComfyUI and calls
+  `gpu-mode.sh prepare-vllm` with the services Compose resolved, so
+  `make up STACK=vllm` cannot start a model while another one holds the VRAM.
+  Calling `docker compose up` directly bypasses it: use `make up STACK=vllm` or
+  `make vllm-model MODEL=...`.
 
 A container that is running but cannot confirm `{"is_sleeping": true}` is
 treated as unsafe and stopped, not trusted.
+
+All vLLM services set `restart: "no"`, overriding the `unless-stopped` default
+from `../base.yaml`. A start that cannot allocate VRAM now fails once instead of
+restart-looping; recover with `make vllm-model MODEL=<name>`. Consequence: vLLM
+does not come back by itself after a host reboot — run `make gpu-vllm` (or
+`make vllm-model MODEL=<name>`) after boot.
 
 ## OpenCode model selector
 
@@ -191,7 +203,8 @@ make vllm-model MODEL=qwen3.6-4bit     # 3.6, 4-bit KV
 Or directly:
 
 ```bash
-docker compose --profile failback-4bit up -d vllm-qwen36-4bit
+# Compose cannot sleep a resident model, so go through the pre-up guard:
+make up STACK=vllm
 ```
 
 ### Measured (2026-11-22, RTX 4090, 200 output tokens, temperature 0)

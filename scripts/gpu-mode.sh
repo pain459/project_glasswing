@@ -5,6 +5,7 @@
 #   scripts/gpu-mode.sh comfyui        # sleep vLLM, free the GPU for ComfyUI
 #   scripts/gpu-mode.sh vllm           # evict ComfyUI, wake the default vLLM model
 #   scripts/gpu-mode.sh evict-comfyui  # stop ComfyUI only (used by model switching)
+#   scripts/gpu-mode.sh prepare-vllm S # sleep every model not in service set S
 #   scripts/gpu-mode.sh status         # show who owns the GPU
 #
 # Called by:
@@ -12,6 +13,7 @@
 #   make gpu-vllm     →  scripts/gpu-mode.sh vllm
 #   make gpu-status   →  scripts/gpu-mode.sh status
 #   switch-model.sh   →  scripts/gpu-mode.sh evict-comfyui
+#   vllm pre-up.sh    →  scripts/gpu-mode.sh prepare-vllm <services...>
 #
 # Design:
 #   - vLLM has /sleep and /wake_up endpoints (VLLM_SERVER_DEV_MODE=1).
@@ -38,22 +40,35 @@ die()  { err "$@"; exit 1; }
 
 # --- Helpers -----------------------------------------------------------------
 
-# Parse the vLLM registry to get container|port pairs.
+# Parse the vLLM registry to get container|port|service triples. Service names
+# let callers reason about what Compose is about to start (see prepare_vllm).
 vllm_models() {
-  local current_model=""
+  local current_model="" container="" service="" port=""
   while IFS= read -r line; do
-    [[ "$line" =~ ^[[:space:]]*# ]] && continue
-    [[ -z "${line// /}" ]] && continue
-    if [[ "$line" =~ ^[[:space:]]{2}([a-zA-Z0-9._-]+):$ ]]; then
-      current_model="${BASH_REMATCH[1]}"
+    if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "${line// /}" ]]; then
       continue
     fi
-    if [[ -n "$current_model" && "$line" =~ ^[[:space:]]{4}container:[[:space:]]*(.+)$ ]]; then
-      local container="${BASH_REMATCH[1]}"
-      local port
-      port=$(grep -A5 "^  $current_model:" "$VLLM_REGISTRY" | grep 'port:' | awk '{print $2}' || true)
-      echo "$container|$port"
-      current_model=""
+    if [[ "$line" =~ ^[[:space:]]{2}([a-zA-Z0-9._-]+):$ ]]; then
+      current_model="${BASH_REMATCH[1]}"
+      container=""; service=""; port=""
+      continue
+    fi
+    [[ -n "$current_model" ]] || continue
+
+    if [[ "$line" =~ ^[[:space:]]{4}container:[[:space:]]*(.+)$ ]]; then
+      container="${BASH_REMATCH[1]}"
+    fi
+    if [[ "$line" =~ ^[[:space:]]{4}service:[[:space:]]*(.+)$ ]]; then
+      service="${BASH_REMATCH[1]}"
+    fi
+    if [[ "$line" =~ ^[[:space:]]{4}port:[[:space:]]*([0-9]+) ]]; then
+      port="${BASH_REMATCH[1]}"
+    fi
+
+    # container and port are the last two keys we need, so emit there.
+    if [[ -n "$container" && -n "$port" ]]; then
+      echo "$container|$port|$service"
+      current_model=""; container=""; service=""; port=""
     fi
   done < <(awk '/^models:/{found=1;next} found' "$VLLM_REGISTRY")
 }
@@ -178,8 +193,8 @@ sleep_vllm_container() {
 # Put every model except the target to sleep. Same-port alternative profiles
 # are stopped instead, because only one service can bind that port.
 sleep_all_vllm_except() {
-  local keep_container="$1" keep_port="$2" container port
-  while IFS='|' read -r container port; do
+  local keep_container="$1" keep_port="$2" container port service
+  while IFS='|' read -r container port service; do
     [[ -z "$container" ]] && continue
     [[ "$container" == "$keep_container" ]] && continue
     if [[ "$port" == "$keep_port" ]]; then
@@ -190,6 +205,79 @@ sleep_all_vllm_except() {
     fi
     sleep_vllm_container "$container" "$port"
   done < <(vllm_models)
+}
+
+# Make room for the services Compose is about to start. Called by
+# stacks/vllm/pre-up.sh with the Compose service names from `compose config
+# --services`, so `make up STACK=vllm` (and any direct `docker compose up`)
+# obeys the same one-awake-model rule as switch-model.sh. Anything that is not
+# incoming is slept, or stopped when it cannot settle; a container that shares a
+# port with an incoming service is stopped because Compose must bind that port.
+prepare_vllm() {
+  local -a keep_services=("$@")
+  if (( ${#keep_services[@]} == 0 )); then
+    log "No vLLM service is about to start; nothing to prepare."
+    return 0
+  fi
+
+  local -a registry=() keep_ports=()
+  local entry container port service keep is_target shares
+
+  while IFS='|' read -r container port service; do
+    [[ -n "$container" ]] || continue
+    registry+=("$container|$port|$service")
+  done < <(vllm_models)
+
+  # Ports the incoming services will bind.
+  for entry in "${registry[@]}"; do
+    IFS='|' read -r container port service <<<"$entry"
+    for keep in "${keep_services[@]}"; do
+      if [[ "$service" == "$keep" ]]; then
+        keep_ports+=("$port")
+        break
+      fi
+    done
+  done
+
+  log "Preparing GPU for: ${keep_services[*]} (port(s): ${keep_ports[*]})"
+
+  for entry in "${registry[@]}"; do
+    IFS='|' read -r container port service <<<"$entry"
+
+    is_target=0
+    for keep in "${keep_services[@]}"; do
+      if [[ "$service" == "$keep" ]]; then
+        is_target=1
+        break
+      fi
+    done
+
+    if (( is_target )); then
+      # Compose owns this container. Only clear a stuck one so `up` can start it.
+      case "$(vllm_state "$container" "$port")" in
+        unresponsive|restarting|starting)
+          stop_vllm_container "$container" "stuck while Compose starts it" ;;
+      esac
+      continue
+    fi
+
+    shares=0
+    for keep in "${keep_ports[@]}"; do
+      if [[ "$port" == "$keep" ]]; then
+        shares=1
+        break
+      fi
+    done
+    if (( shares )); then
+      case "$(container_state "$container")" in
+        running|restarting)
+          stop_vllm_container "$container" "shares port $port with an incoming service" ;;
+      esac
+      continue
+    fi
+
+    sleep_vllm_container "$container" "$port"
+  done
 }
 
 comfyui_running() {
@@ -327,7 +415,7 @@ mode_status() {
 
   echo "=== vLLM Status ==="
   local any_awake=false awake_count=0
-  while IFS='|' read -r container port; do
+  while IFS='|' read -r container port service; do
     local state
     state=$(vllm_state "$container" "$port")
     case "$state" in
@@ -376,6 +464,10 @@ case "${1:-}" in
         ;;
     evict-comfyui)
         evict_comfyui
+        ;;
+    prepare-vllm)
+        shift
+        prepare_vllm "$@"
         ;;
     status)
         mode_status
