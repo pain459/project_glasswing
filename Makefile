@@ -59,6 +59,8 @@ help:
 	@echo "make check STACK=name             Validate Compose configuration and show status"
 	@echo "make status                       Show all Docker containers"
 	@echo "make vllm-model MODEL=name        Switch the active vLLM model"
+	@echo "make vllm-sync                    Enforce the OpenCode-preferred model (stop all others)"
+	@echo "make vllm-status                  Show running/awake vLLM models (read-only)"
 	@echo "make vllm-model list              List available vLLM models"
 	@echo "make vllm-model current           Show the current vLLM model"
 	@echo "make ai-preflight                 Validate the vLLM/OpenCode inference baseline"
@@ -267,7 +269,7 @@ secrets-injection-check:
 # Glasswing platform-wide lifecycle management
 # --------------------------------------------------
 
-.PHONY: list-stacks restart-all vllm-model list current ai-preflight
+.PHONY: list-stacks restart-all vllm-model vllm-sync vllm-status list current ai-preflight
 
 # Discover all independently managed Compose projects.
 STACKS := $(patsubst stacks/%/compose.yaml,%,$(wildcard stacks/*/compose.yaml))
@@ -327,6 +329,7 @@ restart-all: netcheck
 
 VLLM_REGISTRY ?= stacks/vllm/model-registry.yaml
 VLLM_SWITCH ?= stacks/vllm/switch-model.sh
+VLLM_RECONCILE ?= stacks/vllm/reconcile-model.sh
 
 # Switch the active vLLM model.
 # Usage: make vllm-model MODEL=qwen3.6
@@ -341,6 +344,15 @@ vllm-model:
 	  exit 1; \
 	fi; \
 	./$(VLLM_SWITCH) $$arg
+
+# Enforce the one-model invariant against the OpenCode preference.
+# Runs on every `make up STACK=vllm` via post-up.sh as well.
+vllm-sync:
+	@./$(VLLM_RECONCILE)
+
+# Show which vLLM containers are running vs awake, without changing anything.
+vllm-status:
+	@./$(VLLM_RECONCILE) --status
 
 # Consumed by `make vllm-model list|current`; do nothing on their own.
 list current:

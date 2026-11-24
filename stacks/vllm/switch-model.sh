@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# vLLM model switcher — wake one model, sleep the others.
+# vLLM model switcher — run one model, stop all the others.
 #
 # Usage:
 #   ./switch-model.sh list              # list available models
@@ -7,8 +7,11 @@
 #   ./switch-model.sh <model-name>      # switch to a model
 #
 # Model names, Compose services and profiles come from model-registry.yaml.
+# Exactly one vLLM container may run: every other model is STOPPED, not slept.
+# A slept container still holds weights in VRAM, which previously let a 5 GB
+# Nemotron starve the 27B into torch.OutOfMemoryError and kill live sessions.
 # Profiles that share a port are alternative configs of the same model ID, so
-# the old container is stopped (to release the port) rather than slept.
+# the old container must stop to release the port in any case.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -205,18 +208,10 @@ cmd_switch() {
     fi
 
     case "$state" in
-      stopped|missing|asleep)
+      stopped|missing)
         ;;
-      awake)
-        echo "  Sleeping $model ($container)..."
-        if ! curl -sf -X POST --max-time 15 "$BASE:$port/sleep" >/dev/null 2>&1 || \
-           ! wait_for_model_state "$container" "$port" asleep 15; then
-          echo "  WARNING: /sleep did not settle for $container; stopping it." >&2
-          docker stop "$container" >/dev/null 2>&1 || true
-        fi
-        ;;
-      unresponsive|restarting|starting)
-        echo "  Stopping $model ($container) — $state and still holding VRAM..."
+      *)
+        echo "  Stopping $model ($container) — only one model may run ($state)..."
         docker stop "$container" >/dev/null 2>&1 || true
         ;;
     esac

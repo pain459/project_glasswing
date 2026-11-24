@@ -5,7 +5,7 @@ Replaces Ollama for all chat completions. Embeddings are handled by TEI (see `st
 
 ## Architecture
 
-**Option C: one container per model, one awake at a time.**
+**Option C: one container per model, exactly one running at a time.**
 
 | Model | Container | Compose profile | Port | Role |
 |-------|-----------|-----------------|------|------|
@@ -20,8 +20,10 @@ separate models. Both 3.8 services serve `qwen3.8-opencode`; both 3.6 services
 serve `qwen3.6`. OpenCode's model selector therefore shows one entry per model,
 not one per profile.
 
-Sleeping containers keep weights in CPU RAM (~16GB each). Switching between
-models takes ~2s (Level 1 sleep/wake) vs ~55s (process restart).
+Only the OpenCode-preferred model runs; every other registered container is
+**stopped**, not slept. A slept container still holds weights in VRAM, which is
+how a small Nemotron starved the 27B into `torch.OutOfMemoryError`. A switch is
+a process restart (~55s for the 27B) rather than a ~2s sleep/wake.
 
 ## Commands
 
@@ -31,6 +33,10 @@ make up STACK=vllm
 
 # Validation runs automatically after `make up`; to rerun it alone:
 ./stacks/vllm/post-up.sh
+
+# Enforce the invariant against OpenCode's configured .model
+make vllm-sync
+make vllm-status                 # read-only view of running vs awake
 
 # List available models
 make vllm-model list
@@ -49,39 +55,44 @@ make vllm-model MODEL=qwen3.6-4bit
 make vllm-model MODEL=qwen3.8-4bit
 
 # GPU mode switching
-make gpu-comfyui    # sleep vLLM, start ComfyUI
-make gpu-vllm       # stop ComfyUI, wake the default vLLM model
+make gpu-comfyui    # stop vLLM, start ComfyUI
+make gpu-vllm       # stop ComfyUI, start the default vLLM model
 make gpu-status     # show who owns the GPU
 ```
 
 ### Exclusivity
 
-Only one vLLM service should ever be awake. Every entry point sleeps all other
-registry models first:
+Exactly one vLLM container may run: the one OpenCode is configured to use
+(`.model` in `~/.config/opencode/opencode.json`, provider prefix stripped).
+Every other registered model is **stopped, not slept** — a slept container still
+holds weights in VRAM, which is how a small Nemotron starved the 27B into
+`torch.OutOfMemoryError` and dropped live sessions.
 
-- `switch-model.sh` sleeps awake models on other ports, stops models sharing the
-  target port, and stops any container that is `restarting` or unresponsive
-  (those still hold VRAM and cause the next start to fail with a
-  `Free memory ... less than desired GPU memory utilization` error).
-- `gpu-mode.sh vllm` does the same before waking the default: sleep everyone
-  else, then wake or restart the target.
-- `gpu-mode.sh comfyui` sleeps every vLLM model and stops any that cannot reach
-  a clean sleep.
+- `reconcile-model.sh` is the enforcement point. It resolves the preference,
+  stops every other registered container, starts the target if needed, and
+  verifies that exactly one container is running and awake.
+- `switch-model.sh` stops the outgoing model before starting the target.
+  Containers that are `restarting`, unresponsive, or share the target port are
+  stopped as well.
+- `gpu-mode.sh vllm` stops every vLLM model before handing the GPU to the
+  default; `gpu-mode.sh comfyui` stops all vLLM before starting ComfyUI.
 - `stacks/vllm/pre-up.sh` runs before every `make up`, `update`, `rebuild` and
   `restart` of this stack. It evicts ComfyUI and calls
-  `gpu-mode.sh prepare-vllm` with the services Compose resolved, so
-  `make up STACK=vllm` cannot start a model while another one holds the VRAM.
-  Calling `docker compose up` directly bypasses it: use `make up STACK=vllm` or
-  `make vllm-model MODEL=...`.
+  `gpu-mode.sh prepare-vllm` with the services Compose resolved.
+- `stacks/vllm/post-up.sh` reconciles first, then validates the model that is
+  actually running, so `make up STACK=vllm` restores the invariant on every
+  deploy.
 
-A container that is running but cannot confirm `{"is_sleeping": true}` is
-treated as unsafe and stopped, not trusted.
+Calling `docker compose up` directly bypasses these hooks: use
+`make up STACK=vllm` or `make vllm-model MODEL=...`. Enforcement runs on deploy
+and on model switches; continuous enforcement between deploys needs a scheduled
+`make vllm-sync`.
 
 All vLLM services set `restart: "no"`, overriding the `unless-stopped` default
 from `../base.yaml`. A start that cannot allocate VRAM now fails once instead of
 restart-looping; recover with `make vllm-model MODEL=<name>`. Consequence: vLLM
-does not come back by itself after a host reboot — run `make gpu-vllm` (or
-`make vllm-model MODEL=<name>`) after boot.
+does not come back by itself after a host reboot — run `make vllm-sync` (or
+`make gpu-vllm`) after boot.
 
 ## OpenCode model selector
 
@@ -110,9 +121,9 @@ sub-agents, compaction, and title generation). Behavior:
 - Checks `http://<host>:<port>/is_sleeping` (LAN IP, not `127.0.0.1` — see the
   note below). If the container is stopped or unreachable, it is treated as
   asleep and started.
-- If asleep, runs `make -C <repo> vllm-model MODEL=<model>`. That sleeps the
-  currently awake model and wakes the requested one (~2s). Concurrent prompts
-  for the same model are serialized.
+- If asleep, runs `make -C <repo> vllm-model MODEL=<model>`. That stops the
+  currently running model and starts the requested one (~55s for the 27B).
+  Concurrent prompts for the same model are serialized.
 
 The plugin is **project-local**: OpenCode discovers it only when launched from
 the repository directory (e.g. the TUI started in `/home/ravik/src_git/project_glasswing`).
@@ -192,7 +203,7 @@ Each model's two profiles bind the same port (3043 / 3044) and serve the same
 model ID, so LiteLLM/OpenCode need no changes. The alt services carry a network
 alias matching the primary container name, so LiteLLM container DNS keeps
 working. Never run two profiles of the same model together — they share a port
-and the GPU. Use `make vllm-model` (it sleeps the active model and starts the
+and the GPU. Use `make vllm-model` (it stops the active model and starts the
 target with the right profile):
 
 ```bash
@@ -203,7 +214,7 @@ make vllm-model MODEL=qwen3.6-4bit     # 3.6, 4-bit KV
 Or directly:
 
 ```bash
-# Compose cannot sleep a resident model, so go through the pre-up guard:
+# Compose cannot stop a resident model on its own, so go through the pre-up guard:
 make up STACK=vllm
 ```
 

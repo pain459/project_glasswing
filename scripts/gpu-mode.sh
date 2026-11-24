@@ -2,10 +2,10 @@
 # GPU arbitration: ComfyUI and vLLM share the RTX 4090.
 #
 # Usage:
-#   scripts/gpu-mode.sh comfyui        # sleep vLLM, free the GPU for ComfyUI
-#   scripts/gpu-mode.sh vllm           # evict ComfyUI, wake the default vLLM model
+#   scripts/gpu-mode.sh comfyui        # stop vLLM, free the GPU for ComfyUI
+#   scripts/gpu-mode.sh vllm           # evict ComfyUI, start the default vLLM model
 #   scripts/gpu-mode.sh evict-comfyui  # stop ComfyUI only (used by model switching)
-#   scripts/gpu-mode.sh prepare-vllm S # sleep every model not in service set S
+#   scripts/gpu-mode.sh prepare-vllm S # stop every model not in service set S
 #   scripts/gpu-mode.sh status         # show who owns the GPU
 #
 # Called by:
@@ -16,8 +16,8 @@
 #   vllm pre-up.sh    →  scripts/gpu-mode.sh prepare-vllm <services...>
 #
 # Design:
-#   - vLLM has /sleep and /wake_up endpoints (VLLM_SERVER_DEV_MODE=1).
-#     Sleep Level 1 offloads weights to CPU RAM (~2s wake time).
+#   - Exactly one model may run at a time. Other vLLM containers are STOPPED,
+#     not slept: a slept model still holds VRAM and starved the 27B into OOM.
 #   - ComfyUI has no /free endpoint that works mid-prompt. We stop the
 #     container to guarantee GPU release.
 #   - The queue guard on the vllm path prevents evicting ComfyUI while
@@ -148,51 +148,24 @@ wait_for_vllm_awake() {
 }
 
 stop_vllm_container() {
-  local container="$1" reason="$2"
-  if [[ "$(container_state "$container")" != "missing" ]]; then
-    log "  Stopping $container ($reason)..."
-    docker stop "$container" >/dev/null 2>&1 || true
-  fi
-}
-
-# Sleep one model, or stop it if it cannot reach a clean sleep state. A
-# running-but-unresponsive container is the dangerous case: it still holds
-# VRAM and may be in a restart loop.
-sleep_vllm_container() {
-  local container="$1" port="$2" state
-  state=$(vllm_state "$container" "$port")
+  local container="$1" reason="$2" state
+  state=$(container_state "$container")
   case "$state" in
-    asleep)
-      log "  $container is already asleep."
-      ;;
-    awake)
-      log "  Sleeping $container (port $port)..."
-      if curl -sf -X POST --max-time 15 "http://${HOST_IP}:$port/sleep" >/dev/null 2>&1; then
-        for _ in $(seq 1 10); do
-          vllm_asleep "$container" "$port" && break
-          sleep 1
-        done
-      fi
-      if vllm_asleep "$container" "$port"; then
-        log "  $container is asleep."
-      else
-        stop_vllm_container "$container" "sleep failed or did not settle"
-      fi
-      ;;
-    unresponsive|restarting|starting)
-      stop_vllm_container "$container" "running but not cleanly asleep ($state)"
-      ;;
-    stopped|missing)
+    missing|exited|stopped|dead)
       ;;
     *)
-      stop_vllm_container "$container" "unknown state ($state)"
+      log "  Stopping $container ($state, $reason)..."
+      docker stop "$container" >/dev/null 2>&1 || true
       ;;
   esac
 }
 
-# Put every model except the target to sleep. Same-port alternative profiles
-# are stopped instead, because only one service can bind that port.
-sleep_all_vllm_except() {
+# A non-target model is always stopped via stop_vllm_container above. Sleeping
+# it would leave weights in VRAM and let it starve the model that must run.
+
+# Stop every model except the target. No non-target container may keep running:
+# even a slept model holds VRAM and can starve the one that must run.
+stop_all_vllm_except() {
   local keep_container="$1" keep_port="$2" container port service
   while IFS='|' read -r container port service; do
     [[ -z "$container" ]] && continue
@@ -203,16 +176,16 @@ sleep_all_vllm_except() {
       fi
       continue
     fi
-    sleep_vllm_container "$container" "$port"
+    stop_vllm_container "$container" "only one model may run"
   done < <(vllm_models)
 }
 
 # Make room for the services Compose is about to start. Called by
 # stacks/vllm/pre-up.sh with the Compose service names from `compose config
-# --services`, so `make up STACK=vllm` (and any direct `docker compose up`)
-# obeys the same one-awake-model rule as switch-model.sh. Anything that is not
-# incoming is slept, or stopped when it cannot settle; a container that shares a
-# port with an incoming service is stopped because Compose must bind that port.
+# --services`, so `make up STACK=vllm` obeys the same one-running-model rule as
+# switch-model.sh. Anything that is not incoming is stopped; a container that
+# shares a port with an incoming service is stopped because Compose must bind
+# that port.
 prepare_vllm() {
   local -a keep_services=("$@")
   if (( ${#keep_services[@]} == 0 )); then
@@ -276,7 +249,7 @@ prepare_vllm() {
       continue
     fi
 
-    sleep_vllm_container "$container" "$port"
+    stop_vllm_container "$container" "only one model may run"
   done
 }
 
@@ -292,15 +265,14 @@ gpu_free_mb() {
   nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits 2>/dev/null | head -1
 }
 
-# --- comfyui mode: sleep vLLM -------------------------------------------------
+# --- comfyui mode: stop vLLM ---------------------------------------------------
 
 mode_comfyui() {
-  log "Sleeping every vLLM model before handing the GPU to ComfyUI..."
+  log "Stopping every vLLM model before handing the GPU to ComfyUI..."
 
   # No model is the target: pass sentinels so every registry entry is visited.
-  # sleep_vllm_container sleeps healthy models and stops restarting or
-  # unresponsive ones, which may still hold VRAM.
-  sleep_all_vllm_except "__comfyui__" "__comfyui__"
+  # Sleeping would keep weights in VRAM, so every model is stopped.
+  stop_all_vllm_except "__comfyui__" "__comfyui__"
 
   # Give the driver a moment to reclaim the freed VRAM.
   local free_mb="" waited=0
@@ -354,9 +326,8 @@ evict_comfyui() {
   log "GPU is free (${free_mb:-unknown} MiB available). Ready for vLLM."
 }
 
-# Wake only the registry's default model, and put every other model to sleep
-# first. Waking every asleep model would make the Qwen 3.8 and 3.6 containers
-# fight over the same 24 GiB card.
+# Start only the registry's default model, stopping every other model first.
+# Two 27B models cannot coexist on the 24 GiB card.
 wake_vllm_default() {
   local found=false model container port state
   while IFS='|' read -r model container port; do
@@ -364,7 +335,7 @@ wake_vllm_default() {
     state=$(vllm_state "$container" "$port")
 
     # Exclusivity first: the target only gets VRAM once everyone else yields.
-    sleep_all_vllm_except "$container" "$port"
+    stop_all_vllm_except "$container" "$port"
 
     case "$state" in
       awake)

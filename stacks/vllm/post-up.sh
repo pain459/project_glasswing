@@ -11,15 +11,34 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REGISTRY="$SCRIPT_DIR/model-registry.yaml"
+OPENCODE_CONFIG="${OPENCODE_CONFIG:-$HOME/.config/opencode/opencode.json}"
 
-# Find the default model (walk the registry blocks, independent of field count)
-DEFAULT_MODEL=$(awk '
-  /^models:/ { in_models=1; next }
-  in_models && /^  [A-Za-z0-9_.-]+:[[:space:]]*$/ {
-    model=$1; sub(/:$/, "", model)
-  }
-  in_models && /default:[[:space:]]*true/ { print model; exit }
-' "$REGISTRY")
+# Enforce the one-model invariant first: stop every model that is not the one
+# OpenCode is configured to use, and make sure that one is awake. A slept
+# model still holds VRAM, which is how a 5 GB Nemotron starved the 27B.
+if [[ -x "$SCRIPT_DIR/reconcile-model.sh" ]]; then
+  echo "Reconciling vLLM to the OpenCode-preferred model..."
+  "$SCRIPT_DIR/reconcile-model.sh"
+  echo ""
+fi
+
+# Validate the model that is actually running: the OpenCode preference when it
+# resolves, otherwise the registry default.
+DEFAULT_MODEL=""
+if [[ -r "$OPENCODE_CONFIG" ]]; then
+  pref="$(jq -r '.model // empty' "$OPENCODE_CONFIG" 2>/dev/null)"
+  [[ -n "$pref" ]] && DEFAULT_MODEL="${pref#*/}"
+fi
+if [[ -z "$DEFAULT_MODEL" ]]; then
+  # Find the default model (walk the registry blocks, independent of field count)
+  DEFAULT_MODEL=$(awk '
+    /^models:/ { in_models=1; next }
+    in_models && /^  [A-Za-z0-9_.-]+:[[:space:]]*$/ {
+      model=$1; sub(/:$/, "", model)
+    }
+    in_models && /default:[[:space:]]*true/ { print model; exit }
+  ' "$REGISTRY")
+fi
 if [[ -z "$DEFAULT_MODEL" ]]; then
   DEFAULT_MODEL="qwen3.8-opencode"
 fi
